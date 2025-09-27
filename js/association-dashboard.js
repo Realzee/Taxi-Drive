@@ -21,6 +21,64 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
 
+// Enhanced authentication check
+async function checkAssociationAuthentication() {
+    try {
+        // Check Supabase authentication first
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+            console.log('No authenticated user, redirecting to login');
+            window.location.href = 'index.html';
+            return null;
+        }
+
+        // Verify user role is association
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (userError || userData?.role !== 'association') {
+            console.log('User is not an association, redirecting');
+            window.location.href = 'dashboard.html';
+            return null;
+        }
+
+        return user;
+    } catch (error) {
+        console.error('Authentication check error:', error);
+        window.location.href = 'index.html';
+        return null;
+    }
+}
+
+// Update the initializeDashboard function:
+async function initializeDashboard() {
+    try {
+        // Check authentication and role
+        const user = await checkAssociationAuthentication();
+        if (!user) return;
+
+        currentUser = user;
+        console.log('Association user authenticated:', user.email);
+
+        // Rest of your existing initialization code...
+        await Promise.all([
+            loadUserData(),
+            loadAssociationData()
+        ]);
+
+        setupEventListeners();
+        await loadDashboardData();
+
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
+    }
+}
+
 async function initializeDashboard() {
     try {
         // Check if user is logged in
