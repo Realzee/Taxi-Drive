@@ -1,42 +1,84 @@
-// Wait for Supabase to be fully loaded
+// Wait for the page to load completely
 document.addEventListener('DOMContentLoaded', function() {
-    initializeSupabase();
+    console.log('Initializing Supabase client...');
+    initializeApp();
 });
 
-function initializeSupabase() {
-    // Check if supabase is available
-    if (typeof supabase === 'undefined') {
-        console.error('Supabase not loaded yet. Retrying in 500ms...');
-        setTimeout(initializeSupabase, 500);
-        return;
+function initializeApp() {
+    // Initialize Supabase
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+    
+    let supabase;
+    
+    try {
+        // Check if Supabase is available globally (from CDN)
+        if (typeof window.supabase !== 'undefined') {
+            const { createClient } = window.supabase;
+            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            console.error('Supabase CDN not loaded');
+            // Fallback: try to load createClient from global scope
+            supabase = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        console.log('Supabase client initialized successfully');
+    } catch (error) {
+        console.error('Supabase initialization failed:', error);
+        // Create a fallback client to prevent errors
+        supabase = createFallbackClient();
     }
 
-    const { createClient } = supabase;
-    
-    let supabaseClient;
-    try {
-        const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-        
-        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase client initialized successfully');
-        
-        // Make supabaseClient globally available
-        window.supabaseClient = supabaseClient;
-        
-        // Initialize your functions
-        initializeFunctions(supabaseClient);
-        
-    } catch (error) {
-        console.error('Failed to initialize Supabase client:', error);
-        // Create fallback
-        window.supabaseClient = createFallbackClient();
-        initializeFunctions(window.supabaseClient);
-    }
+    // Initialize all application functionality
+    initializeFunctions(supabase);
 }
 
-function initializeFunctions(supabaseClient) {
-    // Helper: Show error message
+function createFallbackClient() {
+    return {
+        auth: { 
+            signInWithPassword: () => Promise.resolve({ error: new Error('Supabase not available') }),
+            signUp: () => Promise.resolve({ error: new Error('Supabase not available') }),
+            signOut: () => Promise.resolve({ error: new Error('Supabase not available') })
+        },
+        from: () => ({ 
+            select: () => ({ 
+                single: () => Promise.resolve({ error: new Error('Supabase not available') }) 
+            }),
+            insert: () => Promise.resolve({ error: new Error('Supabase not available') })
+        }),
+        storage: {
+            from: () => ({
+                upload: () => Promise.resolve({ error: new Error('Supabase not available') }),
+                getPublicUrl: () => ({ publicUrl: '' })
+            })
+        }
+    };
+}
+
+function initializeFunctions(supabase) {
+    // Utility to close all modals
+    function closeAllModals() {
+        const modals = [
+            'signup-role-modal',
+            'signup-passenger-modal',
+            'signup-driver-modal',
+            'signup-owner-modal',
+            'signup-association-modal',
+            'signup-modal'
+        ];
+        modals.forEach(id => {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        });
+    }
+
+    // Utility to show a modal
+    function showModal(modalId) {
+        closeAllModals();
+        const modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'flex';
+    }
+
+    // Utility to show error message
     function showError(elementId, message) {
         const errorElement = document.getElementById(elementId);
         if (errorElement) {
@@ -45,32 +87,30 @@ function initializeFunctions(supabaseClient) {
         }
     }
 
-    // Helper: Show success modal
+    // Utility to show success message
     function showSuccess(message, loginDetails = '') {
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
         const modalLoginDetails = document.getElementById('modal-login-details');
-        const signupModal = document.getElementById('signup-modal');
-        
-        if (modalTitle && modalMessage && modalLoginDetails && signupModal) {
+        if (modalTitle && modalMessage && modalLoginDetails) {
             modalTitle.textContent = 'Success!';
             modalMessage.textContent = message;
             modalLoginDetails.textContent = loginDetails;
-            signupModal.style.display = 'flex';
+            showModal('signup-modal');
         }
     }
 
     // Authentication: Login
     async function login(email, password, role) {
         try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) {
                 showError('login-error-message', error.message || 'Login failed');
                 return null;
             }
 
             // Verify role
-            const { data: userData, error: userError } = await supabaseClient
+            const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('role')
                 .eq('email', email)
@@ -78,7 +118,7 @@ function initializeFunctions(supabaseClient) {
 
             if (userError || userData?.role !== role) {
                 showError('login-error-message', userError?.message || 'Invalid role or user not found');
-                await supabaseClient.auth.signOut();
+                await supabase.auth.signOut();
                 return null;
             }
 
@@ -104,7 +144,7 @@ function initializeFunctions(supabaseClient) {
             }
 
             // Sign up user
-            const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
+            const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
             if (authError) {
                 showError(errorElementId, authError.message || 'Registration failed');
                 return null;
@@ -119,7 +159,7 @@ function initializeFunctions(supabaseClient) {
             if (license_number) userData.license_number = license_number;
             if (company_name) userData.company_name = company_name;
 
-            const { error: dbError } = await supabaseClient.from('users').insert(userData);
+            const { error: dbError } = await supabase.from('users').insert(userData);
             if (dbError) {
                 showError(errorElementId, dbError.message || 'Failed to save user data');
                 return null;
@@ -151,7 +191,7 @@ function initializeFunctions(supabaseClient) {
             }
 
             // Sign up admin
-            const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: adminEmail,
                 password: adminPassword
             });
@@ -163,7 +203,7 @@ function initializeFunctions(supabaseClient) {
             const adminId = authData.user.id;
 
             // Insert admin as user
-            const { error: userError } = await supabaseClient.from('users').insert({
+            const { error: userError } = await supabase.from('users').insert({
                 id: adminId,
                 email: adminEmail,
                 role: 'association'
@@ -177,14 +217,14 @@ function initializeFunctions(supabaseClient) {
             let logoUrl = null;
             if (logoFile) {
                 const fileName = `${adminId}/${Date.now()}_${logoFile.name}`;
-                const { data: storageData, error: storageError } = await supabaseClient.storage
+                const { data: storageData, error: storageError } = await supabase.storage
                     .from('logos')
                     .upload(fileName, logoFile, { cacheControl: '3600', upsert: false });
                 if (storageError) {
                     showError(errorElementId, storageError.message || 'Failed to upload logo');
                     return null;
                 }
-                const { data: publicUrlData } = supabaseClient.storage.from('logos').getPublicUrl(fileName);
+                const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
                 logoUrl = publicUrlData.publicUrl;
             }
 
@@ -203,7 +243,7 @@ function initializeFunctions(supabaseClient) {
             if (description) associationData.description = description;
             if (logoUrl) associationData.logo_url = logoUrl;
 
-            const { error: assocError } = await supabaseClient.from('associations').insert(associationData);
+            const { error: assocError } = await supabase.from('associations').insert(associationData);
             if (assocError) {
                 showError(errorElementId, assocError.message || 'Failed to save association data');
                 return null;
@@ -219,32 +259,210 @@ function initializeFunctions(supabaseClient) {
         }
     }
 
-    function createFallbackClient() {
-        return {
-            auth: { 
-                signInWithPassword: () => Promise.resolve({ error: new Error('Supabase not initialized') }),
-                signUp: () => Promise.resolve({ error: new Error('Supabase not initialized') }),
-                signOut: () => Promise.resolve({ error: new Error('Supabase not initialized') })
-            },
-            from: () => ({ 
-                select: () => ({ 
-                    single: () => Promise.resolve({ error: new Error('Supabase not initialized') }) 
-                }),
-                insert: () => Promise.resolve({ error: new Error('Supabase not initialized') })
-            }),
-            storage: {
-                from: () => ({
-                    upload: () => Promise.resolve({ error: new Error('Supabase not initialized') }),
-                    getPublicUrl: () => ({ publicUrl: '' })
-                })
-            }
-        };
-    }
+    // Set up event listeners
+    setupEventListeners();
 
-    // Make functions globally available
-    window.login = login;
-    window.signupSimple = signupSimple;
-    window.signupAssociation = signupAssociation;
-    window.showError = showError;
-    window.showSuccess = showSuccess;
+    function setupEventListeners() {
+        // Toggle buttons
+        const loginTab = document.getElementById('login-tab');
+        const signupTab = document.getElementById('signup-tab');
+        const loginForm = document.getElementById('login-form');
+
+        if (signupTab) {
+            signupTab.addEventListener('click', () => {
+                if (loginForm) loginForm.style.display = 'none';
+                showModal('signup-role-modal');
+            });
+        }
+
+        if (loginTab) {
+            loginTab.addEventListener('click', () => {
+                if (loginForm) loginForm.style.display = 'block';
+                closeAllModals();
+            });
+        }
+
+        // Role selection buttons
+        const roleButtons = document.querySelectorAll('.signup-role-btn');
+        roleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const role = button.getAttribute('data-role');
+                const modalMap = {
+                    'passenger': 'signup-passenger-modal',
+                    'driver': 'signup-driver-modal',
+                    'owner': 'signup-owner-modal',
+                    'association': 'signup-association-modal'
+                };
+                if (modalMap[role]) {
+                    showModal(modalMap[role]);
+                }
+            });
+        });
+
+        // Close buttons
+        const closeButtons = document.querySelectorAll('.modal-close-btn, #signup-role-cancel, #modal-close-btn');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modalId = button.getAttribute('data-modal') || button.id === 'signup-role-cancel' ? 'signup-role-modal' : 'signup-modal';
+                const modal = document.getElementById(modalId);
+                if (modal) modal.style.display = 'none';
+                if (loginForm) loginForm.style.display = 'block';
+            });
+        });
+
+        // Login form submission
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email')?.value;
+                const password = document.getElementById('login-password')?.value;
+                const role = document.getElementById('login-role')?.value;
+
+                if (!email || !password || !role) {
+                    showError('login-error-message', 'Please fill in all fields');
+                    return;
+                }
+
+                try {
+                    await login(email, password, role);
+                    window.location.href = '/dashboard.html';
+                } catch (error) {
+                    showError('login-error-message', error.message || 'Login failed');
+                }
+            });
+        }
+
+        // Passenger signup
+        const passengerForm = document.getElementById('signup-passenger');
+        if (passengerForm) {
+            passengerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('passenger-email')?.value;
+                const password = document.getElementById('passenger-password')?.value;
+
+                try {
+                    await signupSimple('passenger', { email, password });
+                    showSuccess('Passenger account created successfully');
+                    passengerForm.reset();
+                } catch (error) {
+                    showError('signup-passenger-error-message', error.message || 'Registration failed');
+                }
+            });
+        }
+
+        // Driver signup
+        const driverForm = document.getElementById('signup-driver');
+        if (driverForm) {
+            driverForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('driver-email')?.value;
+                const password = document.getElementById('driver-password')?.value;
+                const licenseNumber = document.getElementById('driver-license-number')?.value;
+
+                try {
+                    await signupSimple('driver', { email, password, license_number: licenseNumber });
+                    showSuccess('Driver account created successfully');
+                    driverForm.reset();
+                } catch (error) {
+                    showError('signup-driver-error-message', error.message || 'Registration failed');
+                }
+            });
+        }
+
+        // Owner signup
+        const ownerForm = document.getElementById('signup-owner');
+        if (ownerForm) {
+            ownerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('owner-email')?.value;
+                const password = document.getElementById('owner-password')?.value;
+                const companyName = document.getElementById('owner-company-name')?.value;
+
+                try {
+                    await signupSimple('owner', { email, password, company_name: companyName });
+                    showSuccess('Owner account created successfully');
+                    ownerForm.reset();
+                } catch (error) {
+                    showError('signup-owner-error-message', error.message || 'Registration failed');
+                }
+            });
+        }
+
+        // Association signup
+        const associationForm = document.getElementById('signup-association');
+        if (associationForm) {
+            associationForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = {
+                    name: document.getElementById('association-name')?.value,
+                    email: document.getElementById('association-email')?.value,
+                    phone: document.getElementById('association-phone')?.value,
+                    registrationNumber: document.getElementById('association-registration-number')?.value,
+                    address: document.getElementById('association-address')?.value,
+                    description: document.getElementById('association-description')?.value,
+                    logo: document.getElementById('association-logo')?.files[0],
+                    adminEmail: document.getElementById('admin-email')?.value,
+                    adminPassword: document.getElementById('admin-password')?.value,
+                    adminName: document.getElementById('admin-name')?.value,
+                    adminPhone: document.getElementById('admin-phone')?.value,
+                    adminIdNumber: document.getElementById('admin-id-number')?.value,
+                    termsAccepted: document.getElementById('terms-accepted')?.checked
+                };
+
+                if (!formData.termsAccepted) {
+                    showError('signup-association-error-message', 'You must accept the terms and conditions');
+                    return;
+                }
+
+                const progressBar = document.getElementById('signup-progress-bar');
+                const progressText = document.getElementById('signup-progress-text');
+                const progressDiv = document.getElementById('signup-progress');
+
+                if (progressBar && progressText && progressDiv) {
+                    progressDiv.style.display = 'block';
+                    progressText.textContent = 'Registering association...';
+                    progressBar.style.width = '10%';
+                }
+
+                try {
+                    await signupAssociation(formData);
+                    if (progressBar && progressText) {
+                        progressBar.style.width = '100%';
+                        progressText.textContent = 'Registration complete!';
+                    }
+                    showSuccess('Association created successfully', `Login with: ${formData.adminEmail}`);
+                    associationForm.reset();
+                } catch (error) {
+                    showError('signup-association-error-message', error.message || 'Registration failed');
+                    if (progressDiv) progressDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Logo preview for association form
+        const logoInput = document.getElementById('association-logo');
+        const logoPreviewContainer = document.getElementById('logo-preview-container');
+        const logoPreviewImg = document.getElementById('logo-preview-img');
+        const removeLogoBtn = document.getElementById('remove-logo-btn');
+
+        if (logoInput && logoPreviewContainer && logoPreviewImg && removeLogoBtn) {
+            logoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        logoPreviewImg.src = e.target.result;
+                        logoPreviewContainer.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            removeLogoBtn.addEventListener('click', () => {
+                logoInput.value = '';
+                logoPreviewContainer.style.display = 'none';
+                logoPreviewImg.src = '';
+            });
+        }
+    }
 }
