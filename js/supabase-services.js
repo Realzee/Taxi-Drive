@@ -65,10 +65,19 @@ function initializeFunctions(supabase) {
             'signup-association-modal',
             'signup-modal'
         ];
+        
         modals.forEach(id => {
             const modal = document.getElementById(id);
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+            }
         });
+        
+        // Always ensure login form is visible
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.style.display = 'block';
+        }
     }
 
     // Utility to show a modal
@@ -299,15 +308,58 @@ function initializeFunctions(supabase) {
             });
         });
 
-        // Close buttons
+        // Close buttons - FIXED VERSION
         const closeButtons = document.querySelectorAll('.modal-close-btn, #signup-role-cancel, #modal-close-btn');
         closeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const modalId = button.getAttribute('data-modal') || button.id === 'signup-role-cancel' ? 'signup-role-modal' : 'signup-modal';
-                const modal = document.getElementById(modalId);
-                if (modal) modal.style.display = 'none';
-                if (loginForm) loginForm.style.display = 'block';
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Close button clicked:', button.id || button.className);
+                
+                let modalId;
+                if (button.classList.contains('modal-close-btn')) {
+                    modalId = button.getAttribute('data-modal');
+                } else if (button.id === 'signup-role-cancel') {
+                    modalId = 'signup-role-modal';
+                } else if (button.id === 'modal-close-btn') {
+                    modalId = 'signup-modal';
+                }
+                
+                console.log('Closing modal:', modalId);
+                
+                if (modalId) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.style.display = 'none';
+                        console.log('Modal closed successfully');
+                    }
+                }
+                
+                if (loginForm) {
+                    loginForm.style.display = 'block';
+                }
+                
+                closeAllModals();
             });
+        });
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                console.log('Clicked outside modal, closing:', e.target.id);
+                e.target.style.display = 'none';
+                if (loginForm) loginForm.style.display = 'block';
+            }
+        });
+
+        // ESC key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                console.log('ESC key pressed, closing all modals');
+                closeAllModals();
+                if (loginForm) loginForm.style.display = 'block';
+            }
         });
 
         // Login form submission
@@ -464,5 +516,27 @@ function initializeFunctions(supabase) {
                 logoPreviewImg.src = '';
             });
         }
-    }
+    } // <-- This closing bracket was missing
+} // <-- This is the end of initializeFunctions
+
+function debugModals() {
+    const modals = [
+        'signup-role-modal',
+        'signup-passenger-modal', 
+        'signup-driver-modal',
+        'signup-owner-modal',
+        'signup-association-modal',
+        'signup-modal'
+    ];
+    
+    modals.forEach(id => {
+        const modal = document.getElementById(id);
+        console.log(`${id}:`, modal ? getComputedStyle(modal).display : 'NOT FOUND');
+    });
+    
+    const loginForm = document.getElementById('login-form');
+    console.log('Login form:', loginForm ? getComputedStyle(loginForm).display : 'NOT FOUND');
 }
+
+// Make it globally available for debugging
+window.debugModals = debugModals;
