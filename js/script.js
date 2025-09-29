@@ -255,9 +255,11 @@ function closeAllModals() {
 
 // Utility to show a modal
 function showModal(modalId) {
-    closeAllModals();
     const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 // Utility to show error message
