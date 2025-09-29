@@ -282,146 +282,221 @@ function initializeFunctions(supabase) {
         }
     }
 
-    // Signup: For Association (complex, with logo upload)
-    async function signupAssociation(formData) {
-        const {
-            name, email, phone, registrationNumber, address, description,
-            logo: logoFile, adminEmail, adminPassword, adminName, adminPhone, adminIdNumber
-        } = formData;
-        const errorElementId = 'signup-association-error-message';
+    // Signup: For Association (complex, with logo upload) - FIXED VERSION
+async function signupAssociation(formData) {
+    const {
+        name, email, phone, registrationNumber, address, description,
+        logo: logoFile, adminEmail, adminPassword, adminName, adminPhone, adminIdNumber,
+        termsAccepted
+    } = formData;
+    const errorElementId = 'signup-association-error-message';
 
-        console.log('🔍 Starting association registration...');
-        console.log('Form data received:', {
-            name, email, phone, registrationNumber, address, description,
-            logoFile: logoFile ? `File: ${logoFile.name} (${logoFile.size} bytes)` : 'No file',
-            adminEmail, adminPassword: '***', adminName, adminPhone, adminIdNumber
-        });
+    console.log('🔍 Starting association registration...');
+    console.log('Form data received:', {
+        name, email, phone, registrationNumber, address, description,
+        logoFile: logoFile ? `File: ${logoFile.name} (${logoFile.size} bytes)` : 'No file',
+        adminEmail, adminPassword: '***', adminName, adminPhone, adminIdNumber,
+        termsAccepted
+    });
 
-        try {
-            // Validate password length
-            if (adminPassword.length < 8) {
-                showError(errorElementId, 'Administrator password must be at least 8 characters long');
-                return null;
-            }
+    // Reset error message
+    showError(errorElementId, '');
 
-            console.log('📝 Step 1: Creating admin auth account...');
-
-            // Sign up admin
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: adminEmail,
-                password: adminPassword
-            });
-
-            if (authError) {
-                console.error('❌ Auth signup error:', authError);
-                showError(errorElementId, authError.message || 'Admin registration failed');
-                return null;
-            }
-
-            console.log('✅ Admin auth account created:', authData.user.id);
-
-            const adminId = authData.user.id;
-
-            // Insert admin as user
-            console.log('📝 Step 2: Creating admin user record...');
-            const { error: userError } = await supabase.from('users').insert({
-                id: adminId,
-                email: adminEmail,
-                name: adminName,
-                phone: adminPhone,
-                role: 'association',
-                association_approved: true, // Auto-approve association admin
-                status: 'active',
-                created_at: new Date().toISOString()
-            });
-
-            if (userError) {
-                console.error('❌ User record creation error:', userError);
-                showError(errorElementId, userError.message || 'Failed to save admin user data');
-                
-                // Clean up: delete the auth account if user record fails
-                await supabase.auth.admin.deleteUser(adminId);
-                return null;
-            }
-
-            console.log('✅ Admin user record created');
-
-            // Upload logo if provided
-            let logoUrl = null;
-            if (logoFile) {
-                console.log('📝 Step 3: Uploading logo...');
-                try {
-                    const fileName = `${adminId}/${Date.now()}_${logoFile.name}`;
-                    const { data: storageData, error: storageError } = await supabase.storage
-                        .from('logos')
-                        .upload(fileName, logoFile, { 
-                            cacheControl: '3600', 
-                            upsert: false 
-                        });
-
-                    if (storageError) {
-                        console.error('❌ Logo upload error:', storageError);
-                        // Continue without logo - don't fail the entire registration
-                    } else {
-                        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
-                        logoUrl = publicUrlData.publicUrl;
-                        console.log('✅ Logo uploaded:', logoUrl);
-                    }
-                } catch (uploadError) {
-                    console.error('❌ Logo upload failed:', uploadError);
-                    // Continue without logo
-                }
-            }
-
-            // Insert association data
-            console.log('📝 Step 4: Creating association record...');
-            const associationData = {
-                name: name,
-                email: email,
-                phone: phone,
-                address: address,
-                admin_id: adminId,
-                admin_name: adminName,
-                admin_phone: adminPhone,
-                admin_id_number: adminIdNumber,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            // Add optional fields if they have values
-            if (registrationNumber) associationData.registration_number = registrationNumber;
-            if (description) associationData.description = description;
-            if (logoUrl) associationData.logo_url = logoUrl;
-
-            console.log('Association data to insert:', associationData);
-
-            const { data: associationResult, error: assocError } = await supabase
-                .from('associations')
-                .insert([associationData])
-                .select();
-
-            if (assocError) {
-                console.error('❌ Association creation error:', assocError);
-                showError(errorElementId, assocError.message || 'Failed to save association data');
-                
-                // Clean up: delete user record and auth account
-                await supabase.from('users').delete().eq('id', adminId);
-                await supabase.auth.admin.deleteUser(adminId);
-                return null;
-            }
-
-            console.log('✅ Association created successfully:', associationResult);
-
-            showSuccess('Association created successfully', `Login with: ${adminEmail}`);
-            console.log('🎉 Association registration completed successfully!');
-            return authData.user;
-
-        } catch (err) {
-            console.error('❌ Unexpected error in signupAssociation:', err);
-            showError(errorElementId, err.message || 'An unexpected error occurred during association registration');
+    try {
+        // Validate terms acceptance
+        if (!termsAccepted) {
+            showError(errorElementId, 'You must accept the terms and conditions');
             return null;
         }
+
+        // Validate password length
+        if (adminPassword.length < 8) {
+            showError(errorElementId, 'Administrator password must be at least 8 characters long');
+            return null;
+        }
+
+        console.log('📝 Step 1: Creating admin auth account...');
+
+        // Sign up admin - ADDED MORE DETAILED LOGGING
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: adminEmail,
+            password: adminPassword,
+            options: {
+                data: {
+                    name: adminName,
+                    role: 'association'
+                }
+            }
+        });
+
+        console.log('🔍 Auth response:', { authData, authError });
+
+        if (authError) {
+            console.error('❌ Auth signup error:', authError);
+            showError(errorElementId, `Admin registration failed: ${authError.message}`);
+            return null;
+        }
+
+        if (!authData.user) {
+            console.error('❌ No user data returned from auth');
+            showError(errorElementId, 'Admin registration failed: No user data returned');
+            return null;
+        }
+
+        console.log('✅ Admin auth account created:', authData.user.id);
+        console.log('🔍 User email confirmed?', authData.user.email_confirmed_at);
+
+        const adminId = authData.user.id;
+
+        // Insert admin as user
+        console.log('📝 Step 2: Creating admin user record...');
+        const userRecord = {
+            id: adminId,
+            email: adminEmail,
+            name: adminName,
+            phone: adminPhone,
+            role: 'association',
+            association_approved: true,
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+
+        console.log('🔍 User record to insert:', userRecord);
+
+        const { data: userResult, error: userError } = await supabase
+            .from('users')
+            .insert([userRecord])
+            .select();
+
+        console.log('🔍 User insert response:', { userResult, userError });
+
+        if (userError) {
+            console.error('❌ User record creation error:', userError);
+            showError(errorElementId, `Failed to save admin user data: ${userError.message}`);
+            
+            // Try to clean up auth user if possible
+            try {
+                await supabase.auth.admin.deleteUser(adminId);
+                console.log('✅ Cleaned up auth user after user record failure');
+            } catch (cleanupError) {
+                console.error('❌ Failed to cleanup auth user:', cleanupError);
+            }
+            return null;
+        }
+
+        console.log('✅ Admin user record created:', userResult);
+
+        // Upload logo if provided
+        let logoUrl = null;
+        if (logoFile) {
+            console.log('📝 Step 3: Uploading logo...');
+            try {
+                const fileName = `${adminId}/${Date.now()}_${logoFile.name}`;
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from('logos')
+                    .upload(fileName, logoFile, { 
+                        cacheControl: '3600', 
+                        upsert: false 
+                    });
+
+                if (storageError) {
+                    console.error('❌ Logo upload error:', storageError);
+                    // Continue without logo - don't fail the entire registration
+                    console.log('⚠️ Continuing without logo');
+                } else {
+                    const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
+                    logoUrl = publicUrlData.publicUrl;
+                    console.log('✅ Logo uploaded:', logoUrl);
+                }
+            } catch (uploadError) {
+                console.error('❌ Logo upload failed:', uploadError);
+                // Continue without logo
+                console.log('⚠️ Continuing without logo after upload error');
+            }
+        }
+
+        // Insert association data
+        console.log('📝 Step 4: Creating association record...');
+        const associationData = {
+            name: name,
+            email: email,
+            phone: phone,
+            address: address,
+            admin_id: adminId,
+            admin_name: adminName,
+            admin_phone: adminPhone,
+            admin_id_number: adminIdNumber,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // Add optional fields if they have values
+        if (registrationNumber) associationData.registration_number = registrationNumber;
+        if (description) associationData.description = description;
+        if (logoUrl) associationData.logo_url = logoUrl;
+
+        console.log('🔍 Association data to insert:', associationData);
+
+        const { data: associationResult, error: assocError } = await supabase
+            .from('associations')
+            .insert([associationData])
+            .select();
+
+        console.log('🔍 Association insert response:', { associationResult, assocError });
+
+        if (assocError) {
+            console.error('❌ Association creation error:', assocError);
+            showError(errorElementId, `Failed to save association data: ${assocError.message}`);
+            
+            // Clean up: delete user record and auth account
+            try {
+                await supabase.from('users').delete().eq('id', adminId);
+                await supabase.auth.admin.deleteUser(adminId);
+                console.log('✅ Cleaned up user and auth after association failure');
+            } catch (cleanupError) {
+                console.error('❌ Failed to cleanup after association failure:', cleanupError);
+            }
+            return null;
+        }
+
+        console.log('✅ Association created successfully:', associationResult);
+
+        // SUCCESS - Show confirmation and close modal
+        console.log('🎉 Association registration completed successfully!');
+        
+        // Close the association signup modal
+        const associationModal = document.getElementById('signup-association-modal');
+        if (associationModal) {
+            associationModal.style.display = 'none';
+        }
+        
+        // Show success modal
+        showSuccess(
+            'Association registration completed successfully!', 
+            `You can now login with: ${adminEmail}`
+        );
+        
+        // Reset the form
+        const associationForm = document.getElementById('signup-association');
+        if (associationForm) {
+            associationForm.reset();
+        }
+        
+        // Hide progress indicator if exists
+        const progressDiv = document.getElementById('signup-progress');
+        if (progressDiv) {
+            progressDiv.style.display = 'none';
+        }
+
+        return authData.user;
+
+    } catch (err) {
+        console.error('❌ UNEXPECTED ERROR in signupAssociation:', err);
+        console.error('🔍 Error stack:', err.stack);
+        showError(errorElementId, `An unexpected error occurred: ${err.message}`);
+        return null;
     }
+}
 
     // Set up event listeners
     function setupEventListeners() {
@@ -592,56 +667,84 @@ function initializeFunctions(supabase) {
             });
         }
 
-        // Association signup
-        const associationForm = document.getElementById('signup-association');
-        if (associationForm) {
-            associationForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = {
-                    name: document.getElementById('association-name')?.value,
-                    email: document.getElementById('association-email')?.value,
-                    phone: document.getElementById('association-phone')?.value,
-                    registrationNumber: document.getElementById('association-registration-number')?.value,
-                    address: document.getElementById('association-address')?.value,
-                    description: document.getElementById('association-description')?.value,
-                    logo: document.getElementById('association-logo')?.files[0],
-                    adminEmail: document.getElementById('admin-email')?.value,
-                    adminPassword: document.getElementById('admin-password')?.value,
-                    adminName: document.getElementById('admin-name')?.value,
-                    adminPhone: document.getElementById('admin-phone')?.value,
-                    adminIdNumber: document.getElementById('admin-id-number')?.value,
-                    termsAccepted: document.getElementById('terms-accepted')?.checked
-                };
+        // Association signup - UPDATED EVENT LISTENER
+const associationForm = document.getElementById('signup-association');
+if (associationForm) {
+    associationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('🔍 Association form submitted');
+        
+        const formData = {
+            name: document.getElementById('association-name')?.value,
+            email: document.getElementById('association-email')?.value,
+            phone: document.getElementById('association-phone')?.value,
+            registrationNumber: document.getElementById('association-registration-number')?.value,
+            address: document.getElementById('association-address')?.value,
+            description: document.getElementById('association-description')?.value,
+            logo: document.getElementById('association-logo')?.files[0],
+            adminEmail: document.getElementById('admin-email')?.value,
+            adminPassword: document.getElementById('admin-password')?.value,
+            adminName: document.getElementById('admin-name')?.value,
+            adminPhone: document.getElementById('admin-phone')?.value,
+            adminIdNumber: document.getElementById('admin-id-number')?.value,
+            termsAccepted: document.getElementById('terms-accepted')?.checked
+        };
 
-                if (!formData.termsAccepted) {
-                    showError('signup-association-error-message', 'You must accept the terms and conditions');
-                    return;
-                }
+        console.log('🔍 Form data collected:', {
+            ...formData,
+            adminPassword: '***', // Hide password in logs
+            logo: formData.logo ? `File: ${formData.logo.name}` : 'No file'
+        });
 
-                const progressBar = document.getElementById('signup-progress-bar');
-                const progressText = document.getElementById('signup-progress-text');
-                const progressDiv = document.getElementById('signup-progress');
-
-                if (progressBar && progressText && progressDiv) {
-                    progressDiv.style.display = 'block';
-                    progressText.textContent = 'Registering association...';
-                    progressBar.style.width = '10%';
-                }
-
-                try {
-                    await signupAssociation(formData);
-                    if (progressBar && progressText) {
-                        progressBar.style.width = '100%';
-                        progressText.textContent = 'Registration complete!';
-                    }
-                    associationForm.reset();
-                } catch (error) {
-                    showError('signup-association-error-message', error.message || 'Registration failed');
-                    if (progressDiv) progressDiv.style.display = 'none';
-                }
-            });
+        if (!formData.termsAccepted) {
+            showError('signup-association-error-message', 'You must accept the terms and conditions');
+            return;
         }
 
+        // Show progress indicator
+        const progressBar = document.getElementById('signup-progress-bar');
+        const progressText = document.getElementById('signup-progress-text');
+        const progressDiv = document.getElementById('signup-progress');
+
+        if (progressBar && progressText && progressDiv) {
+            progressDiv.style.display = 'block';
+            progressText.textContent = 'Starting registration...';
+            progressBar.style.width = '10%';
+        }
+
+        try {
+            // Update progress
+            if (progressBar && progressText) {
+                progressText.textContent = 'Creating admin account...';
+                progressBar.style.width = '25%';
+            }
+
+            const user = await signupAssociation(formData);
+            
+            if (user) {
+                // Success - progress will be handled in signupAssociation
+                if (progressBar && progressText) {
+                    progressBar.style.width = '100%';
+                    progressText.textContent = 'Registration complete!';
+                    
+                    // Hide progress after delay
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                    }, 2000);
+                }
+            } else {
+                // Failure
+                if (progressDiv) {
+                    progressDiv.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('❌ Association form submission error:', error);
+            showError('signup-association-error-message', error.message || 'Registration failed');
+            if (progressDiv) progressDiv.style.display = 'none';
+        }
+    });
+}
         // Logo preview for association form
         const logoInput = document.getElementById('association-logo');
         const logoPreviewContainer = document.getElementById('logo-preview-container');
