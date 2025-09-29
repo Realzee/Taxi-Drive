@@ -413,6 +413,27 @@
         window.debugFormVisibility = debugFormVisibility;
     </script>
 
+    <script>
+// Check if functions are available
+function checkFunctionAvailability() {
+    console.log('🔍 Checking function availability...');
+    console.log('signupAssociation:', typeof signupAssociation);
+    console.log('login:', typeof login);
+    console.log('signupSimple:', typeof signupSimple);
+    
+    if (typeof signupAssociation === 'undefined') {
+        console.error('❌ signupAssociation is not available globally!');
+    } else {
+        console.log('✅ signupAssociation is available globally!');
+    }
+}
+
+// Check when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkFunctionAvailability, 2000);
+});
+</script>
+
 
 </body>
 </html>
