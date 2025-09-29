@@ -54,7 +54,7 @@ async function checkAssociationAuthentication() {
     }
 }
 
-// Update the initializeDashboard function:
+// Initialize dashboard
 async function initializeDashboard() {
     try {
         // Check authentication and role
@@ -64,44 +64,13 @@ async function initializeDashboard() {
         currentUser = user;
         console.log('Association user authenticated:', user.email);
 
-        // Rest of your existing initialization code...
-        await Promise.all([
-            loadUserData(),
-            loadAssociationData()
-        ]);
-
-        setupEventListeners();
-        await loadDashboardData();
-
-    } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
-    }
-}
-
-async function initializeDashboard() {
-    try {
-        // Check if user is logged in
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user) {
-            window.location.href = 'index.html';
-            return;
-        }
-
-        currentUser = user;
-        console.log('User authenticated:', user.email);
-
         // Load user data and association data
         await Promise.all([
             loadUserData(),
             loadAssociationData()
         ]);
 
-        // Setup event listeners
         setupEventListeners();
-
-        // Load dashboard data
         await loadDashboardData();
 
     } catch (error) {
@@ -137,26 +106,58 @@ async function loadUserData() {
 
 async function loadAssociationData() {
     try {
-        // Get association data
-        const { data: associationData, error } = await supabase
+        console.log('Loading association data for admin:', currentUser.id);
+        
+        // Get association data - try different column names
+        let associationData = null;
+        let error = null;
+
+        // Try admin_id first
+        const { data: data1, error: error1 } = await supabase
             .from('associations')
             .select('*')
             .eq('admin_id', currentUser.id)
             .single();
 
-        if (error) {
-            // Try alternative column name
-            const { data: altData, error: altError } = await supabase
+        if (!error1 && data1) {
+            associationData = data1;
+        } else {
+            // Try admin_email
+            const { data: data2, error: error2 } = await supabase
                 .from('associations')
                 .select('*')
-                .eq('admin_id', currentUser.id)
+                .eq('admin_email', currentUser.email)
                 .single();
-                
-            if (altError) throw altError;
-            currentAssociation = altData;
-        } else {
-            currentAssociation = associationData;
+
+            if (!error2 && data2) {
+                associationData = data2;
+            } else {
+                // Try any association with this user as admin
+                const { data: data3, error: error3 } = await supabase
+                    .from('associations')
+                    .select('*')
+                    .or(`admin_id.eq.${currentUser.id},admin_email.eq.${currentUser.email}`)
+                    .single();
+
+                if (!error3 && data3) {
+                    associationData = data3;
+                } else {
+                    error = error3 || error2 || error1;
+                }
+            }
         }
+
+        if (error) {
+            console.error('Association query error:', error);
+            throw new Error(`Association not found: ${error.message}`);
+        }
+
+        if (!associationData) {
+            throw new Error('No association found for this user');
+        }
+
+        currentAssociation = associationData;
+        console.log('Association data loaded:', associationData);
 
         // Update UI with association data
         updateAssociationProfile(currentAssociation);
@@ -164,6 +165,12 @@ async function loadAssociationData() {
     } catch (error) {
         console.error('Error loading association data:', error);
         showNotification('Association data not found. Please complete your association profile.', 'warning');
+        // Create a default association object to prevent further errors
+        currentAssociation = {
+            name: 'My Association',
+            email: currentUser.email
+        };
+        updateAssociationProfile(currentAssociation);
     }
 }
 
@@ -187,9 +194,9 @@ function updateAssociationProfile(associationData) {
     const dashboardAssociationNameElement = document.getElementById('dashboard-association-name');
     const driversAssociationNameElement = document.getElementById('drivers-dashboard-association-name');
 
-    if (associationNameMainElement) associationNameMainElement.textContent = associationData.name;
-    if (dashboardAssociationNameElement) dashboardAssociationNameElement.textContent = associationData.name;
-    if (driversAssociationNameElement) driversAssociationNameElement.textContent = associationData.name;
+    if (associationNameMainElement) associationNameMainElement.textContent = associationData.name || 'Association';
+    if (dashboardAssociationNameElement) dashboardAssociationNameElement.textContent = associationData.name || 'Association';
+    if (driversAssociationNameElement) driversAssociationNameElement.textContent = associationData.name || 'Association';
 
     // Update association logo
     if (associationData.logo_url) {
@@ -212,8 +219,10 @@ function updateAssociationLogo(logoUrl) {
         }
         
         // Hide main logos
-        document.getElementById('main-logo').style.display = 'none';
-        document.getElementById('main-logo-main').style.display = 'none';
+        const mainLogo = document.getElementById('main-logo');
+        const mainLogoMain = document.getElementById('main-logo-main');
+        if (mainLogo) mainLogo.style.display = 'none';
+        if (mainLogoMain) mainLogoMain.style.display = 'none';
     }
 }
 
@@ -251,8 +260,21 @@ async function loadPendingOwners() {
     }
 }
 
+// MISSING FUNCTION: Update pending count
+function updatePendingCount(count) {
+    const pendingCountElement = document.getElementById('pending-count');
+    if (pendingCountElement) {
+        pendingCountElement.textContent = count;
+    }
+}
+
 function renderPendingOwners(owners) {
     const pendingOwnersContent = document.getElementById('pending-owners-content');
+    
+    if (!pendingOwnersContent) {
+        console.error('Pending owners content element not found');
+        return;
+    }
     
     if (!owners || owners.length === 0) {
         pendingOwnersContent.innerHTML = `
@@ -378,8 +400,34 @@ async function loadRegisteredOwners() {
     }
 }
 
+// MISSING FUNCTION: Update registered counts
+function updateRegisteredCounts(owners) {
+    const registeredCountElement = document.getElementById('registered-count');
+    const activeOwnersCountElement = document.getElementById('active-owners-count');
+    const inactiveOwnersCountElement = document.getElementById('inactive-owners-count');
+
+    if (registeredCountElement) {
+        registeredCountElement.textContent = owners.length;
+    }
+    
+    if (activeOwnersCountElement) {
+        const activeCount = owners.filter(owner => owner.status === 'active').length;
+        activeOwnersCountElement.textContent = activeCount;
+    }
+    
+    if (inactiveOwnersCountElement) {
+        const inactiveCount = owners.filter(owner => owner.status !== 'active').length;
+        inactiveOwnersCountElement.textContent = inactiveCount;
+    }
+}
+
 function renderRegisteredOwners(owners) {
     const registeredOwnersContent = document.getElementById('registered-owners-content');
+    
+    if (!registeredOwnersContent) {
+        console.error('Registered owners content element not found');
+        return;
+    }
     
     if (!owners || owners.length === 0) {
         registeredOwnersContent.innerHTML = `
@@ -440,8 +488,34 @@ async function loadDrivers() {
     }
 }
 
+// MISSING FUNCTION: Update driver counts
+function updateDriverCounts(drivers) {
+    const totalDriversCountElement = document.getElementById('total-drivers-count');
+    const activeDriversCountElement = document.getElementById('active-drivers-count');
+    const inactiveDriversCountElement = document.getElementById('inactive-drivers-count');
+
+    if (totalDriversCountElement) {
+        totalDriversCountElement.textContent = drivers.length;
+    }
+    
+    if (activeDriversCountElement) {
+        const activeCount = drivers.filter(driver => driver.status === 'active').length;
+        activeDriversCountElement.textContent = activeCount;
+    }
+    
+    if (inactiveDriversCountElement) {
+        const inactiveCount = drivers.filter(driver => driver.status !== 'active').length;
+        inactiveDriversCountElement.textContent = inactiveCount;
+    }
+}
+
 function renderDrivers(drivers) {
     const driversContent = document.getElementById('drivers-content');
+    
+    if (!driversContent) {
+        console.error('Drivers content element not found');
+        return;
+    }
     
     if (!drivers || drivers.length === 0) {
         driversContent.innerHTML = `
@@ -481,7 +555,7 @@ async function loadDashboardStats() {
         // Get counts for different user types
         const { data: owners, error: ownersError } = await supabase
             .from('users')
-            .select('id, status, created_at')
+            .select('id, status, association_approved')
             .eq('role', 'owner');
 
         const { data: drivers, error: driversError } = await supabase
@@ -516,64 +590,77 @@ async function loadDashboardStats() {
 
 function updateDashboardStats(stats) {
     // Update association header stats
-    document.getElementById('association-registered-count').textContent = stats.totalOwners;
-    document.getElementById('association-active-count').textContent = stats.activeOwners;
-    document.getElementById('association-pending-count').textContent = stats.pendingOwners;
+    const registeredCountElement = document.getElementById('association-registered-count');
+    const activeCountElement = document.getElementById('association-active-count');
+    const pendingCountElement = document.getElementById('association-pending-count');
+
+    if (registeredCountElement) registeredCountElement.textContent = stats.totalOwners;
+    if (activeCountElement) activeCountElement.textContent = stats.activeOwners;
+    if (pendingCountElement) pendingCountElement.textContent = stats.pendingOwners;
 
     // Update approval dashboard stats
-    document.getElementById('pending-count').textContent = stats.pendingOwners;
-    document.getElementById('total-owners').textContent = stats.totalOwners;
+    const pendingCountElement2 = document.getElementById('pending-count');
+    const totalOwnersElement = document.getElementById('total-owners');
 
-    // Update registered owners stats
-    document.getElementById('registered-count').textContent = stats.totalOwners;
-    document.getElementById('active-owners-count').textContent = stats.activeOwners;
-    document.getElementById('inactive-owners-count').textContent = stats.totalOwners - stats.activeOwners;
-
-    // Update drivers stats
-    document.getElementById('total-drivers-count').textContent = stats.totalDrivers;
-    document.getElementById('active-drivers-count').textContent = stats.activeDrivers;
-    document.getElementById('inactive-drivers-count').textContent = stats.totalDrivers - stats.activeDrivers;
+    if (pendingCountElement2) pendingCountElement2.textContent = stats.pendingOwners;
+    if (totalOwnersElement) totalOwnersElement.textContent = stats.totalOwners;
 }
 
 function setupEventListeners() {
     // Refresh buttons
-    document.getElementById('refresh-dashboard').addEventListener('click', () => {
-        loadDashboardData();
-        showNotification('Dashboard refreshed!', 'success');
-    });
+    const refreshDashboardBtn = document.getElementById('refresh-dashboard');
+    const refreshRegisteredOwnersBtn = document.getElementById('refresh-registered-owners');
+    const refreshDriversBtn = document.getElementById('refresh-drivers');
+    const logoutBtn = document.getElementById('logout-btn');
+    const registerNewOwnerBtn = document.getElementById('register-new-owner-btn');
+    const editAssociationProfileBtn = document.getElementById('edit-association-profile-btn');
 
-    document.getElementById('refresh-registered-owners').addEventListener('click', () => {
-        loadRegisteredOwners();
-        showNotification('Owners list refreshed!', 'success');
-    });
+    if (refreshDashboardBtn) {
+        refreshDashboardBtn.addEventListener('click', () => {
+            loadDashboardData();
+            showNotification('Dashboard refreshed!', 'success');
+        });
+    }
 
-    document.getElementById('refresh-drivers').addEventListener('click', () => {
-        loadDrivers();
-        showNotification('Drivers list refreshed!', 'success');
-    });
+    if (refreshRegisteredOwnersBtn) {
+        refreshRegisteredOwnersBtn.addEventListener('click', () => {
+            loadRegisteredOwners();
+            showNotification('Owners list refreshed!', 'success');
+        });
+    }
 
-    // Logout button
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('Error logging out:', error);
-            showNotification('Error logging out. Please try again.', 'error');
-        }
-    });
+    if (refreshDriversBtn) {
+        refreshDriversBtn.addEventListener('click', () => {
+            loadDrivers();
+            showNotification('Drivers list refreshed!', 'success');
+        });
+    }
 
-    // Register new owner button
-    document.getElementById('register-new-owner-btn').addEventListener('click', () => {
-        openOwnerRegistrationModal();
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Error logging out:', error);
+                showNotification('Error logging out. Please try again.', 'error');
+            }
+        });
+    }
 
-    // Edit association profile button
-    document.getElementById('edit-association-profile-btn').addEventListener('click', () => {
-        openEditAssociationModal();
-    });
+    if (registerNewOwnerBtn) {
+        registerNewOwnerBtn.addEventListener('click', () => {
+            openOwnerRegistrationModal();
+        });
+    }
+
+    if (editAssociationProfileBtn) {
+        editAssociationProfileBtn.addEventListener('click', () => {
+            openEditAssociationModal();
+        });
+    }
 }
 
 function openOwnerRegistrationModal() {
@@ -699,35 +786,41 @@ function showNotification(message, type = 'info') {
 // Error state functions
 function showPendingOwnersError() {
     const pendingOwnersContent = document.getElementById('pending-owners-content');
-    pendingOwnersContent.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Error Loading Pending Owners</h3>
-            <p>Please try refreshing the page.</p>
-        </div>
-    `;
+    if (pendingOwnersContent) {
+        pendingOwnersContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Pending Owners</h3>
+                <p>Please try refreshing the page.</p>
+            </div>
+        `;
+    }
 }
 
 function showRegisteredOwnersError() {
     const registeredOwnersContent = document.getElementById('registered-owners-content');
-    registeredOwnersContent.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Error Loading Registered Owners</h3>
-            <p>Please try refreshing the page.</p>
-        </div>
-    `;
+    if (registeredOwnersContent) {
+        registeredOwnersContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Registered Owners</h3>
+                <p>Please try refreshing the page.</p>
+            </div>
+        `;
+    }
 }
 
 function showDriversError() {
     const driversContent = document.getElementById('drivers-content');
-    driversContent.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Error Loading Drivers</h3>
-            <p>Please try refreshing the page.</p>
-        </div>
-    `;
+    if (driversContent) {
+        driversContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Drivers</h3>
+                <p>Please try refreshing the page.</p>
+            </div>
+        `;
+    }
 }
 
 // Make functions globally available for debugging
