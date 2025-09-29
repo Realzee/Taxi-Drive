@@ -283,6 +283,7 @@ function initializeFunctions(supabase) {
     }
 
     // Signup: For Association (complex, with logo upload) - FIXED VERSION
+// Enhanced signupAssociation function with proper password validation
 async function signupAssociation(formData) {
     const {
         name, email, phone, registrationNumber, address, description,
@@ -295,7 +296,8 @@ async function signupAssociation(formData) {
     console.log('Form data received:', {
         name, email, phone, registrationNumber, address, description,
         logoFile: logoFile ? `File: ${logoFile.name} (${logoFile.size} bytes)` : 'No file',
-        adminEmail, adminPassword: '***', adminName, adminPhone, adminIdNumber,
+        adminEmail, adminPassword: adminPassword ? '***' : 'MISSING', 
+        adminName, adminPhone, adminIdNumber,
         termsAccepted
     });
 
@@ -309,17 +311,33 @@ async function signupAssociation(formData) {
             return null;
         }
 
-        // Validate password length
-        if (adminPassword.length < 8) {
+        // Enhanced password validation
+        if (!adminPassword || adminPassword.length < 8) {
             showError(errorElementId, 'Administrator password must be at least 8 characters long');
             return null;
         }
 
-        console.log('📝 Step 1: Creating admin auth account...');
+        // Validate all required fields
+        const requiredFields = [
+            { field: adminEmail, name: 'Admin Email' },
+            { field: adminPassword, name: 'Admin Password' },
+            { field: adminName, name: 'Admin Name' },
+            { field: name, name: 'Association Name' },
+            { field: email, name: 'Association Email' }
+        ];
 
-        // Sign up admin - ADDED MORE DETAILED LOGGING
+        const missingFields = requiredFields.filter(item => !item.field || item.field.trim() === '');
+        if (missingFields.length > 0) {
+            showError(errorElementId, `Missing required fields: ${missingFields.map(f => f.name).join(', ')}`);
+            return null;
+        }
+
+        console.log('📝 Step 1: Creating admin auth account...');
+        console.log('🔍 Using email:', adminEmail.trim().toLowerCase());
+
+        // Step 1: Create auth account with detailed logging
         const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: adminEmail,
+            email: adminEmail.trim().toLowerCase(),
             password: adminPassword,
             options: {
                 data: {
@@ -329,7 +347,9 @@ async function signupAssociation(formData) {
             }
         });
 
-        console.log('🔍 Auth response:', { authData, authError });
+        console.log('🔍 Auth response received');
+        console.log('🔍 Auth data:', authData);
+        console.log('🔍 Auth error:', authError);
 
         if (authError) {
             console.error('❌ Auth signup error:', authError);
@@ -344,15 +364,16 @@ async function signupAssociation(formData) {
         }
 
         console.log('✅ Admin auth account created:', authData.user.id);
-        console.log('🔍 User email confirmed?', authData.user.email_confirmed_at);
+        console.log('📧 User email:', authData.user.email);
+        console.log('✅ Email confirmed?', authData.user.email_confirmed_at);
 
         const adminId = authData.user.id;
 
-        // Insert admin as user
+        // Step 2: Insert admin as user
         console.log('📝 Step 2: Creating admin user record...');
         const userRecord = {
             id: adminId,
-            email: adminEmail,
+            email: adminEmail.trim().toLowerCase(),
             name: adminName,
             phone: adminPhone,
             role: 'association',
@@ -374,7 +395,7 @@ async function signupAssociation(formData) {
             console.error('❌ User record creation error:', userError);
             showError(errorElementId, `Failed to save admin user data: ${userError.message}`);
             
-            // Try to clean up auth user if possible
+            // Clean up auth user
             try {
                 await supabase.auth.admin.deleteUser(adminId);
                 console.log('✅ Cleaned up auth user after user record failure');
@@ -386,7 +407,7 @@ async function signupAssociation(formData) {
 
         console.log('✅ Admin user record created:', userResult);
 
-        // Upload logo if provided
+        // Step 3: Upload logo if provided
         let logoUrl = null;
         if (logoFile) {
             console.log('📝 Step 3: Uploading logo...');
@@ -401,7 +422,6 @@ async function signupAssociation(formData) {
 
                 if (storageError) {
                     console.error('❌ Logo upload error:', storageError);
-                    // Continue without logo - don't fail the entire registration
                     console.log('⚠️ Continuing without logo');
                 } else {
                     const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
@@ -410,12 +430,11 @@ async function signupAssociation(formData) {
                 }
             } catch (uploadError) {
                 console.error('❌ Logo upload failed:', uploadError);
-                // Continue without logo
                 console.log('⚠️ Continuing without logo after upload error');
             }
         }
 
-        // Insert association data
+        // Step 4: Insert association data
         console.log('📝 Step 4: Creating association record...');
         const associationData = {
             name: name,
@@ -470,10 +489,10 @@ async function signupAssociation(formData) {
             associationModal.style.display = 'none';
         }
         
-        // Show success modal
+        // Show success modal with IMPORTANT information
         showSuccess(
             'Association registration completed successfully!', 
-            `You can now login with: ${adminEmail}`
+            `IMPORTANT: You can now login with:\nEmail: ${adminEmail}\nPassword: ${adminPassword}\n\nPlease save these credentials!`
         );
         
         // Reset the form
@@ -488,6 +507,7 @@ async function signupAssociation(formData) {
             progressDiv.style.display = 'none';
         }
 
+        console.log('✅ Registration fully completed - user should be able to login now');
         return authData.user;
 
     } catch (err) {
