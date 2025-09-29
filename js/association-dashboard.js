@@ -108,11 +108,10 @@ async function loadAssociationData() {
     try {
         console.log('Loading association data for admin:', currentUser.id);
         
-        // Get association data - try different column names
+        // Get association data - try different query approaches
         let associationData = null;
-        let error = null;
 
-        // Try admin_id first
+        // Method 1: Try admin_id (most common)
         const { data: data1, error: error1 } = await supabase
             .from('associations')
             .select('*')
@@ -122,55 +121,62 @@ async function loadAssociationData() {
         if (!error1 && data1) {
             associationData = data1;
         } else {
-            // Try admin_email
-            const { data: data2, error: error2 } = await supabase
+            // Method 2: Get all associations and find matching one
+            const { data: allAssociations, error: allError } = await supabase
                 .from('associations')
-                .select('*')
-                .eq('admin_email', currentUser.email)
-                .single();
+                .select('*');
 
-            if (!error2 && data2) {
-                associationData = data2;
-            } else {
-                // Try any association with this user as admin
-                const { data: data3, error: error3 } = await supabase
-                    .from('associations')
-                    .select('*')
-                    .or(`admin_id.eq.${currentUser.id},admin_email.eq.${currentUser.email}`)
-                    .single();
-
-                if (!error3 && data3) {
-                    associationData = data3;
-                } else {
-                    error = error3 || error2 || error1;
-                }
+            if (!allError && allAssociations && allAssociations.length > 0) {
+                // Find association by admin_id or email
+                associationData = allAssociations.find(assoc => 
+                    assoc.admin_id === currentUser.id || 
+                    assoc.email === currentUser.email
+                );
             }
         }
 
-        if (error) {
-            console.error('Association query error:', error);
-            throw new Error(`Association not found: ${error.message}`);
-        }
-
         if (!associationData) {
-            throw new Error('No association found for this user');
+            console.warn('No association data found in database');
+            // Create default association data from user info
+            associationData = {
+                name: 'My Association',
+                email: currentUser.email,
+                phone: '',
+                address: '',
+                admin_id: currentUser.id,
+                admin_name: currentUser.email.split('@')[0],
+                admin_phone: '',
+                description: '',
+                logo_url: null,
+                created_at: new Date().toISOString()
+            };
         }
 
         currentAssociation = associationData;
-        console.log('Association data loaded:', associationData);
+        console.log('✅ Association data loaded:', associationData);
 
         // Update UI with association data
         updateAssociationProfile(currentAssociation);
         
     } catch (error) {
         console.error('Error loading association data:', error);
-        showNotification('Association data not found. Please complete your association profile.', 'warning');
-        // Create a default association object to prevent further errors
+        
+        // Create fallback association data
         currentAssociation = {
             name: 'My Association',
-            email: currentUser.email
+            email: currentUser.email,
+            phone: '',
+            address: '',
+            admin_id: currentUser.id,
+            admin_name: currentUser.email.split('@')[0],
+            admin_phone: '',
+            description: '',
+            logo_url: null,
+            created_at: new Date().toISOString()
         };
+        
         updateAssociationProfile(currentAssociation);
+        showNotification('Using demo association data. Complete your association profile setup.', 'warning');
     }
 }
 
@@ -178,25 +184,22 @@ function updateUserProfile(userData) {
     const userNameElement = document.getElementById('user-name');
     const userRoleElement = document.getElementById('user-role');
     const userAvatarElement = document.getElementById('user-avatar');
-    const associationNameElement = document.getElementById('association-name');
 
     if (userNameElement) userNameElement.textContent = userData.name || userData.email;
     if (userRoleElement) userRoleElement.textContent = userData.role || 'Association';
     if (userAvatarElement) userAvatarElement.textContent = (userData.name || userData.email).charAt(0).toUpperCase();
-    if (associationNameElement && currentAssociation) {
-        associationNameElement.textContent = currentAssociation.name || 'Association';
-    }
 }
 
 function updateAssociationProfile(associationData) {
     // Update association name in header
+    const associationNameElement = document.getElementById('association-name');
     const associationNameMainElement = document.getElementById('association-name-main');
-    const dashboardAssociationNameElement = document.getElementById('dashboard-association-name');
-    const driversAssociationNameElement = document.getElementById('drivers-dashboard-association-name');
 
+    if (associationNameElement) associationNameElement.textContent = associationData.name || 'Association';
     if (associationNameMainElement) associationNameMainElement.textContent = associationData.name || 'Association';
-    if (dashboardAssociationNameElement) dashboardAssociationNameElement.textContent = associationData.name || 'Association';
-    if (driversAssociationNameElement) driversAssociationNameElement.textContent = associationData.name || 'Association';
+
+    // Update association details in profile modal if open
+    updateAssociationProfileModal(associationData);
 
     // Update association logo
     if (associationData.logo_url) {
@@ -226,13 +229,14 @@ function updateAssociationLogo(logoUrl) {
     }
 }
 
+// NEW: Dashboard Data Loading Functions
 async function loadDashboardData() {
     try {
         await Promise.all([
-            loadPendingOwners(),
-            loadRegisteredOwners(),
-            loadDrivers(),
-            loadDashboardStats()
+            loadDashboardStats(),
+            loadRecentMembers(),
+            loadRecentRoutes(),
+            loadRecentAlerts()
         ]);
     } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -240,322 +244,12 @@ async function loadDashboardData() {
     }
 }
 
-async function loadPendingOwners() {
-    try {
-        const { data: pendingOwners, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('role', 'owner')
-            .eq('association_approved', false)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        renderPendingOwners(pendingOwners || []);
-        updatePendingCount(pendingOwners ? pendingOwners.length : 0);
-        
-    } catch (error) {
-        console.error('Error loading pending owners:', error);
-        showPendingOwnersError();
-    }
-}
-
-// MISSING FUNCTION: Update pending count
-function updatePendingCount(count) {
-    const pendingCountElement = document.getElementById('pending-count');
-    if (pendingCountElement) {
-        pendingCountElement.textContent = count;
-    }
-}
-
-function renderPendingOwners(owners) {
-    const pendingOwnersContent = document.getElementById('pending-owners-content');
-    
-    if (!pendingOwnersContent) {
-        console.error('Pending owners content element not found');
-        return;
-    }
-    
-    if (!owners || owners.length === 0) {
-        pendingOwnersContent.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-check-circle"></i>
-                <h3>No Pending Approvals</h3>
-                <p>All owner applications have been reviewed.</p>
-            </div>
-        `;
-        return;
-    }
-
-    let ownersHtml = '';
-    owners.forEach(owner => {
-        ownersHtml += `
-            <div class="list-item">
-                <div class="owner-info">
-                    <h4>${owner.name || 'Unnamed Owner'}</h4>
-                    <p><i class="fas fa-envelope"></i> ${owner.email || 'N/A'}</p>
-                    <p><i class="fas fa-phone"></i> ${owner.phone || 'N/A'}</p>
-                    <p><i class="fas fa-calendar"></i> Applied: ${formatDate(owner.created_at)}</p>
-                </div>
-                <div class="owner-documents">
-                    <button class="btn btn-primary btn-sm view-docs-btn" data-owner-id="${owner.id}">
-                        <i class="fas fa-file-alt"></i> View Documents
-                    </button>
-                    <button class="btn btn-success btn-sm approve-btn" data-owner-id="${owner.id}">
-                        <i class="fas fa-check"></i> Approve
-                    </button>
-                    <button class="btn btn-danger btn-sm reject-btn" data-owner-id="${owner.id}">
-                        <i class="fas fa-times"></i> Reject
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    pendingOwnersContent.innerHTML = ownersHtml;
-
-    // Add event listeners
-    document.querySelectorAll('.approve-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const ownerId = e.target.closest('.approve-btn').getAttribute('data-owner-id');
-            approveOwner(ownerId);
-        });
-    });
-
-    document.querySelectorAll('.reject-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const ownerId = e.target.closest('.reject-btn').getAttribute('data-owner-id');
-            rejectOwner(ownerId);
-        });
-    });
-}
-
-async function approveOwner(ownerId) {
-    if (!confirm('Are you sure you want to approve this owner?')) return;
-
-    try {
-        const { error } = await supabase
-            .from('users')
-            .update({ 
-                association_approved: true,
-                approved_at: new Date().toISOString(),
-                status: 'active'
-            })
-            .eq('id', ownerId);
-
-        if (error) throw error;
-
-        showNotification('Owner approved successfully!', 'success');
-        await loadDashboardData();
-        
-    } catch (error) {
-        console.error('Error approving owner:', error);
-        showNotification('Failed to approve owner.', 'error');
-    }
-}
-
-async function rejectOwner(ownerId) {
-    const reason = prompt('Please provide a reason for rejection:');
-    if (reason === null) return;
-
-    try {
-        const { error } = await supabase
-            .from('users')
-            .update({ 
-                association_approved: false,
-                rejection_reason: reason,
-                status: 'rejected',
-                rejected_at: new Date().toISOString()
-            })
-            .eq('id', ownerId);
-
-        if (error) throw error;
-
-        showNotification('Owner rejected successfully!', 'success');
-        await loadDashboardData();
-        
-    } catch (error) {
-        console.error('Error rejecting owner:', error);
-        showNotification('Failed to reject owner.', 'error');
-    }
-}
-
-async function loadRegisteredOwners() {
-    try {
-        const { data: owners, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('role', 'owner')
-            .eq('association_approved', true)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        renderRegisteredOwners(owners || []);
-        updateRegisteredCounts(owners || []);
-        
-    } catch (error) {
-        console.error('Error loading registered owners:', error);
-        showRegisteredOwnersError();
-    }
-}
-
-// MISSING FUNCTION: Update registered counts
-function updateRegisteredCounts(owners) {
-    const registeredCountElement = document.getElementById('registered-count');
-    const activeOwnersCountElement = document.getElementById('active-owners-count');
-    const inactiveOwnersCountElement = document.getElementById('inactive-owners-count');
-
-    if (registeredCountElement) {
-        registeredCountElement.textContent = owners.length;
-    }
-    
-    if (activeOwnersCountElement) {
-        const activeCount = owners.filter(owner => owner.status === 'active').length;
-        activeOwnersCountElement.textContent = activeCount;
-    }
-    
-    if (inactiveOwnersCountElement) {
-        const inactiveCount = owners.filter(owner => owner.status !== 'active').length;
-        inactiveOwnersCountElement.textContent = inactiveCount;
-    }
-}
-
-function renderRegisteredOwners(owners) {
-    const registeredOwnersContent = document.getElementById('registered-owners-content');
-    
-    if (!registeredOwnersContent) {
-        console.error('Registered owners content element not found');
-        return;
-    }
-    
-    if (!owners || owners.length === 0) {
-        registeredOwnersContent.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-users"></i>
-                <h3>No Registered Owners</h3>
-                <p>No owners have been registered yet.</p>
-            </div>
-        `;
-        return;
-    }
-
-    let ownersHtml = '';
-    owners.forEach(owner => {
-        const statusClass = owner.status === 'active' ? 'status-active' : 
-                           owner.status === 'inactive' ? 'status-inactive' : 'status-pending';
-        
-        ownersHtml += `
-            <div class="list-item">
-                <div class="owner-info">
-                    <h4>${owner.name || 'Unnamed Owner'}</h4>
-                    <p><i class="fas fa-envelope"></i> ${owner.email || 'N/A'}</p>
-                    <p><i class="fas fa-phone"></i> ${owner.phone || 'N/A'}</p>
-                    <p><i class="fas fa-calendar"></i> Registered: ${formatDate(owner.created_at)}</p>
-                    <p><i class="fas fa-id-card"></i> Status: <span class="status-indicator ${statusClass}">${owner.status || 'Unknown'}</span></p>
-                </div>
-                <div class="owner-documents">
-                    <button class="btn btn-primary btn-sm edit-owner-btn" data-owner-id="${owner.id}">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-danger btn-sm deactivate-btn" data-owner-id="${owner.id}">
-                        <i class="fas fa-ban"></i> Deactivate
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    registeredOwnersContent.innerHTML = ownersHtml;
-}
-
-async function loadDrivers() {
-    try {
-        const { data: drivers, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('role', 'driver')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        renderDrivers(drivers || []);
-        updateDriverCounts(drivers || []);
-        
-    } catch (error) {
-        console.error('Error loading drivers:', error);
-        showDriversError();
-    }
-}
-
-// MISSING FUNCTION: Update driver counts
-function updateDriverCounts(drivers) {
-    const totalDriversCountElement = document.getElementById('total-drivers-count');
-    const activeDriversCountElement = document.getElementById('active-drivers-count');
-    const inactiveDriversCountElement = document.getElementById('inactive-drivers-count');
-
-    if (totalDriversCountElement) {
-        totalDriversCountElement.textContent = drivers.length;
-    }
-    
-    if (activeDriversCountElement) {
-        const activeCount = drivers.filter(driver => driver.status === 'active').length;
-        activeDriversCountElement.textContent = activeCount;
-    }
-    
-    if (inactiveDriversCountElement) {
-        const inactiveCount = drivers.filter(driver => driver.status !== 'active').length;
-        inactiveDriversCountElement.textContent = inactiveCount;
-    }
-}
-
-function renderDrivers(drivers) {
-    const driversContent = document.getElementById('drivers-content');
-    
-    if (!driversContent) {
-        console.error('Drivers content element not found');
-        return;
-    }
-    
-    if (!drivers || drivers.length === 0) {
-        driversContent.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-user-tie"></i>
-                <h3>No Registered Drivers</h3>
-                <p>No drivers have been registered yet.</p>
-            </div>
-        `;
-        return;
-    }
-
-    let driversHtml = '';
-    drivers.forEach(driver => {
-        const statusClass = driver.status === 'active' ? 'status-active' : 
-                           driver.status === 'inactive' ? 'status-inactive' : 'status-pending';
-        
-        driversHtml += `
-            <div class="list-item">
-                <div class="owner-info">
-                    <h4>${driver.name || 'Unnamed Driver'}</h4>
-                    <p><i class="fas fa-envelope"></i> ${driver.email || 'N/A'}</p>
-                    <p><i class="fas fa-phone"></i> ${driver.phone || 'N/A'}</p>
-                    <p><i class="fas fa-id-card"></i> License: ${driver.license_number || 'N/A'}</p>
-                    <p><i class="fas fa-calendar"></i> Registered: ${formatDate(driver.created_at)}</p>
-                    <p><i class="fas fa-car"></i> Status: <span class="status-indicator ${statusClass}">${driver.status || 'Unknown'}</span></p>
-                </div>
-            </div>
-        `;
-    });
-
-    driversContent.innerHTML = driversHtml;
-}
-
 async function loadDashboardStats() {
     try {
         // Get counts for different user types
         const { data: owners, error: ownersError } = await supabase
             .from('users')
-            .select('id, status, association_approved')
+            .select('id, status')
             .eq('role', 'owner');
 
         const { data: drivers, error: driversError } = await supabase
@@ -563,25 +257,31 @@ async function loadDashboardStats() {
             .select('id, status')
             .eq('role', 'driver');
 
-        if (ownersError) throw ownersError;
-        if (driversError) throw driversError;
+        const { data: vehicles, error: vehiclesError } = await supabase
+            .from('vehicles')
+            .select('id')
+            .eq('association_id', currentAssociation.id);
+
+        const { data: alerts, error: alertsError } = await supabase
+            .from('panic_alerts')
+            .select('id')
+            .eq('status', 'active');
+
+        if (ownersError) console.error('Owners error:', ownersError);
+        if (driversError) console.error('Drivers error:', driversError);
+        if (vehiclesError) console.error('Vehicles error:', vehiclesError);
+        if (alertsError) console.error('Alerts error:', alertsError);
 
         // Calculate statistics
-        const totalOwners = owners ? owners.length : 0;
-        const activeOwners = owners ? owners.filter(o => o.status === 'active').length : 0;
-        const pendingOwners = owners ? owners.filter(o => !o.association_approved).length : 0;
-        
-        const totalDrivers = drivers ? drivers.length : 0;
-        const activeDrivers = drivers ? drivers.filter(d => d.status === 'active').length : 0;
+        const stats = {
+            registeredVehicles: vehicles ? vehicles.length : 0,
+            registeredMembers: owners ? owners.length + (drivers ? drivers.length : 0) : 0,
+            activeRoutes: 0, // You'll need to implement routes functionality
+            passengerAlarms: alerts ? alerts.length : 0
+        };
 
         // Update UI
-        updateDashboardStats({
-            totalOwners,
-            activeOwners,
-            pendingOwners,
-            totalDrivers,
-            activeDrivers
-        });
+        updateDashboardStats(stats);
         
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
@@ -589,171 +289,405 @@ async function loadDashboardStats() {
 }
 
 function updateDashboardStats(stats) {
-    // Update association header stats
-    const registeredCountElement = document.getElementById('association-registered-count');
-    const activeCountElement = document.getElementById('association-active-count');
-    const pendingCountElement = document.getElementById('association-pending-count');
+    // Update stat cards
+    const statElements = {
+        'stat-vehicles': stats.registeredVehicles,
+        'stat-members': stats.registeredMembers,
+        'stat-routes': stats.activeRoutes,
+        'stat-alarms': stats.passengerAlarms
+    };
 
-    if (registeredCountElement) registeredCountElement.textContent = stats.totalOwners;
-    if (activeCountElement) activeCountElement.textContent = stats.activeOwners;
-    if (pendingCountElement) pendingCountElement.textContent = stats.pendingOwners;
-
-    // Update approval dashboard stats
-    const pendingCountElement2 = document.getElementById('pending-count');
-    const totalOwnersElement = document.getElementById('total-owners');
-
-    if (pendingCountElement2) pendingCountElement2.textContent = stats.pendingOwners;
-    if (totalOwnersElement) totalOwnersElement.textContent = stats.totalOwners;
+    Object.keys(statElements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = statElements[id];
+        }
+    });
 }
 
-function setupEventListeners() {
-    // Refresh buttons
-    const refreshDashboardBtn = document.getElementById('refresh-dashboard');
-    const refreshRegisteredOwnersBtn = document.getElementById('refresh-registered-owners');
-    const refreshDriversBtn = document.getElementById('refresh-drivers');
-    const logoutBtn = document.getElementById('logout-btn');
-    const registerNewOwnerBtn = document.getElementById('register-new-owner-btn');
-    const editAssociationProfileBtn = document.getElementById('edit-association-profile-btn');
-
-    if (refreshDashboardBtn) {
-        refreshDashboardBtn.addEventListener('click', () => {
-            loadDashboardData();
-            showNotification('Dashboard refreshed!', 'success');
-        });
-    }
-
-    if (refreshRegisteredOwnersBtn) {
-        refreshRegisteredOwnersBtn.addEventListener('click', () => {
-            loadRegisteredOwners();
-            showNotification('Owners list refreshed!', 'success');
-        });
-    }
-
-    if (refreshDriversBtn) {
-        refreshDriversBtn.addEventListener('click', () => {
-            loadDrivers();
-            showNotification('Drivers list refreshed!', 'success');
-        });
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
-                
-                window.location.href = 'index.html';
-            } catch (error) {
-                console.error('Error logging out:', error);
-                showNotification('Error logging out. Please try again.', 'error');
-            }
-        });
-    }
-
-    if (registerNewOwnerBtn) {
-        registerNewOwnerBtn.addEventListener('click', () => {
-            openOwnerRegistrationModal();
-        });
-    }
-
-    if (editAssociationProfileBtn) {
-        editAssociationProfileBtn.addEventListener('click', () => {
-            openEditAssociationModal();
-        });
-    }
-}
-
-function openOwnerRegistrationModal() {
-    // Simple implementation - you can expand this with a proper modal
-    const email = prompt('Enter owner email:');
-    const name = prompt('Enter owner name:');
-    
-    if (email && name) {
-        registerNewOwner(email, name);
-    }
-}
-
-async function registerNewOwner(email, name) {
+async function loadRecentMembers() {
     try {
-        // Generate a random password
-        const tempPassword = generateTempPassword();
-        
-        // Create auth user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: email,
-            password: tempPassword,
-        });
-
-        if (authError) throw authError;
-
-        // Create user record
-        const { error: dbError } = await supabase
+        // Get recent owners and drivers
+        const { data: recentOwners, error: ownersError } = await supabase
             .from('users')
-            .insert({
-                id: authData.user.id,
-                email: email,
-                name: name,
-                role: 'owner',
-                association_approved: true, // Auto-approve for association registration
-                status: 'active',
-                created_at: new Date().toISOString()
-            });
+            .select('*')
+            .eq('role', 'owner')
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        if (dbError) throw dbError;
+        const { data: recentDrivers, error: driversError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('role', 'driver')
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        showNotification(`Owner ${name} registered successfully! Temporary password: ${tempPassword}`, 'success');
-        await loadDashboardData();
+        if (ownersError) throw ownersError;
+        if (driversError) throw driversError;
+
+        const recentMembers = [
+            ...(recentOwners || []),
+            ...(recentDrivers || [])
+        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
+
+        renderRecentMembers(recentMembers);
         
     } catch (error) {
-        console.error('Error registering owner:', error);
-        showNotification('Failed to register owner. Please try again.', 'error');
+        console.error('Error loading recent members:', error);
+        showRecentMembersError();
     }
 }
 
-function generateTempPassword() {
-    return Math.random().toString(36).slice(-8) + '!';
-}
-
-function openEditAssociationModal() {
-    // Simple implementation - you can expand this with a proper modal
-    const newName = prompt('Enter new association name:', currentAssociation?.name || '');
+function renderRecentMembers(members) {
+    const recentMembersContent = document.getElementById('recent-members-content');
     
-    if (newName) {
-        updateAssociationName(newName);
+    if (!recentMembersContent) return;
+    
+    if (!members || members.length === 0) {
+        recentMembersContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No Members Yet</h3>
+                <p>Start by adding members to your association.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let membersHtml = '';
+    members.forEach(member => {
+        const statusClass = member.status === 'active' ? 'status-active' : 
+                           member.status === 'inactive' ? 'status-inactive' : 'status-pending';
+        const roleIcon = member.role === 'driver' ? 'fa-user-tie' : 'fa-user';
+        
+        membersHtml += `
+            <div class="list-item">
+                <div class="item-icon">
+                    <i class="fas ${roleIcon}"></i>
+                </div>
+                <div class="item-details">
+                    <h4>${member.name || 'Unnamed Member'}</h4>
+                    <p>${member.email || 'N/A'}</p>
+                    <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${member.status || 'Unknown'}</span></p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="editMember('${member.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="removeMember('${member.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    recentMembersContent.innerHTML = membersHtml;
+}
+
+async function loadRecentRoutes() {
+    try {
+        // This would come from your routes table
+        // For now, using demo data
+        const demoRoutes = [
+            {
+                id: '1',
+                name: 'City Center Route',
+                origin: 'Downtown',
+                destination: 'City Center',
+                schedule: 'Daily 6AM-10PM',
+                status: 'active'
+            },
+            {
+                id: '2', 
+                name: 'Airport Express',
+                origin: 'Central Station',
+                destination: 'International Airport',
+                schedule: 'Every 30 mins',
+                status: 'active'
+            }
+        ];
+
+        renderRecentRoutes(demoRoutes);
+        
+    } catch (error) {
+        console.error('Error loading recent routes:', error);
+        showRecentRoutesError();
     }
 }
 
-async function updateAssociationName(newName) {
+function renderRecentRoutes(routes) {
+    const recentRoutesContent = document.getElementById('recent-routes-content');
+    
+    if (!recentRoutesContent) return;
+    
+    if (!routes || routes.length === 0) {
+        recentRoutesContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-route"></i>
+                <h3>No Routes Yet</h3>
+                <p>Create your first route to get started.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let routesHtml = '';
+    routes.forEach(route => {
+        const statusClass = route.status === 'active' ? 'status-active' : 'status-inactive';
+        
+        routesHtml += `
+            <div class="list-item">
+                <div class="item-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="item-details">
+                    <h4>${route.name}</h4>
+                    <p>${route.origin} → ${route.destination}</p>
+                    <p class="route-schedule">${route.schedule}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="editRoute('${route.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="removeRoute('${route.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    recentRoutesContent.innerHTML = routesHtml;
+}
+
+async function loadRecentAlerts() {
     try {
+        const { data: alerts, error } = await supabase
+            .from('panic_alerts')
+            .select('*')
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        updateAlertBadge(alerts ? alerts.length : 0);
+        
+    } catch (error) {
+        console.error('Error loading recent alerts:', error);
+        updateAlertBadge(0);
+    }
+}
+
+function updateAlertBadge(count) {
+    const alertBadge = document.getElementById('alert-badge');
+    const alertCount = document.getElementById('alert-count');
+    
+    if (alertBadge) {
+        alertBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
+    
+    if (alertCount) {
+        alertCount.textContent = count;
+    }
+}
+
+// Modal Management Functions
+function openProfileModal() {
+    updateAssociationProfileModal(currentAssociation);
+    showModal('profile-modal');
+}
+
+function updateAssociationProfileModal(associationData) {
+    document.getElementById('profile-association-name').value = associationData.name || '';
+    document.getElementById('profile-association-email').value = associationData.email || '';
+    document.getElementById('profile-association-phone').value = associationData.phone || '';
+    document.getElementById('profile-association-address').value = associationData.address || '';
+    document.getElementById('profile-association-description').value = associationData.description || '';
+    document.getElementById('profile-admin-name').value = associationData.admin_name || '';
+    document.getElementById('profile-admin-phone').value = associationData.admin_phone || '';
+}
+
+async function saveAssociationProfile() {
+    try {
+        const formData = {
+            name: document.getElementById('profile-association-name').value,
+            email: document.getElementById('profile-association-email').value,
+            phone: document.getElementById('profile-association-phone').value,
+            address: document.getElementById('profile-association-address').value,
+            description: document.getElementById('profile-association-description').value,
+            admin_name: document.getElementById('profile-admin-name').value,
+            admin_phone: document.getElementById('profile-admin-phone').value
+        };
+
         const { error } = await supabase
             .from('associations')
-            .update({ name: newName })
+            .update(formData)
             .eq('admin_id', currentUser.id);
 
         if (error) throw error;
 
-        currentAssociation.name = newName;
+        // Update local data
+        Object.assign(currentAssociation, formData);
         updateAssociationProfile(currentAssociation);
-        showNotification('Association name updated successfully!', 'success');
+        
+        showNotification('Profile updated successfully!', 'success');
+        closeModal('profile-modal');
         
     } catch (error) {
-        console.error('Error updating association name:', error);
-        showNotification('Failed to update association name.', 'error');
+        console.error('Error updating profile:', error);
+        showNotification('Failed to update profile.', 'error');
     }
 }
 
-// Utility functions
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+// Quick Actions
+function openAddRouteModal() {
+    showModal('add-route-modal');
+}
+
+function openAddMemberModal() {
+    showModal('add-member-modal');
+}
+
+function openManagePartsModal() {
+    showModal('manage-parts-modal');
+}
+
+function openAlertsModal() {
+    showModal('alerts-modal');
+}
+
+function openWalletModal() {
+    showModal('wallet-modal');
+}
+
+function openMapModal() {
+    showModal('map-modal');
+    // Initialize map here if needed
+}
+
+// Utility Functions
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+    });
+    document.body.style.overflow = 'auto';
+}
+
+function setupEventListeners() {
+    // Header actions
+    const profileBtn = document.getElementById('profile-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const alertsBtn = document.getElementById('alerts-btn');
+
+    if (profileBtn) profileBtn.addEventListener('click', openProfileModal);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (alertsBtn) alertsBtn.addEventListener('click', openAlertsModal);
+
+    // Quick actions
+    const quickActionBtns = document.querySelectorAll('.quick-action-btn');
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            switch(action) {
+                case 'add-route': openAddRouteModal(); break;
+                case 'add-member': openAddMemberModal(); break;
+                case 'manage-parts': openManagePartsModal(); break;
+                case 'view-alerts': openAlertsModal(); break;
+            }
         });
+    });
+
+    // Bottom navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            
+            // Remove active class from all items
+            navItems.forEach(nav => nav.classList.remove('active'));
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            switch(target) {
+                case 'dashboard': 
+                    // Already on dashboard
+                    break;
+                case 'map': 
+                    openMapModal(); 
+                    break;
+                case 'wallet': 
+                    openWalletModal(); 
+                    break;
+                case 'profile': 
+                    openProfileModal(); 
+                    break;
+            }
+        });
+    });
+
+    // Modal close buttons
+    const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modal = this.closest('.modal-overlay');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+
+    // Profile form submission
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAssociationProfile();
+        });
+    }
+
+    // Click outside to close modals
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeModal(e.target.id);
+        }
+    });
+
+    // ESC key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
+}
+
+async function handleLogout() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        
+        window.location.href = 'index.html';
     } catch (error) {
-        return 'Invalid Date';
+        console.error('Error logging out:', error);
+        showNotification('Error logging out. Please try again.', 'error');
     }
 }
 
@@ -770,7 +704,7 @@ function showNotification(message, type = 'info') {
             <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
             <span>${message}</span>
         </div>
-        <span class="notification-close" onclick="this.parentElement.remove()">&times;</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 
     document.body.appendChild(notification);
@@ -784,46 +718,56 @@ function showNotification(message, type = 'info') {
 }
 
 // Error state functions
-function showPendingOwnersError() {
-    const pendingOwnersContent = document.getElementById('pending-owners-content');
-    if (pendingOwnersContent) {
-        pendingOwnersContent.innerHTML = `
+function showRecentMembersError() {
+    const content = document.getElementById('recent-members-content');
+    if (content) {
+        content.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Pending Owners</h3>
+                <h3>Error Loading Members</h3>
                 <p>Please try refreshing the page.</p>
             </div>
         `;
     }
 }
 
-function showRegisteredOwnersError() {
-    const registeredOwnersContent = document.getElementById('registered-owners-content');
-    if (registeredOwnersContent) {
-        registeredOwnersContent.innerHTML = `
+function showRecentRoutesError() {
+    const content = document.getElementById('recent-routes-content');
+    if (content) {
+        content.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Registered Owners</h3>
+                <h3>Error Loading Routes</h3>
                 <p>Please try refreshing the page.</p>
             </div>
         `;
     }
 }
 
-function showDriversError() {
-    const driversContent = document.getElementById('drivers-content');
-    if (driversContent) {
-        driversContent.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Drivers</h3>
-                <p>Please try refreshing the page.</p>
-            </div>
-        `;
+// Placeholder functions for member and route management
+function editMember(memberId) {
+    showNotification(`Edit member ${memberId} - Feature coming soon`, 'info');
+}
+
+function removeMember(memberId) {
+    if (confirm('Are you sure you want to remove this member?')) {
+        showNotification(`Remove member ${memberId} - Feature coming soon`, 'info');
     }
 }
 
-// Make functions globally available for debugging
-window.refreshDashboard = loadDashboardData;
-window.getCurrentUser = () => currentUser;
-window.getCurrentAssociation = () => currentAssociation;
+function editRoute(routeId) {
+    showNotification(`Edit route ${routeId} - Feature coming soon`, 'info');
+}
+
+function removeRoute(routeId) {
+    if (confirm('Are you sure you want to remove this route?')) {
+        showNotification(`Remove route ${routeId} - Feature coming soon`, 'info');
+    }
+}
+
+// Make functions globally available
+window.editMember = editMember;
+window.removeMember = removeMember;
+window.editRoute = editRoute;
+window.removeRoute = removeRoute;
+window.closeModal = closeModal;
