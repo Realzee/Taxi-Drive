@@ -29,23 +29,13 @@ function initializeApp() {
     }
 
     // Initialize all application functionality
-    initializeFunctions(supabase);
+    const functions = initializeFunctions(supabase);
     
     // Make all functions globally available
-    window.login = login;
-    window.signupSimple = signupSimple;
-    window.signupAssociation = signupAssociation;
-    window.showError = showError;
-    window.showSuccess = showSuccess;
-    window.closeAllModals = closeAllModals;
-    window.showModal = showModal;
+    Object.assign(window, functions);
 
     console.log('✅ All functions are now globally available');
-    console.log('Available functions:', {
-        login: typeof login,
-        signupSimple: typeof signupSimple, 
-        signupAssociation: typeof signupAssociation
-    });
+    console.log('Available functions:', Object.keys(functions));
 }
 
 function createFallbackClient() {
@@ -53,13 +43,17 @@ function createFallbackClient() {
         auth: { 
             signInWithPassword: () => Promise.resolve({ error: new Error('Supabase not available') }),
             signUp: () => Promise.resolve({ error: new Error('Supabase not available') }),
-            signOut: () => Promise.resolve({ error: new Error('Supabase not available') })
+            signOut: () => Promise.resolve({ error: new Error('Supabase not available') }),
+            admin: {
+                deleteUser: () => Promise.resolve({ error: new Error('Supabase not available') })
+            }
         },
         from: () => ({ 
             select: () => ({ 
                 single: () => Promise.resolve({ error: new Error('Supabase not available') }) 
             }),
-            insert: () => Promise.resolve({ error: new Error('Supabase not available') })
+            insert: () => Promise.resolve({ error: new Error('Supabase not available') }),
+            delete: () => Promise.resolve({ error: new Error('Supabase not available') })
         }),
         storage: {
             from: () => ({
@@ -109,6 +103,11 @@ function initializeFunctions(supabase) {
         if (errorElement) {
             errorElement.textContent = message;
             errorElement.style.display = 'block';
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
         }
     }
 
@@ -125,120 +124,120 @@ function initializeFunctions(supabase) {
         }
     }
 
-    // Authentication: Login
     // Enhanced Login function with detailed debugging
-async function login(email, password, role) {
-    const errorElementId = 'login-error-message';
-    
-    console.log('🔐 LOGIN ATTEMPT STARTED ==========');
-    console.log('📧 Email:', email);
-    console.log('🔑 Password length:', password ? password.length : 0);
-    console.log('👤 Requested role:', role);
-    console.log('⏰ Time:', new Date().toLocaleString());
+    async function login(email, password, role) {
+        const errorElementId = 'login-error-message';
+        
+        console.log('🔐 LOGIN ATTEMPT STARTED ==========');
+        console.log('📧 Email:', email);
+        console.log('🔑 Password length:', password ? password.length : 0);
+        console.log('👤 Requested role:', role);
+        console.log('⏰ Time:', new Date().toLocaleString());
 
-    try {
-        // Step 1: Supabase Authentication
-        console.log('🔄 Step 1: Authenticating with Supabase Auth...');
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
-            email: email, 
-            password: password 
-        });
-
-        if (authError) {
-            console.error('❌ Auth failed:', authError);
-            console.log('🔍 Auth error details:', {
-                message: authError.message,
-                status: authError.status,
-                name: authError.name
+        try {
+            // Step 1: Supabase Authentication
+            console.log('🔄 Step 1: Authenticating with Supabase Auth...');
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+                email: email, 
+                password: password 
             });
-            showError(errorElementId, authError.message || 'Authentication failed');
-            return null;
-        }
 
-        console.log('✅ Auth successful!');
-        console.log('👤 User ID:', authData.user.id);
-        console.log('📧 User email:', authData.user.email);
-
-        // Step 2: Verify user exists in users table
-        console.log('🔄 Step 2: Checking user role in database...');
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, email, role, association_approved, status, name, created_at')
-            .eq('email', email)
-            .single();
-
-        if (userError) {
-            console.error('❌ Database query failed:', userError);
-            console.log('🔍 User error details:', userError);
-            
-            // Check if user doesn't exist in users table
-            if (userError.code === 'PGRST116') { // No rows returned
-                console.log('⚠️ User exists in auth but not in users table!');
-                showError(errorElementId, 'User account not properly set up. Please contact support.');
-            } else {
-                showError(errorElementId, 'Database error: ' + userError.message);
+            if (authError) {
+                console.error('❌ Auth failed:', authError);
+                console.log('🔍 Auth error details:', {
+                    message: authError.message,
+                    status: authError.status,
+                    name: authError.name
+                });
+                showError(errorElementId, authError.message || 'Authentication failed');
+                return null;
             }
-            
-            // Sign out since we can't verify the role
-            await supabase.auth.signOut();
-            return null;
-        }
 
-        console.log('✅ User found in database:', userData);
+            console.log('✅ Auth successful!');
+            console.log('👤 User ID:', authData.user.id);
+            console.log('📧 User email:', authData.user.email);
 
-        // Step 3: Verify role matches
-        console.log('🔄 Step 3: Verifying role...');
-        console.log('📋 User role in DB:', userData.role);
-        console.log('🎯 Expected role:', role);
+            // Step 2: Verify user exists in users table
+            console.log('🔄 Step 2: Checking user role in database...');
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id, email, role, association_approved, status, name, created_at')
+                .eq('email', email)
+                .single();
 
-        if (userData.role !== role) {
-            console.error('❌ Role mismatch!');
-            showError(errorElementId, `Invalid role. Your account is registered as ${userData.role}, but you're trying to login as ${role}`);
-            await supabase.auth.signOut();
-            return null;
-        }
-        console.log('✅ Role verified successfully!');
-
-        // Step 4: Additional checks for associations
-        if (role === 'association') {
-            console.log('🔄 Step 4: Additional association checks...');
-            console.log('✅ Association approved:', userData.association_approved);
-            console.log('✅ Account status:', userData.status);
-
-            if (!userData.association_approved) {
-                showError(errorElementId, 'Association account is pending approval. Please contact administrator.');
+            if (userError) {
+                console.error('❌ Database query failed:', userError);
+                console.log('🔍 User error details:', userError);
+                
+                // Check if user doesn't exist in users table
+                if (userError.code === 'PGRST116') { // No rows returned
+                    console.log('⚠️ User exists in auth but not in users table!');
+                    showError(errorElementId, 'User account not properly set up. Please contact support.');
+                } else {
+                    showError(errorElementId, 'Database error: ' + userError.message);
+                }
+                
+                // Sign out since we can't verify the role
                 await supabase.auth.signOut();
                 return null;
             }
 
-            if (userData.status !== 'active') {
-                showError(errorElementId, `Association account is ${userData.status}. Please contact administrator.`);
+            console.log('✅ User found in database:', userData);
+
+            // Step 3: Verify role matches
+            console.log('🔄 Step 3: Verifying role...');
+            console.log('📋 User role in DB:', userData.role);
+            console.log('🎯 Expected role:', role);
+
+            if (userData.role !== role) {
+                console.error('❌ Role mismatch!');
+                showError(errorElementId, `Invalid role. Your account is registered as ${userData.role}, but you're trying to login as ${role}`);
                 await supabase.auth.signOut();
                 return null;
             }
-            console.log('✅ Association checks passed!');
+            console.log('✅ Role verified successfully!');
+
+            // Step 4: Additional checks for associations
+            if (role === 'association') {
+                console.log('🔄 Step 4: Additional association checks...');
+                console.log('✅ Association approved:', userData.association_approved);
+                console.log('✅ Account status:', userData.status);
+
+                if (!userData.association_approved) {
+                    showError(errorElementId, 'Association account is pending approval. Please contact administrator.');
+                    await supabase.auth.signOut();
+                    return null;
+                }
+
+                if (userData.status !== 'active') {
+                    showError(errorElementId, `Association account is ${userData.status}. Please contact administrator.`);
+                    await supabase.auth.signOut();
+                    return null;
+                }
+                console.log('✅ Association checks passed!');
+            }
+
+            // Step 5: Login successful
+            console.log('🎉 LOGIN SUCCESSFUL!');
+            console.log('👤 Logged in as:', userData.name || userData.email);
+            console.log('🔑 Role:', userData.role);
+            console.log('🆔 User ID:', userData.id);
+            console.log('================================');
+
+            return authData.user;
+
+        } catch (err) {
+            console.error('💥 UNEXPECTED LOGIN ERROR:', err);
+            console.error('🔍 Error details:', {
+                name: err.name,
+                message: err.message,
+                stack: err.stack
+            });
+            showError(errorElementId, 'An unexpected error occurred: ' + err.message);
+            return null;
         }
-
-        // Step 5: Login successful
-        console.log('🎉 LOGIN SUCCESSFUL!');
-        console.log('👤 Logged in as:', userData.name || userData.email);
-        console.log('🔑 Role:', userData.role);
-        console.log('🆔 User ID:', userData.id);
-        console.log('================================');
-
-        return authData.user;
-
-    } catch (err) {
-        console.error('💥 UNEXPECTED LOGIN ERROR:', err);
-        console.error('🔍 Error details:', {
-            name: err.name,
-            message: err.message,
-            stack: err.stack
-        });
-        showError(errorElementId, 'An unexpected error occurred: ' + err.message);
-        return null;
     }
-}
+
     // Signup: Generic for simple roles (passenger, driver, owner)
     async function signupSimple(role, formData) {
         const { email, password, license_number, company_name } = formData;
@@ -283,7 +282,7 @@ async function login(email, password, role) {
         }
     }
 
-        // Signup: For Association (complex, with logo upload) - WITH DEBUGGING
+    // Signup: For Association (complex, with logo upload)
     async function signupAssociation(formData) {
         const {
             name, email, phone, registrationNumber, address, description,
@@ -399,7 +398,7 @@ async function login(email, password, role) {
             const { data: associationResult, error: assocError } = await supabase
                 .from('associations')
                 .insert([associationData])
-                .select(); // Add .select() to get the inserted data back
+                .select();
 
             if (assocError) {
                 console.error('❌ Association creation error:', assocError);
@@ -424,12 +423,7 @@ async function login(email, password, role) {
         }
     }
 
-    // Make signupAssociation globally available
-    window.signupAssociation = signupAssociation;
-
     // Set up event listeners
-    setupEventListeners();
-
     function setupEventListeners() {
         // Toggle buttons
         const loginTab = document.getElementById('login-tab');
@@ -467,7 +461,7 @@ async function login(email, password, role) {
             });
         });
 
-        // Close buttons - FIXED VERSION
+        // Close buttons
         const closeButtons = document.querySelectorAll('.modal-close-btn, #signup-role-cancel, #modal-close-btn');
         closeButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -535,8 +529,10 @@ async function login(email, password, role) {
                 }
 
                 try {
-                    await login(email, password, role);
-                    window.location.href = '/dashboard.html';
+                    const user = await login(email, password, role);
+                    if (user) {
+                        window.location.href = '/dashboard.html';
+                    }
                 } catch (error) {
                     showError('login-error-message', error.message || 'Login failed');
                 }
@@ -553,7 +549,6 @@ async function login(email, password, role) {
 
                 try {
                     await signupSimple('passenger', { email, password });
-                    showSuccess('Passenger account created successfully');
                     passengerForm.reset();
                 } catch (error) {
                     showError('signup-passenger-error-message', error.message || 'Registration failed');
@@ -572,7 +567,6 @@ async function login(email, password, role) {
 
                 try {
                     await signupSimple('driver', { email, password, license_number: licenseNumber });
-                    showSuccess('Driver account created successfully');
                     driverForm.reset();
                 } catch (error) {
                     showError('signup-driver-error-message', error.message || 'Registration failed');
@@ -591,7 +585,6 @@ async function login(email, password, role) {
 
                 try {
                     await signupSimple('owner', { email, password, company_name: companyName });
-                    showSuccess('Owner account created successfully');
                     ownerForm.reset();
                 } catch (error) {
                     showError('signup-owner-error-message', error.message || 'Registration failed');
@@ -641,7 +634,6 @@ async function login(email, password, role) {
                         progressBar.style.width = '100%';
                         progressText.textContent = 'Registration complete!';
                     }
-                    showSuccess('Association created successfully', `Login with: ${formData.adminEmail}`);
                     associationForm.reset();
                 } catch (error) {
                     showError('signup-association-error-message', error.message || 'Registration failed');
@@ -675,8 +667,22 @@ async function login(email, password, role) {
                 logoPreviewImg.src = '';
             });
         }
-    } // <-- This closing bracket was missing
-} // <-- This is the end of initializeFunctions
+    }
+
+    // Initialize event listeners
+    setupEventListeners();
+
+    // Return all functions to be made globally available
+    return {
+        login,
+        signupSimple,
+        signupAssociation,
+        showError,
+        showSuccess,
+        closeAllModals,
+        showModal
+    };
+}
 
 function debugModals() {
     const modals = [
