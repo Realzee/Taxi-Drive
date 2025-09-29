@@ -3,257 +3,460 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Association Dashboard - TaxiDrive</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="./css/style.css">
+    <title>TaxiDrive Association</title>
     
-    </head>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Montserrat Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="association-dashboard.css">
+</head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <div class="logo">
-                <img id="association-logo" src="assets/Logo1.png" alt="Association Logo" style="display: none; height: 40px; margin-right: 10px; border-radius: 4px;">
-                <img id="main-logo" src="assets/Logo1.png" alt="TaxiDrive Logo" style="height: 40px; margin-right: 10px;">
-                <h1>TaxiDrive</h1>
-            </div>
-            <div class="header-right">
-                <div class="user-profile" id="user-profile">
-                    <div class="user-avatar" id="user-avatar">A</div>
-                    <div class="user-info">
-                        <div class="user-name" id="user-name">Loading...</div>
-                        <div class="user-role" id="user-role">Association</div>
-                        <div class="association-name" id="association-name" style="font-size: 10px; opacity: 0.9; line-height: 1.2; margin-top: 2px;">Loading Association...</div>
-                    </div>
-                </div>
-                <div class="header-icons">
-                    <i class="fas fa-bell" id="notifications-btn"></i>
-                    <i class="fas fa-sign-out-alt" id="logout-btn"></i>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo" id="main-logo">
+                <img src="" alt="Association Logo" class="logo association-logo" id="association-logo" style="display: none;">
+                <div class="title-section">
+                    <h1 class="app-title">TaxiDrive</h1>
+                    <span class="association-name" id="association-name">Association</span>
                 </div>
             </div>
-        </header>
-
-        <!-- App Content -->
-        <div class="app-content">
-            <!-- Association Header Section -->
-            <div class="association-header-section" style="background: linear-gradient(135deg, var(--dark-blue), var(--light-blue)); color: white; padding: 30px 20px; text-align: center; margin-bottom: 20px;">
-                <div class="association-header-content">
-                    <div class="association-logo-container" style="margin-bottom: 15px;">
-                        <img id="association-logo-main" src="" alt="Association Logo" style="display: none; height: 80px; width: 80px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.3); background: white; padding: 8px;">
-                        <img id="main-logo-main" src="assets/Logo1.png" alt="TaxiDrive Logo" style="height: 80px; width: 80px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.3); background: white; padding: 8px;">
-                    </div>
-                    <h1 class="association-name-main" id="association-name-main" style="font-size: 28px; font-weight: 700; margin: 0 0 10px 0; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);">Loading Association...</h1>
-                    <p class="association-subtitle" style="font-size: 16px; opacity: 0.9; margin: 0; font-weight: 500;">
-                        <i class="fas fa-building"></i> Association Management Dashboard
-                    </p>
-                    <div class="association-stats" style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; flex-wrap: wrap;">
-                        <div class="stat-item" style="text-align: center;">
-                            <div class="stat-value" id="association-registered-count" style="font-size: 24px; font-weight: 700;">0</div>
-                            <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Registered Owners</div>
-                        </div>
-                        <div class="stat-item" style="text-align: center;">
-                            <div class="stat-value" id="association-active-count" style="font-size: 24px; font-weight: 700;">0</div>
-                            <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Active Owners</div>
-                        </div>
-                        <div class="stat-item" style="text-align: center;">
-                            <div class="stat-value" id="association-pending-count" style="font-size: 24px; font-weight: 700;">0</div>
-                            <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Pending Approvals</div>
-                        </div>
-                    </div>
-                    <div class="association-actions" style="margin-top: 20px; text-align: center;">
-                        <button class="btn btn-primary" id="edit-association-profile-btn" style="padding: 10px 20px; font-size: 14px;">
-                            <i class="fas fa-edit"></i> Edit Association Profile
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Owner Registration Section -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Owner Registration</h2>
-                    <button class="refresh-btn" id="refresh-registration">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-
-                <div style="background: var(--white); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 20px; margin-bottom: 20px;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <i class="fas fa-user-plus" style="font-size: 48px; color: var(--light-blue); margin-bottom: 15px;"></i>
-                        <h3 style="color: var(--dark-blue); margin: 0 0 10px 0;">Register New Owner</h3>
-                        <p style="color: #666; margin: 0;">Create a new owner account with Supabase Authentication</p>
-                    </div>
-                    <button class="btn btn-primary" id="register-new-owner-btn" style="width: 100%; padding: 12px; font-size: 16px;">
-                        <i class="fas fa-plus"></i> Register New Owner
-                    </button>
-                </div>
-            </div>
-
-            <!-- Owner Approval Dashboard -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Owner Approval Dashboard</h2>
-                    <button class="refresh-btn" id="refresh-dashboard">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-
-                <!-- Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="pending-count">0</div>
-                        <div class="stat-label">Pending Owners</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="approved-count">0</div>
-                        <div class="stat-label">Approved Today</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="rejected-count">0</div>
-                        <div class="stat-label">Rejected Today</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-owners">0</div>
-                        <div class="stat-label">Total Owners</div>
-                    </div>
-                </div>
-
-                <!-- Pending Owners Section -->
-                <div class="pending-owners-list" id="pending-owners-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Pending Owner Approvals</h3>
-                    </div>
-                    <div id="pending-owners-content">
-                        <!-- Pending owners will be loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Registered Owners Dashboard -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Registered Owners Dashboard</h2>
-                    <button class="refresh-btn" id="refresh-registered-owners">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-
-                <!-- Association Name Display -->
-                <div style="background: var(--white); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 15px; margin-bottom: 20px; text-align: center; border-left: 4px solid var(--light-blue);">
-                    <h3 style="color: var(--dark-blue); margin: 0 0 5px 0;">
-                        <i class="fas fa-building"></i> Association: <span id="dashboard-association-name">Loading...</span>
-                    </h3>
-                    <p style="color: #666; margin: 0; font-size: 14px;">All registered members belong to this association</p>
-                </div>
-
-                <!-- Registered Owners Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="registered-count">0</div>
-                        <div class="stat-label">Total Registered</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="active-owners-count">0</div>
-                        <div class="stat-label">Active Owners</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="inactive-owners-count">0</div>
-                        <div class="stat-label">Inactive Owners</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="updated-today-count">0</div>
-                        <div class="stat-label">Updated Today</div>
-                    </div>
-                </div>
-
-                <!-- Registered Owners List -->
-                <div class="pending-owners-list" id="registered-owners-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Registered Owners</h3>
-                    </div>
-                    <div id="registered-owners-content">
-                        <!-- Registered owners will be loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Registered Drivers Dashboard -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Registered Drivers Dashboard</h2>
-                    <button class="refresh-btn" id="refresh-drivers">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-
-                <!-- Association Name Display -->
-                <div style="background: var(--white); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 15px; margin-bottom: 20px; text-align: center; border-left: 4px solid var(--light-blue);">
-                    <h3 style="color: var(--dark-blue); margin: 0 0 5px 0;">
-                        <i class="fas fa-building"></i> Association: <span id="drivers-dashboard-association-name">Loading...</span>
-                    </h3>
-                    <p style="color: #666; margin: 0; font-size: 14px;">All registered drivers belong to this association</p>
-                </div>
-
-                <!-- Drivers Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-drivers-count">0</div>
-                        <div class="stat-label">Total Drivers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="active-drivers-count">0</div>
-                        <div class="stat-label">Active Drivers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="inactive-drivers-count">0</div>
-                        <div class="stat-label">Inactive Drivers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="drivers-with-vehicles-count">0</div>
-                        <div class="stat-label">With Vehicles</div>
-                    </div>
-                </div>
-
-                <!-- Registered Drivers List -->
-                <div class="pending-owners-list" id="drivers-section" style="max-height: 500px; overflow-y: auto;">
-                    <div class="section-header">
-                        <h3 class="section-title">Registered Drivers</h3>
-                    </div>
-                    <div id="drivers-content">
-                        <!-- Drivers will be loaded here -->
-                    </div>
-                </div>
+            
+            <div class="header-actions">
+                <!-- Notifications with Badge -->
+                <button class="icon-btn" id="alerts-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="alert-badge" style="display: none;">
+                        <span id="alert-count">0</span>
+                    </span>
+                </button>
+                
+                <!-- Profile -->
+                <button class="icon-btn" id="profile-btn">
+                    <i class="fas fa-user"></i>
+                </button>
+                
+                <!-- Logout -->
+                <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
             </div>
         </div>
+    </header>
 
-        <!-- Your existing modals remain exactly the same -->
-        <!-- [Keep all your modal HTML from the Firebase version] -->
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <h2>Welcome, <span id="user-name">Admin</span></h2>
+                <p>Manage your association efficiently</p>
+            </section>
 
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <div class="nav-item active" data-nav="home">
-                <i class="fas fa-home"></i>
-                <div>Home</div>
+            <!-- Dashboard Stats -->
+            <section class="stats-section">
+                <h3 class="section-title">Dashboard Overview</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-vehicles">0</h4>
+                            <p class="stat-label">Registered Vehicles</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-members">0</h4>
+                            <p class="stat-label">Registered Members</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-routes">0</h4>
+                            <p class="stat-label">Active Routes</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-alarms">0</h4>
+                            <p class="stat-label">Passenger Alarms</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Map Section -->
+            <section class="map-section" id="map-section" style="display: none;">
+                <div class="section-header">
+                    <h3 class="section-title">Live Vehicle Locations</h3>
+                    <button class="btn btn-primary" id="map-toggle">Hide Map</button>
+                </div>
+                <div id="map" style="height: 300px; border-radius: 8px;"></div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions-section">
+                <h3 class="section-title">Quick Actions</h3>
+                <div class="quick-actions">
+                    <button class="quick-action-btn btn btn-primary" data-action="add-route">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Route</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-primary" data-action="add-member">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Add Member</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-secondary" data-action="manage-parts">
+                        <i class="fas fa-cogs"></i>
+                        <span>Manage Parts</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-danger" data-action="view-alerts">
+                        <i class="fas fa-bell"></i>
+                        <span>View Alerts</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Recent Members -->
+            <section class="recent-section">
+                <div class="section-header">
+                    <h3 class="section-title">Recent Members</h3>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+                <div class="list-container" id="recent-members-content">
+                    <!-- Members will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>No Members Yet</h3>
+                        <p>Start by adding members to your association.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Routes -->
+            <section class="recent-section">
+                <div class="section-header">
+                    <h3 class="section-title">Active Routes</h3>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+                <div class="list-container" id="recent-routes-content">
+                    <!-- Routes will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-route"></i>
+                        <h3>No Routes Yet</h3>
+                        <p>Create your first route to get started.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-target="dashboard">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" data-target="map">
+            <i class="fas fa-map"></i>
+            <span>Map</span>
+        </div>
+        <div class="nav-item" data-target="wallet">
+            <i class="fas fa-wallet"></i>
+            <span>Wallet</span>
+        </div>
+        <div class="nav-item" data-target="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </nav>
+
+    <!-- Modals -->
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Association Profile</h3>
+                <button class="modal-close">&times;</button>
             </div>
-            <div class="nav-item" data-nav="map">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>Map</div>
-            </div>
-            <div class="nav-item" data-nav="wallet">
-                <i class="fas fa-wallet"></i>
-                <div>Wallet</div>
-            </div>
-            <div class="nav-item" data-nav="profile">
-                <i class="fas fa-user"></i>
-                <div>Profile</div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-association-name">Association Name</label>
+                        <input type="text" id="profile-association-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-email">Association Email</label>
+                        <input type="email" id="profile-association-email" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-phone">Association Phone</label>
+                        <input type="tel" id="profile-association-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-address">Association Address</label>
+                        <textarea id="profile-association-address" class="form-input" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-description">Description</label>
+                        <textarea id="profile-association-description" class="form-input" rows="3"></textarea>
+                    </div>
+                    
+                    <h4>Administrator Details</h4>
+                    
+                    <div class="form-group">
+                        <label for="profile-admin-name">Admin Name</label>
+                        <input type="text" id="profile-admin-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-admin-phone">Admin Phone</label>
+                        <input type="tel" id="profile-admin-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Supabase Script -->
+    <!-- Map Modal -->
+    <div id="map-modal" class="modal-overlay">
+        <div class="modal-content fullscreen-modal">
+            <div class="modal-header">
+                <h3>Live Vehicle Map</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="full-map" style="height: 80vh; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Route Modal -->
+    <div id="add-route-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Route</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-route-form">
+                    <div class="form-group">
+                        <label for="route-name">Route Name</label>
+                        <input type="text" id="route-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-origin">Origin</label>
+                        <input type="text" id="route-origin" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-destination">Destination</label>
+                        <input type="text" id="route-destination" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-schedule">Schedule</label>
+                        <input type="text" id="route-schedule" class="form-input" placeholder="e.g., Daily 6AM-10PM" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-waypoints">Waypoints (Optional)</label>
+                        <textarea id="route-waypoints" class="form-input" rows="3" placeholder="Enter waypoints separated by commas"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Route</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="add-member-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Member</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form">
+                    <div class="form-group">
+                        <label for="member-email">Member Email</label>
+                        <input type="email" id="member-email" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-name">Member Name</label>
+                        <input type="text" id="member-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-phone">Phone Number</label>
+                        <input type="tel" id="member-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-role">Role</label>
+                        <select id="member-role" class="form-input" required>
+                            <option value="driver">Driver</option>
+                            <option value="owner">Owner</option>
+                            <option value="member">Member</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="member-verified" class="form-checkbox">
+                        <label for="member-verified">Verified Member</label>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Parts Modal -->
+    <div id="manage-parts-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Manage Parts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="parts-header">
+                    <button class="btn btn-primary" id="add-part-btn">
+                        <i class="fas fa-plus"></i> Add Part
+                    </button>
+                </div>
+                <div class="parts-list" id="parts-list">
+                    <div class="empty-state">
+                        <i class="fas fa-cogs"></i>
+                        <h3>No Parts Added</h3>
+                        <p>Start by adding parts to your inventory.</p>
+                    </div>
+                </div>
+                <div class="parts-summary">
+                    <div class="summary-item">
+                        <span>Subtotal:</span>
+                        <span id="parts-subtotal">R 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>VAT (15%):</span>
+                        <span id="parts-vat">R 0.00</span>
+                    </div>
+                    <div class="summary-item total">
+                        <span>Total:</span>
+                        <span id="parts-total">R 0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Modal -->
+    <div id="alerts-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Panic Alerts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alerts-list" id="alerts-modal-content">
+                    <!-- Alerts will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>No Active Alerts</h3>
+                        <p>All clear! No panic alerts at the moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Association Wallet</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="wallet-balance">
+                    <h4>Current Balance</h4>
+                    <div class="balance-amount" id="wallet-balance">R 0.00</div>
+                </div>
+                
+                <div class="wallet-actions">
+                    <button class="btn btn-primary" id="withdraw-btn">
+                        <i class="fas fa-money-bill-wave"></i> Withdraw Funds
+                    </button>
+                    <button class="btn btn-secondary" id="view-transactions-btn">
+                        <i class="fas fa-history"></i> Transaction History
+                    </button>
+                </div>
+                
+                <div class="recent-transactions">
+                    <h4>Recent Transactions</h4>
+                    <div class="transactions-list" id="transactions-list">
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <h3>No Transactions</h3>
+                            <p>Transaction history will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/association-dashboard.js"></script>
+    
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main Dashboard Script -->
+    <script src="association-dashboard.js"></script>
 </body>
 </html>
