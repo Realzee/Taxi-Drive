@@ -15,6 +15,8 @@ try {
 // Global variables
 let currentUser = null;
 let currentAssociation = null;
+let map = null;
+let realtimeSubscription = null;
 
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
@@ -72,6 +74,9 @@ async function initializeDashboard() {
 
         setupEventListeners();
         await loadDashboardData();
+        
+        // Initialize real-time subscriptions
+        initializeRealtimeSubscriptions();
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -108,10 +113,10 @@ async function loadAssociationData() {
     try {
         console.log('Loading association data for admin:', currentUser.id);
         
-        // Get association data - try different query approaches
+        // Get association data
         let associationData = null;
 
-        // Method 1: Try admin_id (most common)
+        // Try to get association by admin_id
         const { data: data1, error: error1 } = await supabase
             .from('associations')
             .select('*')
@@ -123,13 +128,12 @@ async function loadAssociationData() {
         if (!error1 && data1) {
             associationData = data1;
         } else {
-            // Method 2: Get all associations and find matching one
+            // Try alternative: get any association data
             const { data: allAssociations, error: allError } = await supabase
                 .from('associations')
                 .select('*');
 
             if (!allError && allAssociations && allAssociations.length > 0) {
-                // Find association by admin_id or email
                 associationData = allAssociations.find(assoc => 
                     assoc.admin_id === currentUser.id || 
                     assoc.email === currentUser.email
@@ -139,9 +143,9 @@ async function loadAssociationData() {
 
         if (!associationData) {
             console.warn('No association data found in database');
-            // Create default association data from user info
+            // Create default association data
             associationData = {
-                name: 'My Association',
+                association_name: 'My Taxi Association',
                 email: currentUser.email,
                 phone: '',
                 address: '',
@@ -150,6 +154,7 @@ async function loadAssociationData() {
                 admin_phone: '',
                 description: '',
                 logo_url: null,
+                wallet_balance: 0,
                 created_at: new Date().toISOString()
             };
         }
@@ -165,7 +170,7 @@ async function loadAssociationData() {
         
         // Create fallback association data
         currentAssociation = {
-            name: 'My Association',
+            association_name: 'My Taxi Association',
             email: currentUser.email,
             phone: '',
             address: '',
@@ -174,6 +179,7 @@ async function loadAssociationData() {
             admin_phone: '',
             description: '',
             logo_url: null,
+            wallet_balance: 0,
             created_at: new Date().toISOString()
         };
         
@@ -197,10 +203,10 @@ function updateAssociationProfile(associationData) {
     const associationNameElement = document.getElementById('association-name');
     const associationNameMainElement = document.getElementById('association-name-main');
 
-    if (associationNameElement) associationNameElement.textContent = associationData.name || 'Association';
-    if (associationNameMainElement) associationNameMainElement.textContent = associationData.name || 'Association';
+    if (associationNameElement) associationNameElement.textContent = associationData.association_name || 'Taxi Association';
+    if (associationNameMainElement) associationNameMainElement.textContent = associationData.association_name || 'Taxi Association';
 
-    // Update association details in profile modal if open
+    // Update association details in profile modal
     updateAssociationProfileModal(associationData);
 
     // Update association logo
@@ -231,27 +237,31 @@ function updateAssociationLogo(logoUrl) {
     }
 }
 
-// FIXED: Update association profile modal with null checks
 function updateAssociationProfileModal(associationData) {
-    // Only update if the modal elements exist
-    const profileAssociationName = document.getElementById('profile-association-name');
-    const profileAssociationEmail = document.getElementById('profile-association-email');
-    const profileAssociationPhone = document.getElementById('profile-association-phone');
-    const profileAssociationAddress = document.getElementById('profile-association-address');
-    const profileAssociationDescription = document.getElementById('profile-association-description');
-    const profileAdminName = document.getElementById('profile-admin-name');
-    const profileAdminPhone = document.getElementById('profile-admin-phone');
+    const elements = {
+        'profile-association-name': associationData.association_name || '',
+        'profile-association-email': associationData.email || '',
+        'profile-association-phone': associationData.phone || '',
+        'profile-association-address': associationData.address || '',
+        'profile-association-description': associationData.description || '',
+        'profile-admin-name': associationData.admin_name || '',
+        'profile-admin-phone': associationData.admin_phone || '',
+        'wallet-balance': `R ${(associationData.wallet_balance || 0).toFixed(2)}`
+    };
 
-    if (profileAssociationName) profileAssociationName.value = associationData.name || '';
-    if (profileAssociationEmail) profileAssociationEmail.value = associationData.email || '';
-    if (profileAssociationPhone) profileAssociationPhone.value = associationData.phone || '';
-    if (profileAssociationAddress) profileAssociationAddress.value = associationData.address || '';
-    if (profileAssociationDescription) profileAssociationDescription.value = associationData.description || '';
-    if (profileAdminName) profileAdminName.value = associationData.admin_name || '';
-    if (profileAdminPhone) profileAdminPhone.value = associationData.admin_phone || '';
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'text' || element.type === 'email' || element.type === 'tel' || element.tagName === 'TEXTAREA') {
+                element.value = elements[id];
+            } else {
+                element.textContent = elements[id];
+            }
+        }
+    });
 }
 
-// NEW: Dashboard Data Loading Functions
+// Dashboard Data Loading Functions
 async function loadDashboardData() {
     try {
         await Promise.all([
@@ -268,50 +278,94 @@ async function loadDashboardData() {
 
 async function loadDashboardStats() {
     try {
-        // Get counts for different user types
-        const { data: owners, error: ownersError } = await supabase
-            .from('users')
-            .select('id, status')
-            .eq('role', 'owner');
-
-        const { data: drivers, error: driversError } = await supabase
-            .from('users')
-            .select('id, status')
-            .eq('role', 'driver');
-
-        const { data: vehicles, error: vehiclesError } = await supabase
-            .from('vehicles')
-            .select('id')
-            .eq('association_id', currentAssociation.id);
-
-        const { data: alerts, error: alertsError } = await supabase
-            .from('panic_alerts')
-            .select('id')
-            .eq('status', 'active');
-
-        if (ownersError) console.error('Owners error:', ownersError);
-        if (driversError) console.error('Drivers error:', driversError);
-        if (vehiclesError) console.error('Vehicles error:', vehiclesError);
-        if (alertsError) console.error('Alerts error:', alertsError);
-
-        // Calculate statistics
         const stats = {
-            registeredVehicles: vehicles ? vehicles.length : 0,
-            registeredMembers: owners ? owners.length + (drivers ? drivers.length : 0) : 0,
-            activeRoutes: 0, // You'll need to implement routes functionality
-            passengerAlarms: alerts ? alerts.length : 0
+            registeredVehicles: 0,
+            registeredMembers: 0,
+            activeRoutes: 0,
+            passengerAlarms: 0
         };
 
-        // Update UI
+        // Load vehicles count
+        try {
+            const { data: vehicles, error } = await supabase
+                .from('vehicles')
+                .select('id')
+                .eq('association_id', currentAssociation.id);
+
+            if (!error && vehicles) stats.registeredVehicles = vehicles.length;
+        } catch (error) {
+            console.log('Vehicles table not available');
+        }
+
+        // Load members count (using users table as fallback)
+        try {
+            const { data: members, error } = await supabase
+                .from('members')
+                .select('id')
+                .eq('association_id', currentAssociation.id);
+
+            if (!error && members) {
+                stats.registeredMembers = members.length;
+            } else {
+                // Fallback to users table
+                const { data: owners, error: ownersError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('role', 'owner');
+
+                const { data: drivers, error: driversError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('role', 'driver');
+
+                if (!ownersError && owners) stats.registeredMembers += owners.length;
+                if (!driversError && drivers) stats.registeredMembers += drivers.length;
+            }
+        } catch (error) {
+            console.log('Members table not available');
+        }
+
+        // Load routes count
+        try {
+            const { data: routes, error } = await supabase
+                .from('routes')
+                .select('id')
+                .eq('association_id', currentAssociation.id)
+                .eq('status', 'active');
+
+            if (!error && routes) stats.activeRoutes = routes.length;
+        } catch (error) {
+            console.log('Routes table not available');
+        }
+
+        // Load alerts count
+        try {
+            const { data: alerts, error } = await supabase
+                .from('panic_alerts')
+                .select('id')
+                .eq('association_id', currentAssociation.id)
+                .eq('status', 'active');
+
+            if (!error && alerts) stats.passengerAlarms = alerts.length;
+        } catch (error) {
+            console.log('Panic alerts table not available');
+        }
+
+        console.log('Dashboard stats:', stats);
         updateDashboardStats(stats);
         
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
+        updateDashboardStats({
+            registeredVehicles: 0,
+            registeredMembers: 0,
+            activeRoutes: 0,
+            passengerAlarms: 0
+        });
     }
 }
 
 function updateDashboardStats(stats) {
-    // Update stat cards with null checks
     const statElements = {
         'stat-vehicles': stats.registeredVehicles,
         'stat-members': stats.registeredMembers,
@@ -329,34 +383,58 @@ function updateDashboardStats(stats) {
 
 async function loadRecentMembers() {
     try {
-        // Get recent owners and drivers
-        const { data: recentOwners, error: ownersError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('role', 'owner')
-            .order('created_at', { ascending: false })
-            .limit(3);
+        let recentMembers = [];
 
-        const { data: recentDrivers, error: driversError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('role', 'driver')
-            .order('created_at', { ascending: false })
-            .limit(3);
+        // Try to load from members table
+        try {
+            const { data: members, error } = await supabase
+                .from('members')
+                .select('*')
+                .eq('association_id', currentAssociation.id)
+                .order('created_at', { ascending: false })
+                .limit(3);
 
-        if (ownersError) throw ownersError;
-        if (driversError) throw driversError;
+            if (!error && members) {
+                recentMembers = members.map(member => ({
+                    id: member.id,
+                    name: member.member_name,
+                    email: member.member_email,
+                    role: 'member',
+                    is_verified: member.is_verified,
+                    created_at: member.created_at
+                }));
+            }
+        } catch (error) {
+            console.log('Members table not available, using users as fallback');
+            
+            // Fallback to users table
+            const { data: owners, error: ownersError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'owner')
+                .order('created_at', { ascending: false })
+                .limit(3);
 
-        const recentMembers = [
-            ...(recentOwners || []),
-            ...(recentDrivers || [])
-        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
+            const { data: drivers, error: driversError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'driver')
+                .order('created_at', { ascending: false })
+                .limit(3);
+
+            if (!ownersError && owners) recentMembers.push(...owners);
+            if (!driversError && drivers) recentMembers.push(...drivers);
+
+            recentMembers = recentMembers
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 3);
+        }
 
         renderRecentMembers(recentMembers);
         
     } catch (error) {
         console.error('Error loading recent members:', error);
-        showRecentMembersError();
+        renderRecentMembers([]);
     }
 }
 
@@ -378,19 +456,18 @@ function renderRecentMembers(members) {
 
     let membersHtml = '';
     members.forEach(member => {
-        const statusClass = member.status === 'active' ? 'status-active' : 
-                           member.status === 'inactive' ? 'status-inactive' : 'status-pending';
-        const roleIcon = member.role === 'driver' ? 'fa-user-tie' : 'fa-user';
+        const statusClass = member.is_verified ? 'status-active' : 'status-pending';
+        const statusText = member.is_verified ? 'Verified' : 'Pending';
         
         membersHtml += `
             <div class="list-item">
                 <div class="item-icon">
-                    <i class="fas ${roleIcon}"></i>
+                    <i class="fas fa-user"></i>
                 </div>
                 <div class="item-details">
                     <h4>${member.name || 'Unnamed Member'}</h4>
                     <p>${member.email || 'N/A'}</p>
-                    <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${member.status || 'Unknown'}</span></p>
+                    <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${statusText}</span></p>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary btn-sm" onclick="editMember('${member.id}')">
@@ -409,32 +486,49 @@ function renderRecentMembers(members) {
 
 async function loadRecentRoutes() {
     try {
-        // This would come from your routes table
-        // For now, using demo data
-        const demoRoutes = [
-            {
-                id: '1',
-                name: 'City Center Route',
-                origin: 'Downtown',
-                destination: 'City Center',
-                schedule: 'Daily 6AM-10PM',
-                status: 'active'
-            },
-            {
-                id: '2', 
-                name: 'Airport Express',
-                origin: 'Central Station',
-                destination: 'International Airport',
-                schedule: 'Every 30 mins',
-                status: 'active'
-            }
-        ];
+        let recentRoutes = [];
 
-        renderRecentRoutes(demoRoutes);
+        // Try to load from routes table
+        try {
+            const { data: routes, error } = await supabase
+                .from('routes')
+                .select('*')
+                .eq('association_id', currentAssociation.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(3);
+
+            if (!error && routes) {
+                recentRoutes = routes;
+            }
+        } catch (error) {
+            console.log('Routes table not available, using demo data');
+            // Demo data
+            recentRoutes = [
+                {
+                    id: '1',
+                    route_name: 'City Center Route',
+                    origin: 'Downtown',
+                    destination: 'City Center',
+                    schedule: 'Daily 6AM-10PM',
+                    status: 'active'
+                },
+                {
+                    id: '2', 
+                    route_name: 'Airport Express',
+                    origin: 'Central Station',
+                    destination: 'International Airport',
+                    schedule: 'Every 30 mins',
+                    status: 'active'
+                }
+            ];
+        }
+
+        renderRecentRoutes(recentRoutes);
         
     } catch (error) {
         console.error('Error loading recent routes:', error);
-        showRecentRoutesError();
+        renderRecentRoutes([]);
     }
 }
 
@@ -456,15 +550,13 @@ function renderRecentRoutes(routes) {
 
     let routesHtml = '';
     routes.forEach(route => {
-        const statusClass = route.status === 'active' ? 'status-active' : 'status-inactive';
-        
         routesHtml += `
             <div class="list-item">
                 <div class="item-icon">
                     <i class="fas fa-route"></i>
                 </div>
                 <div class="item-details">
-                    <h4>${route.name}</h4>
+                    <h4>${route.route_name}</h4>
                     <p>${route.origin} → ${route.destination}</p>
                     <p class="route-schedule">${route.schedule}</p>
                 </div>
@@ -485,16 +577,25 @@ function renderRecentRoutes(routes) {
 
 async function loadRecentAlerts() {
     try {
-        const { data: alerts, error } = await supabase
-            .from('panic_alerts')
-            .select('*')
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(5);
+        let alertCount = 0;
+        
+        try {
+            const { data: alerts, error } = await supabase
+                .from('panic_alerts')
+                .select('*')
+                .eq('association_id', currentAssociation.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(5);
 
-        if (error) throw error;
+            if (!error && alerts) {
+                alertCount = alerts.length;
+            }
+        } catch (error) {
+            console.log('Panic alerts table not available');
+        }
 
-        updateAlertBadge(alerts ? alerts.length : 0);
+        updateAlertBadge(alertCount);
         
     } catch (error) {
         console.error('Error loading recent alerts:', error);
@@ -515,16 +616,161 @@ function updateAlertBadge(count) {
     }
 }
 
+// Real-time Subscriptions
+function initializeRealtimeSubscriptions() {
+    try {
+        // Subscribe to vehicles table for real-time updates
+        realtimeSubscription = supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'vehicles'
+                },
+                (payload) => {
+                    console.log('Vehicle update received:', payload);
+                    loadDashboardStats();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'panic_alerts'
+                },
+                (payload) => {
+                    console.log('Alert update received:', payload);
+                    loadDashboardStats();
+                    loadRecentAlerts();
+                }
+            )
+            .subscribe();
+
+        console.log('Real-time subscriptions initialized');
+    } catch (error) {
+        console.error('Error initializing real-time subscriptions:', error);
+    }
+}
+
+// Map Functions
+function initializeMap() {
+    if (!map) {
+        map = L.map('map').setView([-26.2041, 28.0473], 10); // Johannesburg coordinates
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        loadVehicleMarkers();
+    }
+    return map;
+}
+
+function initializeFullScreenMap() {
+    const fullMap = L.map('full-map').setView([-26.2041, 28.0473], 10);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(fullMap);
+    
+    loadVehicleMarkers(fullMap);
+    return fullMap;
+}
+
+async function loadVehicleMarkers(targetMap = null) {
+    try {
+        const mapToUse = targetMap || map;
+        if (!mapToUse) return;
+
+        // Clear existing markers
+        if (window.vehicleMarkers) {
+            window.vehicleMarkers.forEach(marker => mapToUse.removeLayer(marker));
+        }
+        window.vehicleMarkers = [];
+
+        // Load vehicles with locations
+        const { data: vehicles, error } = await supabase
+            .from('vehicles')
+            .select('vehicle_reg, last_location, driver_name')
+            .eq('association_id', currentAssociation.id)
+            .not('last_location', 'is', null);
+
+        if (error) {
+            console.error('Error loading vehicles for map:', error);
+            return;
+        }
+
+        if (vehicles && vehicles.length > 0) {
+            vehicles.forEach(vehicle => {
+                if (vehicle.last_location) {
+                    const [lat, lng] = vehicle.last_location.split(',').map(coord => parseFloat(coord.trim()));
+                    const marker = L.marker([lat, lng]).addTo(mapToUse);
+                    
+                    marker.bindPopup(`
+                        <div class="vehicle-popup">
+                            <h4>${vehicle.vehicle_reg || 'Unknown Vehicle'}</h4>
+                            <p>Driver: ${vehicle.driver_name || 'Unknown'}</p>
+                            <p>Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
+                        </div>
+                    `);
+                    
+                    window.vehicleMarkers.push(marker);
+                }
+            });
+
+            // Fit map to show all markers
+            if (window.vehicleMarkers.length > 0) {
+                const group = new L.featureGroup(window.vehicleMarkers);
+                mapToUse.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+    } catch (error) {
+        console.error('Error loading vehicle markers:', error);
+    }
+}
+
 // Modal Management Functions
 function openProfileModal() {
     updateAssociationProfileModal(currentAssociation);
     showModal('profile-modal');
 }
 
+function openMapModal() {
+    showModal('map-modal');
+    setTimeout(() => {
+        initializeFullScreenMap();
+    }, 100);
+}
+
+function openAddRouteModal() {
+    showModal('add-route-modal');
+}
+
+function openAddMemberModal() {
+    showModal('add-member-modal');
+}
+
+function openManagePartsModal() {
+    showModal('manage-parts-modal');
+}
+
+function openAlertsModal() {
+    showModal('alerts-modal');
+    loadAlertsForModal();
+}
+
+function openWalletModal() {
+    showModal('wallet-modal');
+    loadWalletData();
+}
+
 async function saveAssociationProfile() {
     try {
         const formData = {
-            name: document.getElementById('profile-association-name')?.value || '',
+            association_name: document.getElementById('profile-association-name')?.value || '',
             email: document.getElementById('profile-association-email')?.value || '',
             phone: document.getElementById('profile-association-phone')?.value || '',
             address: document.getElementById('profile-association-address')?.value || '',
@@ -533,7 +779,6 @@ async function saveAssociationProfile() {
             admin_phone: document.getElementById('profile-admin-phone')?.value || ''
         };
 
-        // Check if we're updating an existing association or creating a new one
         if (currentAssociation.id && !currentAssociation.id.startsWith('temp-')) {
             // Update existing association
             const { error } = await supabase
@@ -559,7 +804,6 @@ async function saveAssociationProfile() {
             }
         }
 
-        // Update local data
         Object.assign(currentAssociation, formData);
         updateAssociationProfile(currentAssociation);
         
@@ -572,30 +816,94 @@ async function saveAssociationProfile() {
     }
 }
 
-// Quick Actions
-function openAddRouteModal() {
-    showModal('add-route-modal');
+async function loadAlertsForModal() {
+    try {
+        const alertsContent = document.getElementById('alerts-modal-content');
+        if (!alertsContent) return;
+
+        let alerts = [];
+
+        try {
+            const { data, error } = await supabase
+                .from('panic_alerts')
+                .select('*')
+                .eq('association_id', currentAssociation.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) alerts = data;
+        } catch (error) {
+            console.log('Panic alerts table not available');
+        }
+
+        if (alerts.length === 0) {
+            alertsContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <h3>No Active Alerts</h3>
+                    <p>All clear! No panic alerts at the moment.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let alertsHtml = '';
+        alerts.forEach(alert => {
+            const alertTime = new Date(alert.created_at).toLocaleString();
+            alertsHtml += `
+                <div class="alert-item">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-details">
+                        <h4>Panic Alert</h4>
+                        <p>Location: ${alert.lat || 'N/A'}, ${alert.lng || 'N/A'}</p>
+                        <p>Time: ${alertTime}</p>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-success btn-sm" onclick="resolveAlert('${alert.id}')">
+                            <i class="fas fa-check"></i> Resolve
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        alertsContent.innerHTML = alertsHtml;
+    } catch (error) {
+        console.error('Error loading alerts for modal:', error);
+    }
 }
 
-function openAddMemberModal() {
-    showModal('add-member-modal');
+async function resolveAlert(alertId) {
+    try {
+        const { error } = await supabase
+            .from('panic_alerts')
+            .update({ status: 'resolved' })
+            .eq('id', alertId);
+
+        if (error) throw error;
+
+        showNotification('Alert resolved successfully!', 'success');
+        loadAlertsForModal();
+        loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error resolving alert:', error);
+        showNotification('Failed to resolve alert.', 'error');
+    }
 }
 
-function openManagePartsModal() {
-    showModal('manage-parts-modal');
-}
-
-function openAlertsModal() {
-    showModal('alerts-modal');
-}
-
-function openWalletModal() {
-    showModal('wallet-modal');
-}
-
-function openMapModal() {
-    showModal('map-modal');
-    // Initialize map here if needed
+async function loadWalletData() {
+    try {
+        // This would load transaction history and update wallet balance
+        const walletBalance = document.getElementById('wallet-balance');
+        if (walletBalance) {
+            walletBalance.textContent = `R ${(currentAssociation.wallet_balance || 0).toFixed(2)}`;
+        }
+    } catch (error) {
+        console.error('Error loading wallet data:', error);
+    }
 }
 
 // Utility Functions
@@ -624,7 +932,7 @@ function closeAllModals() {
 }
 
 function setupEventListeners() {
-    // Header actions with null checks
+    // Header actions
     const profileBtn = document.getElementById('profile-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const alertsBtn = document.getElementById('alerts-btn');
@@ -653,27 +961,34 @@ function setupEventListeners() {
         item.addEventListener('click', function() {
             const target = this.getAttribute('data-target');
             
-            // Remove active class from all items
             navItems.forEach(nav => nav.classList.remove('active'));
-            // Add active class to clicked item
             this.classList.add('active');
             
             switch(target) {
-                case 'dashboard': 
-                    // Already on dashboard
-                    break;
-                case 'map': 
-                    openMapModal(); 
-                    break;
-                case 'wallet': 
-                    openWalletModal(); 
-                    break;
-                case 'profile': 
-                    openProfileModal(); 
-                    break;
+                case 'dashboard': break;
+                case 'map': openMapModal(); break;
+                case 'wallet': openWalletModal(); break;
+                case 'profile': openProfileModal(); break;
             }
         });
     });
+
+    // Map toggle
+    const mapToggle = document.getElementById('map-toggle');
+    const mapSection = document.getElementById('map-section');
+    if (mapToggle && mapSection) {
+        mapToggle.addEventListener('click', function() {
+            const isVisible = mapSection.style.display !== 'none';
+            mapSection.style.display = isVisible ? 'none' : 'block';
+            this.textContent = isVisible ? 'Show Map' : 'Hide Map';
+            
+            if (!isVisible && !map) {
+                setTimeout(() => {
+                    initializeMap();
+                }, 100);
+            }
+        });
+    }
 
     // Modal close buttons
     const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
@@ -712,6 +1027,11 @@ function setupEventListeners() {
 
 async function handleLogout() {
     try {
+        // Clean up real-time subscriptions
+        if (realtimeSubscription) {
+            await supabase.removeChannel(realtimeSubscription);
+        }
+        
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         
@@ -723,11 +1043,9 @@ async function handleLogout() {
 }
 
 function showNotification(message, type = 'info') {
-    // Remove existing notifications
     const existingNotifications = document.querySelectorAll('.notification');
     existingNotifications.forEach(notification => notification.remove());
 
-    // Create notification
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
@@ -740,7 +1058,6 @@ function showNotification(message, type = 'info') {
 
     document.body.appendChild(notification);
 
-    // Auto-remove after 5 seconds
     setTimeout(() => {
         if (notification.parentElement) {
             notification.remove();
@@ -748,34 +1065,7 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Error state functions
-function showRecentMembersError() {
-    const content = document.getElementById('recent-members-content');
-    if (content) {
-        content.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Members</h3>
-                <p>Please try refreshing the page.</p>
-            </div>
-        `;
-    }
-}
-
-function showRecentRoutesError() {
-    const content = document.getElementById('recent-routes-content');
-    if (content) {
-        content.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Routes</h3>
-                <p>Please try refreshing the page.</p>
-            </div>
-        `;
-    }
-}
-
-// Placeholder functions for member and route management
+// Placeholder functions
 function editMember(memberId) {
     showNotification(`Edit member ${memberId} - Feature coming soon`, 'info');
 }
@@ -802,3 +1092,4 @@ window.removeMember = removeMember;
 window.editRoute = editRoute;
 window.removeRoute = removeRoute;
 window.closeModal = closeModal;
+window.resolveAlert = resolveAlert;
