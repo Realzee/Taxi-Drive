@@ -63,6 +63,14 @@ function initializeApplication() {
         });
     });
 
+// Add event listeners for close buttons
+document.querySelectorAll('.modal-close-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const modalId = btn.getAttribute('data-modal') || btn.closest('.modal-overlay').id;
+        closeModal(modalId);
+    });
+});
+
     // Login form submission
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -237,6 +245,16 @@ function initializeApplication() {
     console.log('TaxiDrive application initialized successfully');
 }
 
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+
+
 // Utility to close all modals
 function closeAllModals() {
     const modals = [
@@ -255,9 +273,11 @@ function closeAllModals() {
 
 // Utility to show a modal
 function showModal(modalId) {
-    closeAllModals();
     const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 // Utility to show error message
