@@ -48,243 +48,205 @@
     </div>
 
     <!-- Sign Up Role Selection Modal -->
-    <div id="signup-role-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Select Role</h2>
-            <p>Please choose the type of account you want to create:</p>
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-                <button class="btn btn-primary signup-role-btn" data-role="association">Association</button>
-                <button class="btn btn-primary signup-role-btn" data-role="driver">Driver</button>
-                <button class="btn btn-primary signup-role-btn" data-role="owner">Owner</button>
-                <button class="btn btn-primary signup-role-btn" data-role="passenger">Passenger</button>
+<div id="signup-role-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>Select Role</h2>
+        <p>Please choose the type of account you want to create:</p>
+        <div class="form-group">
+            <button class="btn btn-primary signup-role-btn" data-role="association">Association</button>
+            <button class="btn btn-primary signup-role-btn" data-role="driver">Driver</button>
+            <button class="btn btn-primary signup-role-btn" data-role="owner">Owner</button>
+            <button class="btn btn-primary signup-role-btn" data-role="passenger">Passenger</button>
+        </div>
+        <button id="signup-role-cancel" class="modal-close-btn">Cancel</button>
+    </div>
+</div>
+
+<!-- Confirmation / Error Modal -->
+<div id="signup-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-title">Success!</h2>
+        <p id="modal-message">Association created successfully</p>
+        <p id="modal-login-details"></p>
+        <button id="modal-close-btn" class="modal-close-btn">Close</button>
+    </div>
+</div>
+
+<!-- Passenger Signup Modal -->
+<div id="signup-passenger-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Passenger Signup</h3>
+        <form id="signup-passenger">
+            <div class="form-group">
+                <label for="passenger-email">Email</label>
+                <input type="email" id="passenger-email" class="form-input" required placeholder="Enter your email">
             </div>
-            <button id="signup-role-cancel" class="modal-close-btn">Cancel</button>
-        </div>
+            <div class="form-group">
+                <label for="passenger-password">Password</label>
+                <input type="password" id="passenger-password" class="form-input" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn btn-primary">Register Passenger</button>
+            <div id="signup-passenger-error-message" class="error"></div>
+        </form>
+        <button class="modal-close-btn" data-modal="signup-passenger-modal">Close</button>
     </div>
+</div>
 
-    <!-- Confirmation / Error Modal -->
-    <div id="signup-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="modal-title">Success!</h2>
-            <p id="modal-message">Association created successfully</p>
-            <p id="modal-login-details"></p>
-            <button id="modal-close-btn" class="modal-close-btn">Close</button>
-        </div>
+<!-- Driver Signup Modal -->
+<div id="signup-driver-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Driver Signup</h3>
+        <form id="signup-driver">
+            <div class="form-group">
+                <label for="driver-email">Email</label>
+                <input type="email" id="driver-email" class="form-input" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="driver-password">Password</label>
+                <input type="password" id="driver-password" class="form-input" required placeholder="Enter your password">
+            </div>
+            <div class="form-group">
+                <label for="driver-license-number">License Number</label>
+                <input type="text" id="driver-license-number" class="form-input" required placeholder="Enter your license number">
+            </div>
+            <button type="submit" class="btn btn-primary">Register Driver</button>
+            <div id="signup-driver-error-message" class="error"></div>
+        </form>
+        <button class="modal-close-btn" data-modal="signup-driver-modal">Close</button>
     </div>
+</div>
 
-    <!-- Passenger Signup Modal -->
-    <div id="signup-passenger-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Passenger Signup</h3>
-            <form id="signup-passenger">
-                <div class="form-group">
-                    <label for="passenger-email">Email</label>
-                    <input type="email" id="passenger-email" class="form-input" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="passenger-password">Password</label>
-                    <input type="password" id="passenger-password" class="form-input" required placeholder="Enter your password">
-                </div>
-                <button type="submit" class="btn btn-primary">Register Passenger</button>
-                <div id="signup-passenger-error-message" class="error"></div>
-            </form>
-            <button class="modal-close-btn" data-modal="signup-passenger-modal">Close</button>
-        </div>
+<!-- Owner Signup Modal -->
+<div id="signup-owner-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Owner Signup</h3>
+        <form id="signup-owner">
+            <div class="form-group">
+                <label for="owner-email">Email</label>
+                <input type="email" id="owner-email" class="form-input" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="owner-password">Password</label>
+                <input type="password" id="owner-password" class="form-input" required placeholder="Enter your password">
+            </div>
+            <div class="form-group">
+                <label for="owner-company-name">Company Name</label>
+                <input type="text" id="owner-company-name" class="form-input" required placeholder="Enter company name">
+            </div>
+            <button type="submit" class="btn btn-primary">Register Owner</button>
+            <div id="signup-owner-error-message" class="error"></div>
+        </form>
+        <button class="modal-close-btn" data-modal="signup-owner-modal">Close</button>
     </div>
+</div>
 
-    <!-- Driver Signup Modal -->
-    <div id="signup-driver-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Driver Signup</h3>
-            <form id="signup-driver">
-                <div class="form-group">
-                    <label for="driver-email">Email</label>
-                    <input type="email" id="driver-email" class="form-input" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="driver-password">Password</label>
-                    <input type="password" id="driver-password" class="form-input" required placeholder="Enter your password">
-                </div>
-                <div class="form-group">
-                    <label for="driver-license-number">License Number</label>
-                    <input type="text" id="driver-license-number" class="form-input" required placeholder="Enter your license number">
-                </div>
-                <button type="submit" class="btn btn-primary">Register Driver</button>
-                <div id="signup-driver-error-message" class="error"></div>
-            </form>
-            <button class="modal-close-btn" data-modal="signup-driver-modal">Close</button>
-        </div>
-    </div>
-
-    <!-- Owner Signup Modal -->
-    <div id="signup-owner-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Owner Signup</h3>
-            <form id="signup-owner">
-                <div class="form-group">
-                    <label for="owner-email">Email</label>
-                    <input type="email" id="owner-email" class="form-input" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="owner-password">Password</label>
-                    <input type="password" id="owner-password" class="form-input" required placeholder="Enter your password">
-                </div>
-                <div class="form-group">
-                    <label for="owner-company-name">Company Name</label>
-                    <input type="text" id="owner-company-name" class="form-input" required placeholder="Enter company name">
-                </div>
-                <button type="submit" class="btn btn-primary">Register Owner</button>
-                <div id="signup-owner-error-message" class="error"></div>
-            </form>
-            <button class="modal-close-btn" data-modal="signup-owner-modal">Close</button>
-        </div>
-    </div>
-
-    <!-- Association Signup Modal -->
-    <div id="signup-association-modal" class="modal-overlay">
-        <div class="modal-content">
-            <form id="signup-association">
-                <!-- Association Information Section -->
-                <div style="margin-bottom: 30px;">
-                    <h4 style="color: var(--dark-blue); margin-bottom: 15px; border-bottom: 2px solid var(--light-blue); padding-bottom: 5px;">
-                        <i class="fas fa-info-circle"></i> Association Information
-                    </h4>
-                    <div class="form-group">
-                        <label for="association-name">Association Name *</label>
-                        <input type="text" id="association-name" name="name" class="form-input" required placeholder="Enter association name">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">This will be displayed throughout the system</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="association-email">Email Address *</label>
-                        <input type="email" id="association-email" name="email" class="form-input" required placeholder="Enter association email">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Used for notifications and communications</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="association-phone">Phone Number *</label>
-                        <input type="tel" id="association-phone" name="phone" class="form-input" required placeholder="Enter phone number">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Primary contact number</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="association-registration-number">Registration Number</label>
-                        <input type="text" id="association-registration-number" name="registrationNumber" class="form-input" placeholder="Enter registration number">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Official registration number (optional)</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="association-address">Physical Address *</label>
-                        <textarea id="association-address" name="address" class="form-input" required rows="3" placeholder="Enter complete physical address"></textarea>
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Street address, city, province, postal code</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="association-description">Description</label>
-                        <textarea id="association-description" name="description" class="form-input" rows="3" placeholder="Brief description of your association"></textarea>
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Tell us about your association's mission and services</small>
-                    </div>
-                </div>
-                <!-- Logo Upload Section -->
-                <div style="margin-bottom: 30px;">
-                    <h4 style="color: var(--dark-blue); margin-bottom: 15px; border-bottom: 2px solid var(--light-blue); padding-bottom: 5px;">
-                        <i class="fas fa-image"></i> Association Logo
-                    </h4>
-                    <div class="form-group">
-                        <label for="association-logo">Upload Logo</label>
-                        <input type="file" id="association-logo" name="logo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.svg">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Accepted formats: JPG, PNG, GIF, SVG (Max 2MB)</small>
-                    </div>
-                    <div id="logo-preview-container" style="margin-top: 15px; display: none; text-align: center;">
-                        <div style="background: var(--glass-bg); backdrop-filter: var(--glass-backdrop); -webkit-backdrop-filter: var(--glass-backdrop); border: 2px solid var(--glass-border); border-radius: 16px; padding: 20px; display: inline-block; box-shadow: var(--glass-shadow);">
-                            <img id="logo-preview-img" src="" alt="Logo Preview" style="max-width: 150px; max-height: 150px; border-radius: 12px; border: 2px solid var(--glass-border);">
-                            <div style="margin-top: 10px;">
-                                <button type="button" id="remove-logo-btn" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-trash"></i> Remove
-                                </button>
-                                <span id="logo-info" style="color: rgba(0, 0, 0, 0.8); font-size: 12px;"></span>
-                            </div>
+<!-- Association Signup Modal -->
+<div id="signup-association-modal" class="modal-overlay">
+    <div class="modal-content">
+        <form id="signup-association">
+            <!-- Association Information Section -->
+            <div class="form-group">
+                <h4><i class="fas fa-info-circle"></i> Association Information</h4>
+                <label for="association-name">Association Name *</label>
+                <input type="text" id="association-name" name="name" class="form-input" required placeholder="Enter association name">
+                <small>This will be displayed throughout the system</small>
+                <label for="association-email">Email Address *</label>
+                <input type="email" id="association-email" name="email" class="form-input" required placeholder="Enter association email">
+                <small>Used for notifications and communications</small>
+                <label for="association-phone">Phone Number *</label>
+                <input type="tel" id="association-phone" name="phone" class="form-input" required placeholder="Enter phone number">
+                <small>Primary contact number</small>
+                <label for="association-registration-number">Registration Number</label>
+                <input type="text" id="association-registration-number" name="registrationNumber" class="form-input" placeholder="Enter registration number">
+                <small>Official registration number (optional)</small>
+                <label for="association-address">Physical Address *</label>
+                <textarea id="association-address" name="address" class="form-input" required rows="3" placeholder="Enter complete physical address"></textarea>
+                <small>Street address, city, province, postal code</small>
+                <label for="association-description">Description</label>
+                <textarea id="association-description" name="description" class="form-input" rows="3" placeholder="Brief description of your association"></textarea>
+                <small>Tell us about your association's mission and services</small>
+            </div>
+            <!-- Logo Upload Section -->
+            <div class="form-group">
+                <h4><i class="fas fa-image"></i> Association Logo</h4>
+                <label for="association-logo">Upload Logo</label>
+                <input type="file" id="association-logo" name="logo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.svg">
+                <small>Accepted formats: JPG, PNG, GIF, SVG (Max 2MB)</small>
+                <div id="logo-preview-container" style="display: none; text-align: center;">
+                    <div class="logo-preview">
+                        <img id="logo-preview-img" src="" alt="Logo Preview" style="max-width: 150px; max-height: 150px; border-radius: 12px;">
+                        <div>
+                            <button type="button" id="remove-logo-btn" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                            <span id="logo-info"></span>
                         </div>
                     </div>
                 </div>
-                <!-- Login Information Section -->
-                <div style="margin-bottom: 30px;">
-                    <h4 style="color: var(--dark-blue); margin-bottom: 15px; border-bottom: 2px solid var(--light-blue); padding-bottom: 5px;">
-                        <i class="fas fa-user-shield"></i> Login Information
-                    </h4>
-                    <div class="form-group">
-                        <label for="admin-email">Administrator Email *</label>
-                        <input type="email" id="admin-email" name="adminEmail" class="form-input" required placeholder="Enter administrator email">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">This will be the login email for the administrator</small>
+            </div>
+            <!-- Login Information Section -->
+            <div class="form-group">
+                <h4><i class="fas fa-user-shield"></i> Login Information</h4>
+                <label for="admin-email">Administrator Email *</label>
+                <input type="email" id="admin-email" name="adminEmail" class="form-input" required placeholder="Enter administrator email">
+                <small>This will be the login email for the administrator</small>
+                <label for="admin-password">Administrator Password *</label>
+                <input type="password" id="admin-password" name="adminPassword" class="form-input" required placeholder="Enter administrator password">
+                <small>Password must be at least 8 characters long</small>
+            </div>
+            <!-- Administrator Information Section -->
+            <div class="form-group">
+                <h4><i class="fas fa-user"></i> Administrator Information</h4>
+                <label for="admin-name">Administrator Name *</label>
+                <input type="text" id="admin-name" name="adminName" class="form-input" required placeholder="Enter administrator name">
+                <small>Full name of the association administrator</small>
+                <label for="admin-phone">Administrator Phone *</label>
+                <input type="tel" id="admin-phone" name="adminPhone" class="form-input" required placeholder="Enter administrator phone">
+                <small>Contact number for the administrator</small>
+                <label for="admin-id-number">Administrator ID Number *</label>
+                <input type="text" id="admin-id-number" name="adminIdNumber" class="form-input" required placeholder="Enter administrator ID number">
+                <small>Official ID number for verification</small>
+            </div>
+            <!-- Terms and Conditions -->
+            <div class="form-group">
+                <h4><i class="fas fa-clipboard-list"></i> Terms and Conditions</h4>
+                <div class="terms-container">
+                    <p>By registering this association, you agree to:</p>
+                    <ul>
+                        <li>Provide accurate and truthful information</li>
+                        <li>Comply with all applicable taxi industry regulations</li>
+                        <li>Maintain proper licensing and insurance requirements</li>
+                        <li>Ensure all member owners are properly registered and licensed</li>
+                        <li>Use the system responsibly and in accordance with the terms of service</li>
+                        <li>Protect user data and maintain confidentiality</li>
+                    </ul>
+                    <p>The administrator will receive login credentials and be responsible for managing the association's account and member owners.</p>
+                    <label>
+                        <input type="checkbox" id="terms-accepted" name="termsAccepted" required>
+                        I have read and agree to the terms and conditions. I confirm that all information provided is accurate and I have the authority to register this association.
+                    </label>
+                </div>
+            </div>
+            <!-- Registration Progress -->
+            <div id="signup-progress" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="signup-progress-bar"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="admin-password">Administrator Password *</label>
-                        <input type="password" id="admin-password" name="adminPassword" class="form-input" required placeholder="Enter administrator password">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Password must be at least 8 characters long</small>
+                    <div class="progress-text">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span id="signup-progress-text">Preparing registration...</span>
                     </div>
                 </div>
-                <!-- Administrator Information Section -->
-                <div style="margin-bottom: 30px;">
-                    <h4 style="color: var(--dark-blue); margin-bottom: 15px; border-bottom: 2px solid var(--light-blue); padding-bottom: 5px;">
-                        <i class="fas fa-user"></i> Administrator Information
-                    </h4>
-                    <div class="form-group">
-                        <label for="admin-name">Administrator Name *</label>
-                        <input type="text" id="admin-name" name="adminName" class="form-input" required placeholder="Enter administrator name">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Full name of the association administrator</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-phone">Administrator Phone *</label>
-                        <input type="tel" id="admin-phone" name="adminPhone" class="form-input" required placeholder="Enter administrator phone">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Contact number for the administrator</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-id-number">Administrator ID Number *</label>
-                        <input type="text" id="admin-id-number" name="adminIdNumber" class="form-input" required placeholder="Enter administrator ID number">
-                        <small style="color: rgba(0, 0, 0, 0.7); font-size: 12px; margin-top: 5px; display: block;">Official ID number for verification</small>
-                    </div>
-                </div>
-                <!-- Terms and Conditions -->
-                <div style="margin-bottom: 25px;">
-                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                        <h5 style="color: var(--dark-blue); margin-bottom: 15px;">
-                            <i class="fas fa-clipboard-list"></i> Terms and Conditions
-                        </h5>
-                        <div style="max-height: 150px; overflow-y: auto; color: rgba(0, 0, 0, 0.9); font-size: 13px; line-height: 1.5; margin-bottom: 15px; padding-right: 10px;">
-                            <p>By registering this association, you agree to:</p>
-                            <ul style="margin: 10px 0; padding-left: 20px;">
-                                <li>Provide accurate and truthful information</li>
-                                <li>Comply with all applicable taxi industry regulations</li>
-                                <li>Maintain proper licensing and insurance requirements</li>
-                                <li>Ensure all member owners are properly registered and licensed</li>
-                                <li>Use the system responsibly and in accordance with the terms of service</li>
-                                <li>Protect user data and maintain confidentiality</li>
-                            </ul>
-                            <p>The administrator will receive login credentials and be responsible for managing the association's account and member owners.</p>
-                        </div>
-                        <label style="display: flex; align-items: flex-start; cursor: pointer; color: var(--dark-blue);">
-                            <input type="checkbox" id="terms-accepted" name="termsAccepted" required style="margin-right: 12px; margin-top: 3px; transform: scale(1.2);">
-                            <span style="font-size: 14px; line-height: 1.4;">
-                                I have read and agree to the terms and conditions. I confirm that all information provided is accurate and I have the authority to register this association.
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <!-- Registration Progress -->
-                <div id="signup-progress" style="display: none; margin-bottom: 20px;">
-                    <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; text-align: center;">
-                        <div style="background: rgba(255, 255, 255, 0.1); border-radius: 8px; height: 8px; margin-bottom: 15px; overflow: hidden;">
-                            <div id="signup-progress-bar" style="background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%); height: 100%; border-radius: 8px; width: 0%; transition: width 0.3s ease;"></div>
-                        </div>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--dark-blue);">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 16px;"></i>
-                            <span id="signup-progress-text" style="font-size: 14px;">Preparing registration...</span>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary" id="submit-signup">
-                    <i class="fas fa-building"></i> Register Association
-                </button>
-                <div id="signup-association-error-message" class="error"></div>
-            </form>
-            <button class="modal-close-btn" data-modal="signup-association-modal">Close</button>
-        </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submit-signup">
+                <i class="fas fa-building"></i> Register Association
+            </button>
+            <div id="signup-association-error-message" class="error"></div>
+        </form>
+        <button class="modal-close-btn" data-modal="signup-association-modal">Close</button>
     </div>
+</div>
 
     <!-- External Supabase Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
