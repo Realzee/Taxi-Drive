@@ -30,6 +30,22 @@ function initializeApp() {
 
     // Initialize all application functionality
     initializeFunctions(supabase);
+    
+    // Make all functions globally available
+    window.login = login;
+    window.signupSimple = signupSimple;
+    window.signupAssociation = signupAssociation;
+    window.showError = showError;
+    window.showSuccess = showSuccess;
+    window.closeAllModals = closeAllModals;
+    window.showModal = showModal;
+
+    console.log('✅ All functions are now globally available');
+    console.log('Available functions:', {
+        login: typeof login,
+        signupSimple: typeof signupSimple, 
+        signupAssociation: typeof signupAssociation
+    });
 }
 
 function createFallbackClient() {
@@ -110,36 +126,119 @@ function initializeFunctions(supabase) {
     }
 
     // Authentication: Login
-    async function login(email, password, role) {
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                showError('login-error-message', error.message || 'Login failed');
-                return null;
+    // Enhanced Login function with detailed debugging
+async function login(email, password, role) {
+    const errorElementId = 'login-error-message';
+    
+    console.log('🔐 LOGIN ATTEMPT STARTED ==========');
+    console.log('📧 Email:', email);
+    console.log('🔑 Password length:', password ? password.length : 0);
+    console.log('👤 Requested role:', role);
+    console.log('⏰ Time:', new Date().toLocaleString());
+
+    try {
+        // Step 1: Supabase Authentication
+        console.log('🔄 Step 1: Authenticating with Supabase Auth...');
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+            email: email, 
+            password: password 
+        });
+
+        if (authError) {
+            console.error('❌ Auth failed:', authError);
+            console.log('🔍 Auth error details:', {
+                message: authError.message,
+                status: authError.status,
+                name: authError.name
+            });
+            showError(errorElementId, authError.message || 'Authentication failed');
+            return null;
+        }
+
+        console.log('✅ Auth successful!');
+        console.log('👤 User ID:', authData.user.id);
+        console.log('📧 User email:', authData.user.email);
+
+        // Step 2: Verify user exists in users table
+        console.log('🔄 Step 2: Checking user role in database...');
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, email, role, association_approved, status, name, created_at')
+            .eq('email', email)
+            .single();
+
+        if (userError) {
+            console.error('❌ Database query failed:', userError);
+            console.log('🔍 User error details:', userError);
+            
+            // Check if user doesn't exist in users table
+            if (userError.code === 'PGRST116') { // No rows returned
+                console.log('⚠️ User exists in auth but not in users table!');
+                showError(errorElementId, 'User account not properly set up. Please contact support.');
+            } else {
+                showError(errorElementId, 'Database error: ' + userError.message);
             }
+            
+            // Sign out since we can't verify the role
+            await supabase.auth.signOut();
+            return null;
+        }
 
-            // Verify role
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('role')
-                .eq('email', email)
-                .single();
+        console.log('✅ User found in database:', userData);
 
-            if (userError || userData?.role !== role) {
-                showError('login-error-message', userError?.message || 'Invalid role or user not found');
+        // Step 3: Verify role matches
+        console.log('🔄 Step 3: Verifying role...');
+        console.log('📋 User role in DB:', userData.role);
+        console.log('🎯 Expected role:', role);
+
+        if (userData.role !== role) {
+            console.error('❌ Role mismatch!');
+            showError(errorElementId, `Invalid role. Your account is registered as ${userData.role}, but you're trying to login as ${role}`);
+            await supabase.auth.signOut();
+            return null;
+        }
+        console.log('✅ Role verified successfully!');
+
+        // Step 4: Additional checks for associations
+        if (role === 'association') {
+            console.log('🔄 Step 4: Additional association checks...');
+            console.log('✅ Association approved:', userData.association_approved);
+            console.log('✅ Account status:', userData.status);
+
+            if (!userData.association_approved) {
+                showError(errorElementId, 'Association account is pending approval. Please contact administrator.');
                 await supabase.auth.signOut();
                 return null;
             }
 
-            console.log('Logged in as:', role);
-            return data.user;
-        } catch (err) {
-            showError('login-error-message', err.message || 'An unexpected error occurred during login');
-            console.error('Login error:', err);
-            return null;
+            if (userData.status !== 'active') {
+                showError(errorElementId, `Association account is ${userData.status}. Please contact administrator.`);
+                await supabase.auth.signOut();
+                return null;
+            }
+            console.log('✅ Association checks passed!');
         }
-    }
 
+        // Step 5: Login successful
+        console.log('🎉 LOGIN SUCCESSFUL!');
+        console.log('👤 Logged in as:', userData.name || userData.email);
+        console.log('🔑 Role:', userData.role);
+        console.log('🆔 User ID:', userData.id);
+        console.log('================================');
+
+        return authData.user;
+
+    } catch (err) {
+        console.error('💥 UNEXPECTED LOGIN ERROR:', err);
+        console.error('🔍 Error details:', {
+            name: err.name,
+            message: err.message,
+            stack: err.stack
+        });
+        showError(errorElementId, 'An unexpected error occurred: ' + err.message);
+        return null;
+    }
+}
     // Signup: Generic for simple roles (passenger, driver, owner)
     async function signupSimple(role, formData) {
         const { email, password, license_number, company_name } = formData;
@@ -184,146 +283,149 @@ function initializeFunctions(supabase) {
         }
     }
 
-    // Signup: For Association (complex, with logo upload) - WITH DEBUGGING
-async function signupAssociation(formData) {
-    const {
-        name, email, phone, registrationNumber, address, description,
-        logo: logoFile, adminEmail, adminPassword, adminName, adminPhone, adminIdNumber
-    } = formData;
-    const errorElementId = 'signup-association-error-message';
+        // Signup: For Association (complex, with logo upload) - WITH DEBUGGING
+    async function signupAssociation(formData) {
+        const {
+            name, email, phone, registrationNumber, address, description,
+            logo: logoFile, adminEmail, adminPassword, adminName, adminPhone, adminIdNumber
+        } = formData;
+        const errorElementId = 'signup-association-error-message';
 
-    console.log('🔍 Starting association registration...');
-    console.log('Form data received:', {
-        name, email, phone, registrationNumber, address, description,
-        logoFile: logoFile ? `File: ${logoFile.name} (${logoFile.size} bytes)` : 'No file',
-        adminEmail, adminPassword: '***', adminName, adminPhone, adminIdNumber
-    });
-
-    try {
-        // Validate password length
-        if (adminPassword.length < 8) {
-            showError(errorElementId, 'Administrator password must be at least 8 characters long');
-            return null;
-        }
-
-        console.log('📝 Step 1: Creating admin auth account...');
-
-        // Sign up admin
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: adminEmail,
-            password: adminPassword
+        console.log('🔍 Starting association registration...');
+        console.log('Form data received:', {
+            name, email, phone, registrationNumber, address, description,
+            logoFile: logoFile ? `File: ${logoFile.name} (${logoFile.size} bytes)` : 'No file',
+            adminEmail, adminPassword: '***', adminName, adminPhone, adminIdNumber
         });
 
-        if (authError) {
-            console.error('❌ Auth signup error:', authError);
-            showError(errorElementId, authError.message || 'Admin registration failed');
-            return null;
-        }
-
-        console.log('✅ Admin auth account created:', authData.user.id);
-
-        const adminId = authData.user.id;
-
-        // Insert admin as user
-        console.log('📝 Step 2: Creating admin user record...');
-        const { error: userError } = await supabase.from('users').insert({
-            id: adminId,
-            email: adminEmail,
-            name: adminName,
-            phone: adminPhone,
-            role: 'association',
-            association_approved: true, // Auto-approve association admin
-            status: 'active',
-            created_at: new Date().toISOString()
-        });
-
-        if (userError) {
-            console.error('❌ User record creation error:', userError);
-            showError(errorElementId, userError.message || 'Failed to save admin user data');
-            
-            // Clean up: delete the auth account if user record fails
-            await supabase.auth.admin.deleteUser(adminId);
-            return null;
-        }
-
-        console.log('✅ Admin user record created');
-
-        // Upload logo if provided
-        let logoUrl = null;
-        if (logoFile) {
-            console.log('📝 Step 3: Uploading logo...');
-            try {
-                const fileName = `${adminId}/${Date.now()}_${logoFile.name}`;
-                const { data: storageData, error: storageError } = await supabase.storage
-                    .from('logos')
-                    .upload(fileName, logoFile, { 
-                        cacheControl: '3600', 
-                        upsert: false 
-                    });
-
-                if (storageError) {
-                    console.error('❌ Logo upload error:', storageError);
-                    // Continue without logo - don't fail the entire registration
-                } else {
-                    const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
-                    logoUrl = publicUrlData.publicUrl;
-                    console.log('✅ Logo uploaded:', logoUrl);
-                }
-            } catch (uploadError) {
-                console.error('❌ Logo upload failed:', uploadError);
-                // Continue without logo
+        try {
+            // Validate password length
+            if (adminPassword.length < 8) {
+                showError(errorElementId, 'Administrator password must be at least 8 characters long');
+                return null;
             }
-        }
 
-        // Insert association data
-        console.log('📝 Step 4: Creating association record...');
-        const associationData = {
-            name: name,
-            email: email,
-            phone: phone,
-            address: address,
-            admin_id: adminId,
-            admin_name: adminName,
-            admin_phone: adminPhone,
-            admin_id_number: adminIdNumber,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        };
+            console.log('📝 Step 1: Creating admin auth account...');
 
-        // Add optional fields if they have values
-        if (registrationNumber) associationData.registration_number = registrationNumber;
-        if (description) associationData.description = description;
-        if (logoUrl) associationData.logo_url = logoUrl;
+            // Sign up admin
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: adminEmail,
+                password: adminPassword
+            });
 
-        console.log('Association data to insert:', associationData);
+            if (authError) {
+                console.error('❌ Auth signup error:', authError);
+                showError(errorElementId, authError.message || 'Admin registration failed');
+                return null;
+            }
 
-        const { data: associationResult, error: assocError } = await supabase
-            .from('associations')
-            .insert([associationData])
-            .select(); // Add .select() to get the inserted data back
+            console.log('✅ Admin auth account created:', authData.user.id);
 
-        if (assocError) {
-            console.error('❌ Association creation error:', assocError);
-            showError(errorElementId, assocError.message || 'Failed to save association data');
-            
-            // Clean up: delete user record and auth account
-            await supabase.from('users').delete().eq('id', adminId);
-            await supabase.auth.admin.deleteUser(adminId);
+            const adminId = authData.user.id;
+
+            // Insert admin as user
+            console.log('📝 Step 2: Creating admin user record...');
+            const { error: userError } = await supabase.from('users').insert({
+                id: adminId,
+                email: adminEmail,
+                name: adminName,
+                phone: adminPhone,
+                role: 'association',
+                association_approved: true, // Auto-approve association admin
+                status: 'active',
+                created_at: new Date().toISOString()
+            });
+
+            if (userError) {
+                console.error('❌ User record creation error:', userError);
+                showError(errorElementId, userError.message || 'Failed to save admin user data');
+                
+                // Clean up: delete the auth account if user record fails
+                await supabase.auth.admin.deleteUser(adminId);
+                return null;
+            }
+
+            console.log('✅ Admin user record created');
+
+            // Upload logo if provided
+            let logoUrl = null;
+            if (logoFile) {
+                console.log('📝 Step 3: Uploading logo...');
+                try {
+                    const fileName = `${adminId}/${Date.now()}_${logoFile.name}`;
+                    const { data: storageData, error: storageError } = await supabase.storage
+                        .from('logos')
+                        .upload(fileName, logoFile, { 
+                            cacheControl: '3600', 
+                            upsert: false 
+                        });
+
+                    if (storageError) {
+                        console.error('❌ Logo upload error:', storageError);
+                        // Continue without logo - don't fail the entire registration
+                    } else {
+                        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
+                        logoUrl = publicUrlData.publicUrl;
+                        console.log('✅ Logo uploaded:', logoUrl);
+                    }
+                } catch (uploadError) {
+                    console.error('❌ Logo upload failed:', uploadError);
+                    // Continue without logo
+                }
+            }
+
+            // Insert association data
+            console.log('📝 Step 4: Creating association record...');
+            const associationData = {
+                name: name,
+                email: email,
+                phone: phone,
+                address: address,
+                admin_id: adminId,
+                admin_name: adminName,
+                admin_phone: adminPhone,
+                admin_id_number: adminIdNumber,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // Add optional fields if they have values
+            if (registrationNumber) associationData.registration_number = registrationNumber;
+            if (description) associationData.description = description;
+            if (logoUrl) associationData.logo_url = logoUrl;
+
+            console.log('Association data to insert:', associationData);
+
+            const { data: associationResult, error: assocError } = await supabase
+                .from('associations')
+                .insert([associationData])
+                .select(); // Add .select() to get the inserted data back
+
+            if (assocError) {
+                console.error('❌ Association creation error:', assocError);
+                showError(errorElementId, assocError.message || 'Failed to save association data');
+                
+                // Clean up: delete user record and auth account
+                await supabase.from('users').delete().eq('id', adminId);
+                await supabase.auth.admin.deleteUser(adminId);
+                return null;
+            }
+
+            console.log('✅ Association created successfully:', associationResult);
+
+            showSuccess('Association created successfully', `Login with: ${adminEmail}`);
+            console.log('🎉 Association registration completed successfully!');
+            return authData.user;
+
+        } catch (err) {
+            console.error('❌ Unexpected error in signupAssociation:', err);
+            showError(errorElementId, err.message || 'An unexpected error occurred during association registration');
             return null;
         }
-
-        console.log('✅ Association created successfully:', associationResult);
-
-        showSuccess('Association created successfully', `Login with: ${adminEmail}`);
-        console.log('🎉 Association registration completed successfully!');
-        return authData.user;
-
-    } catch (err) {
-        console.error('❌ Unexpected error in signupAssociation:', err);
-        showError(errorElementId, err.message || 'An unexpected error occurred during association registration');
-        return null;
     }
-}
+
+    // Make signupAssociation globally available
+    window.signupAssociation = signupAssociation;
 
     // Set up event listeners
     setupEventListeners();
