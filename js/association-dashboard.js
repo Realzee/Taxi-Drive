@@ -118,6 +118,8 @@ async function loadAssociationData() {
             .eq('admin_id', currentUser.id)
             .single();
 
+        console.log('Association query result:', { data: data1, error: error1 });
+
         if (!error1 && data1) {
             associationData = data1;
         } else {
@@ -229,6 +231,26 @@ function updateAssociationLogo(logoUrl) {
     }
 }
 
+// FIXED: Update association profile modal with null checks
+function updateAssociationProfileModal(associationData) {
+    // Only update if the modal elements exist
+    const profileAssociationName = document.getElementById('profile-association-name');
+    const profileAssociationEmail = document.getElementById('profile-association-email');
+    const profileAssociationPhone = document.getElementById('profile-association-phone');
+    const profileAssociationAddress = document.getElementById('profile-association-address');
+    const profileAssociationDescription = document.getElementById('profile-association-description');
+    const profileAdminName = document.getElementById('profile-admin-name');
+    const profileAdminPhone = document.getElementById('profile-admin-phone');
+
+    if (profileAssociationName) profileAssociationName.value = associationData.name || '';
+    if (profileAssociationEmail) profileAssociationEmail.value = associationData.email || '';
+    if (profileAssociationPhone) profileAssociationPhone.value = associationData.phone || '';
+    if (profileAssociationAddress) profileAssociationAddress.value = associationData.address || '';
+    if (profileAssociationDescription) profileAssociationDescription.value = associationData.description || '';
+    if (profileAdminName) profileAdminName.value = associationData.admin_name || '';
+    if (profileAdminPhone) profileAdminPhone.value = associationData.admin_phone || '';
+}
+
 // NEW: Dashboard Data Loading Functions
 async function loadDashboardData() {
     try {
@@ -289,7 +311,7 @@ async function loadDashboardStats() {
 }
 
 function updateDashboardStats(stats) {
-    // Update stat cards
+    // Update stat cards with null checks
     const statElements = {
         'stat-vehicles': stats.registeredVehicles,
         'stat-members': stats.registeredMembers,
@@ -499,34 +521,43 @@ function openProfileModal() {
     showModal('profile-modal');
 }
 
-function updateAssociationProfileModal(associationData) {
-    document.getElementById('profile-association-name').value = associationData.name || '';
-    document.getElementById('profile-association-email').value = associationData.email || '';
-    document.getElementById('profile-association-phone').value = associationData.phone || '';
-    document.getElementById('profile-association-address').value = associationData.address || '';
-    document.getElementById('profile-association-description').value = associationData.description || '';
-    document.getElementById('profile-admin-name').value = associationData.admin_name || '';
-    document.getElementById('profile-admin-phone').value = associationData.admin_phone || '';
-}
-
 async function saveAssociationProfile() {
     try {
         const formData = {
-            name: document.getElementById('profile-association-name').value,
-            email: document.getElementById('profile-association-email').value,
-            phone: document.getElementById('profile-association-phone').value,
-            address: document.getElementById('profile-association-address').value,
-            description: document.getElementById('profile-association-description').value,
-            admin_name: document.getElementById('profile-admin-name').value,
-            admin_phone: document.getElementById('profile-admin-phone').value
+            name: document.getElementById('profile-association-name')?.value || '',
+            email: document.getElementById('profile-association-email')?.value || '',
+            phone: document.getElementById('profile-association-phone')?.value || '',
+            address: document.getElementById('profile-association-address')?.value || '',
+            description: document.getElementById('profile-association-description')?.value || '',
+            admin_name: document.getElementById('profile-admin-name')?.value || '',
+            admin_phone: document.getElementById('profile-admin-phone')?.value || ''
         };
 
-        const { error } = await supabase
-            .from('associations')
-            .update(formData)
-            .eq('admin_id', currentUser.id);
+        // Check if we're updating an existing association or creating a new one
+        if (currentAssociation.id && !currentAssociation.id.startsWith('temp-')) {
+            // Update existing association
+            const { error } = await supabase
+                .from('associations')
+                .update(formData)
+                .eq('admin_id', currentUser.id);
 
-        if (error) throw error;
+            if (error) throw error;
+        } else {
+            // Create new association
+            formData.admin_id = currentUser.id;
+            formData.created_at = new Date().toISOString();
+            
+            const { data, error } = await supabase
+                .from('associations')
+                .insert([formData])
+                .select();
+
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                currentAssociation = data[0];
+            }
+        }
 
         // Update local data
         Object.assign(currentAssociation, formData);
@@ -593,7 +624,7 @@ function closeAllModals() {
 }
 
 function setupEventListeners() {
-    // Header actions
+    // Header actions with null checks
     const profileBtn = document.getElementById('profile-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const alertsBtn = document.getElementById('alerts-btn');
