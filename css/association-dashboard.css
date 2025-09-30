@@ -510,15 +510,16 @@ body.association-dashboard .container {
     }
 }
 /* Add to association-dashboard.css */
-
 .user-info {
     color: white;
     font-size: 0.75rem;
     text-align: right;
     margin-right: 0.5rem;
+    opacity: 0.9;
 }
 
 .user-info small {
     display: block;
-    opacity: 0.9;
+    line-height: 1.2;
 }
+
