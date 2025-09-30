@@ -1,4 +1,4 @@
-// Supabase Configuration
+// Association Dashboard - COMPLETE FUNCTIONALITY
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
@@ -18,6 +18,18 @@ let currentAssociation = null;
 let map = null;
 let realtimeSubscription = null;
 
+// Database table names for easy updates
+const TABLES = {
+    USERS: 'users',
+    ASSOCIATIONS: 'associations',
+    VEHICLES: 'vehicles',
+    MEMBERS: 'members',
+    ROUTES: 'routes',
+    PANIC_ALERTS: 'panic_alerts',
+    PARTS: 'parts',
+    TRANSACTIONS: 'transactions'
+};
+
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
@@ -26,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Enhanced authentication check
 async function checkAssociationAuthentication() {
     try {
-        // Check Supabase authentication first
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError || !user) {
@@ -37,8 +48,8 @@ async function checkAssociationAuthentication() {
 
         // Verify user role is association
         const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role')
+            .from(TABLES.USERS)
+            .select('role, name, email')
             .eq('id', user.id)
             .single();
 
@@ -48,7 +59,7 @@ async function checkAssociationAuthentication() {
             return null;
         }
 
-        return user;
+        return { ...user, ...userData };
     } catch (error) {
         console.error('Authentication check error:', error);
         window.location.href = 'index.html';
@@ -59,14 +70,12 @@ async function checkAssociationAuthentication() {
 // Initialize dashboard
 async function initializeDashboard() {
     try {
-        // Check authentication and role
         const user = await checkAssociationAuthentication();
         if (!user) return;
 
         currentUser = user;
         console.log('Association user authenticated:', user.email);
 
-        // Load user data and association data
         await Promise.all([
             loadUserData(),
             loadAssociationData()
@@ -74,8 +83,6 @@ async function initializeDashboard() {
 
         setupEventListeners();
         await loadDashboardData();
-        
-        // Initialize real-time subscriptions
         initializeRealtimeSubscriptions();
 
     } catch (error) {
@@ -86,26 +93,38 @@ async function initializeDashboard() {
 
 async function loadUserData() {
     try {
-        // Get user data from users table
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (error) throw error;
-
-        // Update UI with user data
-        updateUserProfile(userData);
+        // Display user info in header
+        updateUserHeader(currentUser);
         
     } catch (error) {
         console.error('Error loading user data:', error);
-        // Use basic user info from auth
-        updateUserProfile({
+        updateUserHeader({
             name: currentUser.email.split('@')[0],
-            role: 'association',
             email: currentUser.email
         });
+    }
+}
+
+function updateUserHeader(userData) {
+    const userNameElement = document.getElementById('user-name');
+    const userInfoElement = document.getElementById('user-info');
+    
+    if (userNameElement) {
+        userNameElement.textContent = userData.name || userData.email.split('@')[0];
+    }
+    
+    // Create or update user info display in header
+    if (!userInfoElement) {
+        const headerActions = document.querySelector('.header-actions');
+        const userInfo = document.createElement('div');
+        userInfo.className = 'user-info';
+        userInfo.id = 'user-info';
+        userInfo.innerHTML = `
+            <small>${userData.name || userData.email}</small>
+        `;
+        headerActions.insertBefore(userInfo, headerActions.querySelector('.logout-btn'));
+    } else {
+        userInfoElement.innerHTML = `<small>${userData.name || userData.email}</small>`;
     }
 }
 
@@ -113,24 +132,21 @@ async function loadAssociationData() {
     try {
         console.log('Loading association data for admin:', currentUser.id);
         
-        // Get association data
         let associationData = null;
 
         // Try to get association by admin_id
         const { data: data1, error: error1 } = await supabase
-            .from('associations')
+            .from(TABLES.ASSOCIATIONS)
             .select('*')
             .eq('admin_id', currentUser.id)
             .single();
-
-        console.log('Association query result:', { data: data1, error: error1 });
 
         if (!error1 && data1) {
             associationData = data1;
         } else {
             // Try alternative: get any association data
             const { data: allAssociations, error: allError } = await supabase
-                .from('associations')
+                .from(TABLES.ASSOCIATIONS)
                 .select('*');
 
             if (!allError && allAssociations && allAssociations.length > 0) {
@@ -142,27 +158,35 @@ async function loadAssociationData() {
         }
 
         if (!associationData) {
-            console.warn('No association data found in database');
-            // Create default association data
-            associationData = {
+            console.log('Creating new association record');
+            // Create new association record
+            const newAssociation = {
                 association_name: 'My Taxi Association',
                 email: currentUser.email,
                 phone: '',
                 address: '',
                 admin_id: currentUser.id,
-                admin_name: currentUser.email.split('@')[0],
+                admin_name: currentUser.name || currentUser.email.split('@')[0],
                 admin_phone: '',
                 description: '',
                 logo_url: null,
                 wallet_balance: 0,
                 created_at: new Date().toISOString()
             };
+
+            const { data, error } = await supabase
+                .from(TABLES.ASSOCIATIONS)
+                .insert([newAssociation])
+                .select()
+                .single();
+
+            if (error) throw error;
+            associationData = data;
         }
 
         currentAssociation = associationData;
         console.log('✅ Association data loaded:', associationData);
 
-        // Update UI with association data
         updateAssociationProfile(currentAssociation);
         
     } catch (error) {
@@ -175,7 +199,7 @@ async function loadAssociationData() {
             phone: '',
             address: '',
             admin_id: currentUser.id,
-            admin_name: currentUser.email.split('@')[0],
+            admin_name: currentUser.name || currentUser.email.split('@')[0],
             admin_phone: '',
             description: '',
             logo_url: null,
@@ -188,52 +212,39 @@ async function loadAssociationData() {
     }
 }
 
-function updateUserProfile(userData) {
-    const userNameElement = document.getElementById('user-name');
-    const userRoleElement = document.getElementById('user-role');
-    const userAvatarElement = document.getElementById('user-avatar');
-
-    if (userNameElement) userNameElement.textContent = userData.name || userData.email;
-    if (userRoleElement) userRoleElement.textContent = userData.role || 'Association';
-    if (userAvatarElement) userAvatarElement.textContent = (userData.name || userData.email).charAt(0).toUpperCase();
-}
-
 function updateAssociationProfile(associationData) {
     // Update association name in header
     const associationNameElement = document.getElementById('association-name');
-    const associationNameMainElement = document.getElementById('association-name-main');
+    if (associationNameElement) {
+        associationNameElement.textContent = associationData.association_name || 'Taxi Association';
+    }
 
-    if (associationNameElement) associationNameElement.textContent = associationData.association_name || 'Taxi Association';
-    if (associationNameMainElement) associationNameMainElement.textContent = associationData.association_name || 'Taxi Association';
+    // Update association logo
+    updateAssociationLogo(associationData.logo_url);
 
     // Update association details in profile modal
     updateAssociationProfileModal(associationData);
-
-    // Update association logo
-    if (associationData.logo_url) {
-        updateAssociationLogo(associationData.logo_url);
-    }
 }
 
 function updateAssociationLogo(logoUrl) {
     const associationLogoElement = document.getElementById('association-logo');
-    const associationLogoMainElement = document.getElementById('association-logo-main');
+    const mainLogoElement = document.getElementById('main-logo');
 
     if (logoUrl) {
         if (associationLogoElement) {
             associationLogoElement.src = logoUrl;
             associationLogoElement.style.display = 'block';
         }
-        if (associationLogoMainElement) {
-            associationLogoMainElement.src = logoUrl;
-            associationLogoMainElement.style.display = 'block';
+        if (mainLogoElement) {
+            mainLogoElement.style.display = 'none';
         }
-        
-        // Hide main logos
-        const mainLogo = document.getElementById('main-logo');
-        const mainLogoMain = document.getElementById('main-logo-main');
-        if (mainLogo) mainLogo.style.display = 'none';
-        if (mainLogoMain) mainLogoMain.style.display = 'none';
+    } else {
+        if (associationLogoElement) {
+            associationLogoElement.style.display = 'none';
+        }
+        if (mainLogoElement) {
+            mainLogoElement.style.display = 'block';
+        }
     }
 }
 
@@ -286,72 +297,39 @@ async function loadDashboardStats() {
         };
 
         // Load vehicles count
-        try {
-            const { data: vehicles, error } = await supabase
-                .from('vehicles')
-                .select('id')
-                .eq('association_id', currentAssociation.id);
+        const { data: vehicles, error: vehiclesError } = await supabase
+            .from(TABLES.VEHICLES)
+            .select('id')
+            .eq('association_id', currentAssociation.id);
 
-            if (!error && vehicles) stats.registeredVehicles = vehicles.length;
-        } catch (error) {
-            console.log('Vehicles table not available');
-        }
+        if (!vehiclesError && vehicles) stats.registeredVehicles = vehicles.length;
 
-        // Load members count (using users table as fallback)
-        try {
-            const { data: members, error } = await supabase
-                .from('members')
-                .select('id')
-                .eq('association_id', currentAssociation.id);
+        // Load members count
+        const { data: members, error: membersError } = await supabase
+            .from(TABLES.MEMBERS)
+            .select('id')
+            .eq('association_id', currentAssociation.id);
 
-            if (!error && members) {
-                stats.registeredMembers = members.length;
-            } else {
-                // Fallback to users table
-                const { data: owners, error: ownersError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('role', 'owner');
-
-                const { data: drivers, error: driversError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('role', 'driver');
-
-                if (!ownersError && owners) stats.registeredMembers += owners.length;
-                if (!driversError && drivers) stats.registeredMembers += drivers.length;
-            }
-        } catch (error) {
-            console.log('Members table not available');
-        }
+        if (!membersError && members) stats.registeredMembers = members.length;
 
         // Load routes count
-        try {
-            const { data: routes, error } = await supabase
-                .from('routes')
-                .select('id')
-                .eq('association_id', currentAssociation.id)
-                .eq('status', 'active');
+        const { data: routes, error: routesError } = await supabase
+            .from(TABLES.ROUTES)
+            .select('id')
+            .eq('association_id', currentAssociation.id)
+            .eq('status', 'active');
 
-            if (!error && routes) stats.activeRoutes = routes.length;
-        } catch (error) {
-            console.log('Routes table not available');
-        }
+        if (!routesError && routes) stats.activeRoutes = routes.length;
 
         // Load alerts count
-        try {
-            const { data: alerts, error } = await supabase
-                .from('panic_alerts')
-                .select('id')
-                .eq('association_id', currentAssociation.id)
-                .eq('status', 'active');
+        const { data: alerts, error: alertsError } = await supabase
+            .from(TABLES.PANIC_ALERTS)
+            .select('id')
+            .eq('association_id', currentAssociation.id)
+            .eq('status', 'active');
 
-            if (!error && alerts) stats.passengerAlarms = alerts.length;
-        } catch (error) {
-            console.log('Panic alerts table not available');
-        }
+        if (!alertsError && alerts) stats.passengerAlarms = alerts.length;
 
-        console.log('Dashboard stats:', stats);
         updateDashboardStats(stats);
         
     } catch (error) {
@@ -381,56 +359,18 @@ function updateDashboardStats(stats) {
     });
 }
 
+// MEMBER MANAGEMENT
 async function loadRecentMembers() {
     try {
-        let recentMembers = [];
+        const { data: members, error } = await supabase
+            .from(TABLES.MEMBERS)
+            .select('*')
+            .eq('association_id', currentAssociation.id)
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        // Try to load from members table
-        try {
-            const { data: members, error } = await supabase
-                .from('members')
-                .select('*')
-                .eq('association_id', currentAssociation.id)
-                .order('created_at', { ascending: false })
-                .limit(3);
-
-            if (!error && members) {
-                recentMembers = members.map(member => ({
-                    id: member.id,
-                    name: member.member_name,
-                    email: member.member_email,
-                    role: 'member',
-                    is_verified: member.is_verified,
-                    created_at: member.created_at
-                }));
-            }
-        } catch (error) {
-            console.log('Members table not available, using users as fallback');
-            
-            // Fallback to users table
-            const { data: owners, error: ownersError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('role', 'owner')
-                .order('created_at', { ascending: false })
-                .limit(3);
-
-            const { data: drivers, error: driversError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('role', 'driver')
-                .order('created_at', { ascending: false })
-                .limit(3);
-
-            if (!ownersError && owners) recentMembers.push(...owners);
-            if (!driversError && drivers) recentMembers.push(...drivers);
-
-            recentMembers = recentMembers
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                .slice(0, 3);
-        }
-
-        renderRecentMembers(recentMembers);
+        if (error) throw error;
+        renderRecentMembers(members || []);
         
     } catch (error) {
         console.error('Error loading recent members:', error);
@@ -465,15 +405,15 @@ function renderRecentMembers(members) {
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="item-details">
-                    <h4>${member.name || 'Unnamed Member'}</h4>
-                    <p>${member.email || 'N/A'}</p>
+                    <h4>${member.member_name || 'Unnamed Member'}</h4>
+                    <p>${member.member_email || 'N/A'}</p>
                     <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${statusText}</span></p>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary btn-sm" onclick="editMember('${member.id}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="removeMember('${member.id}')">
+                    <button class="btn btn-danger btn-sm" onclick="deleteMember('${member.id}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -484,47 +424,123 @@ function renderRecentMembers(members) {
     recentMembersContent.innerHTML = membersHtml;
 }
 
+async function addMember(memberData) {
+    try {
+        const memberWithAssociation = {
+            ...memberData,
+            association_id: currentAssociation.id,
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from(TABLES.MEMBERS)
+            .insert([memberWithAssociation])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        showNotification('Member added successfully!', 'success');
+        closeModal('add-member-modal');
+        await loadRecentMembers();
+        await loadDashboardStats();
+        
+        return data;
+    } catch (error) {
+        console.error('Error adding member:', error);
+        showNotification('Failed to add member.', 'error');
+        throw error;
+    }
+}
+
+async function editMember(memberId) {
+    try {
+        // Load member data
+        const { data: member, error } = await supabase
+            .from(TABLES.MEMBERS)
+            .select('*')
+            .eq('id', memberId)
+            .single();
+
+        if (error) throw error;
+
+        // Populate edit form
+        document.getElementById('member-email').value = member.member_email || '';
+        document.getElementById('member-name').value = member.member_name || '';
+        document.getElementById('member-phone').value = member.phone || '';
+        document.getElementById('member-role').value = member.role || 'member';
+        document.getElementById('member-verified').checked = member.is_verified || false;
+
+        // Change form to edit mode
+        const form = document.getElementById('add-member-form');
+        form.setAttribute('data-edit-mode', 'true');
+        form.setAttribute('data-member-id', memberId);
+
+        // Update modal title
+        document.querySelector('#add-member-modal .modal-header h3').textContent = 'Edit Member';
+
+        openAddMemberModal();
+        
+    } catch (error) {
+        console.error('Error loading member for edit:', error);
+        showNotification('Failed to load member data.', 'error');
+    }
+}
+
+async function updateMember(memberId, memberData) {
+    try {
+        const { error } = await supabase
+            .from(TABLES.MEMBERS)
+            .update(memberData)
+            .eq('id', memberId);
+
+        if (error) throw error;
+
+        showNotification('Member updated successfully!', 'success');
+        closeModal('add-member-modal');
+        await loadRecentMembers();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error updating member:', error);
+        showNotification('Failed to update member.', 'error');
+        throw error;
+    }
+}
+
+async function deleteMember(memberId) {
+    if (!confirm('Are you sure you want to delete this member?')) return;
+
+    try {
+        const { error } = await supabase
+            .from(TABLES.MEMBERS)
+            .delete()
+            .eq('id', memberId);
+
+        if (error) throw error;
+
+        showNotification('Member deleted successfully!', 'success');
+        await loadRecentMembers();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error deleting member:', error);
+        showNotification('Failed to delete member.', 'error');
+    }
+}
+
+// ROUTE MANAGEMENT
 async function loadRecentRoutes() {
     try {
-        let recentRoutes = [];
+        const { data: routes, error } = await supabase
+            .from(TABLES.ROUTES)
+            .select('*')
+            .eq('association_id', currentAssociation.id)
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        // Try to load from routes table
-        try {
-            const { data: routes, error } = await supabase
-                .from('routes')
-                .select('*')
-                .eq('association_id', currentAssociation.id)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false })
-                .limit(3);
-
-            if (!error && routes) {
-                recentRoutes = routes;
-            }
-        } catch (error) {
-            console.log('Routes table not available, using demo data');
-            // Demo data
-            recentRoutes = [
-                {
-                    id: '1',
-                    route_name: 'City Center Route',
-                    origin: 'Downtown',
-                    destination: 'City Center',
-                    schedule: 'Daily 6AM-10PM',
-                    status: 'active'
-                },
-                {
-                    id: '2', 
-                    route_name: 'Airport Express',
-                    origin: 'Central Station',
-                    destination: 'International Airport',
-                    schedule: 'Every 30 mins',
-                    status: 'active'
-                }
-            ];
-        }
-
-        renderRecentRoutes(recentRoutes);
+        if (error) throw error;
+        renderRecentRoutes(routes || []);
         
     } catch (error) {
         console.error('Error loading recent routes:', error);
@@ -564,7 +580,7 @@ function renderRecentRoutes(routes) {
                     <button class="btn btn-secondary btn-sm" onclick="editRoute('${route.id}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="removeRoute('${route.id}')">
+                    <button class="btn btn-danger btn-sm" onclick="deleteRoute('${route.id}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -575,198 +591,112 @@ function renderRecentRoutes(routes) {
     recentRoutesContent.innerHTML = routesHtml;
 }
 
-async function loadRecentAlerts() {
+async function addRoute(routeData) {
     try {
-        let alertCount = 0;
+        const routeWithAssociation = {
+            ...routeData,
+            association_id: currentAssociation.id,
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from(TABLES.ROUTES)
+            .insert([routeWithAssociation])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        showNotification('Route added successfully!', 'success');
+        closeModal('add-route-modal');
+        await loadRecentRoutes();
+        await loadDashboardStats();
         
-        try {
-            const { data: alerts, error } = await supabase
-                .from('panic_alerts')
-                .select('*')
-                .eq('association_id', currentAssociation.id)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false })
-                .limit(5);
+        return data;
+    } catch (error) {
+        console.error('Error adding route:', error);
+        showNotification('Failed to add route.', 'error');
+        throw error;
+    }
+}
 
-            if (!error && alerts) {
-                alertCount = alerts.length;
-            }
-        } catch (error) {
-            console.log('Panic alerts table not available');
-        }
+async function editRoute(routeId) {
+    try {
+        const { data: route, error } = await supabase
+            .from(TABLES.ROUTES)
+            .select('*')
+            .eq('id', routeId)
+            .single();
 
-        updateAlertBadge(alertCount);
+        if (error) throw error;
+
+        // Populate edit form
+        document.getElementById('route-name').value = route.route_name || '';
+        document.getElementById('route-origin').value = route.origin || '';
+        document.getElementById('route-destination').value = route.destination || '';
+        document.getElementById('route-schedule').value = route.schedule || '';
+        document.getElementById('route-waypoints').value = route.waypoints || '';
+
+        // Change form to edit mode
+        const form = document.getElementById('add-route-form');
+        form.setAttribute('data-edit-mode', 'true');
+        form.setAttribute('data-route-id', routeId);
+
+        // Update modal title
+        document.querySelector('#add-route-modal .modal-header h3').textContent = 'Edit Route';
+
+        openAddRouteModal();
         
     } catch (error) {
-        console.error('Error loading recent alerts:', error);
-        updateAlertBadge(0);
+        console.error('Error loading route for edit:', error);
+        showNotification('Failed to load route data.', 'error');
     }
 }
 
-function updateAlertBadge(count) {
-    const alertBadge = document.getElementById('alert-badge');
-    const alertCount = document.getElementById('alert-count');
-    
-    if (alertBadge) {
-        alertBadge.style.display = count > 0 ? 'flex' : 'none';
-    }
-    
-    if (alertCount) {
-        alertCount.textContent = count;
-    }
-}
-
-// Real-time Subscriptions
-function initializeRealtimeSubscriptions() {
+async function updateRoute(routeId, routeData) {
     try {
-        // Subscribe to vehicles table for real-time updates
-        realtimeSubscription = supabase
-            .channel('dashboard-updates')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'vehicles'
-                },
-                (payload) => {
-                    console.log('Vehicle update received:', payload);
-                    loadDashboardStats();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'panic_alerts'
-                },
-                (payload) => {
-                    console.log('Alert update received:', payload);
-                    loadDashboardStats();
-                    loadRecentAlerts();
-                }
-            )
-            .subscribe();
+        const { error } = await supabase
+            .from(TABLES.ROUTES)
+            .update(routeData)
+            .eq('id', routeId);
 
-        console.log('Real-time subscriptions initialized');
+        if (error) throw error;
+
+        showNotification('Route updated successfully!', 'success');
+        closeModal('add-route-modal');
+        await loadRecentRoutes();
+        await loadDashboardStats();
+        
     } catch (error) {
-        console.error('Error initializing real-time subscriptions:', error);
+        console.error('Error updating route:', error);
+        showNotification('Failed to update route.', 'error');
+        throw error;
     }
 }
 
-// Map Functions
-function initializeMap() {
-    if (!map) {
-        map = L.map('map').setView([-26.2041, 28.0473], 10); // Johannesburg coordinates
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        
-        loadVehicleMarkers();
-    }
-    return map;
-}
+async function deleteRoute(routeId) {
+    if (!confirm('Are you sure you want to delete this route?')) return;
 
-function initializeFullScreenMap() {
-    const fullMap = L.map('full-map').setView([-26.2041, 28.0473], 10);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(fullMap);
-    
-    loadVehicleMarkers(fullMap);
-    return fullMap;
-}
-
-async function loadVehicleMarkers(targetMap = null) {
     try {
-        const mapToUse = targetMap || map;
-        if (!mapToUse) return;
+        const { error } = await supabase
+            .from(TABLES.ROUTES)
+            .delete()
+            .eq('id', routeId);
 
-        // Clear existing markers
-        if (window.vehicleMarkers) {
-            window.vehicleMarkers.forEach(marker => mapToUse.removeLayer(marker));
-        }
-        window.vehicleMarkers = [];
+        if (error) throw error;
 
-        // Load vehicles with locations
-        const { data: vehicles, error } = await supabase
-            .from('vehicles')
-            .select('vehicle_reg, last_location, driver_name')
-            .eq('association_id', currentAssociation.id)
-            .not('last_location', 'is', null);
-
-        if (error) {
-            console.error('Error loading vehicles for map:', error);
-            return;
-        }
-
-        if (vehicles && vehicles.length > 0) {
-            vehicles.forEach(vehicle => {
-                if (vehicle.last_location) {
-                    const [lat, lng] = vehicle.last_location.split(',').map(coord => parseFloat(coord.trim()));
-                    const marker = L.marker([lat, lng]).addTo(mapToUse);
-                    
-                    marker.bindPopup(`
-                        <div class="vehicle-popup">
-                            <h4>${vehicle.vehicle_reg || 'Unknown Vehicle'}</h4>
-                            <p>Driver: ${vehicle.driver_name || 'Unknown'}</p>
-                            <p>Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
-                        </div>
-                    `);
-                    
-                    window.vehicleMarkers.push(marker);
-                }
-            });
-
-            // Fit map to show all markers
-            if (window.vehicleMarkers.length > 0) {
-                const group = new L.featureGroup(window.vehicleMarkers);
-                mapToUse.fitBounds(group.getBounds().pad(0.1));
-            }
-        }
+        showNotification('Route deleted successfully!', 'success');
+        await loadRecentRoutes();
+        await loadDashboardStats();
+        
     } catch (error) {
-        console.error('Error loading vehicle markers:', error);
+        console.error('Error deleting route:', error);
+        showNotification('Failed to delete route.', 'error');
     }
 }
 
-// Modal Management Functions
-function openProfileModal() {
-    updateAssociationProfileModal(currentAssociation);
-    showModal('profile-modal');
-}
-
-function openMapModal() {
-    showModal('map-modal');
-    setTimeout(() => {
-        initializeFullScreenMap();
-    }, 100);
-}
-
-function openAddRouteModal() {
-    showModal('add-route-modal');
-}
-
-function openAddMemberModal() {
-    showModal('add-member-modal');
-}
-
-function openManagePartsModal() {
-    showModal('manage-parts-modal');
-}
-
-function openAlertsModal() {
-    showModal('alerts-modal');
-    loadAlertsForModal();
-}
-
-function openWalletModal() {
-    showModal('wallet-modal');
-    loadWalletData();
-}
-
+// ASSOCIATION PROFILE MANAGEMENT
 async function saveAssociationProfile() {
     try {
         const formData = {
@@ -776,34 +706,18 @@ async function saveAssociationProfile() {
             address: document.getElementById('profile-association-address')?.value || '',
             description: document.getElementById('profile-association-description')?.value || '',
             admin_name: document.getElementById('profile-admin-name')?.value || '',
-            admin_phone: document.getElementById('profile-admin-phone')?.value || ''
+            admin_phone: document.getElementById('profile-admin-phone')?.value || '',
+            updated_at: new Date().toISOString()
         };
 
-        if (currentAssociation.id && !currentAssociation.id.startsWith('temp-')) {
-            // Update existing association
-            const { error } = await supabase
-                .from('associations')
-                .update(formData)
-                .eq('admin_id', currentUser.id);
+        const { error } = await supabase
+            .from(TABLES.ASSOCIATIONS)
+            .update(formData)
+            .eq('admin_id', currentUser.id);
 
-            if (error) throw error;
-        } else {
-            // Create new association
-            formData.admin_id = currentUser.id;
-            formData.created_at = new Date().toISOString();
-            
-            const { data, error } = await supabase
-                .from('associations')
-                .insert([formData])
-                .select();
+        if (error) throw error;
 
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                currentAssociation = data[0];
-            }
-        }
-
+        // Update current association data
         Object.assign(currentAssociation, formData);
         updateAssociationProfile(currentAssociation);
         
@@ -816,121 +730,7 @@ async function saveAssociationProfile() {
     }
 }
 
-async function loadAlertsForModal() {
-    try {
-        const alertsContent = document.getElementById('alerts-modal-content');
-        if (!alertsContent) return;
-
-        let alerts = [];
-
-        try {
-            const { data, error } = await supabase
-                .from('panic_alerts')
-                .select('*')
-                .eq('association_id', currentAssociation.id)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false });
-
-            if (!error && data) alerts = data;
-        } catch (error) {
-            console.log('Panic alerts table not available');
-        }
-
-        if (alerts.length === 0) {
-            alertsContent.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-bell-slash"></i>
-                    <h3>No Active Alerts</h3>
-                    <p>All clear! No panic alerts at the moment.</p>
-                </div>
-            `;
-            return;
-        }
-
-        let alertsHtml = '';
-        alerts.forEach(alert => {
-            const alertTime = new Date(alert.created_at).toLocaleString();
-            alertsHtml += `
-                <div class="alert-item">
-                    <div class="alert-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="alert-details">
-                        <h4>Panic Alert</h4>
-                        <p>Location: ${alert.lat || 'N/A'}, ${alert.lng || 'N/A'}</p>
-                        <p>Time: ${alertTime}</p>
-                    </div>
-                    <div class="alert-actions">
-                        <button class="btn btn-success btn-sm" onclick="resolveAlert('${alert.id}')">
-                            <i class="fas fa-check"></i> Resolve
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-
-        alertsContent.innerHTML = alertsHtml;
-    } catch (error) {
-        console.error('Error loading alerts for modal:', error);
-    }
-}
-
-async function resolveAlert(alertId) {
-    try {
-        const { error } = await supabase
-            .from('panic_alerts')
-            .update({ status: 'resolved' })
-            .eq('id', alertId);
-
-        if (error) throw error;
-
-        showNotification('Alert resolved successfully!', 'success');
-        loadAlertsForModal();
-        loadDashboardStats();
-        
-    } catch (error) {
-        console.error('Error resolving alert:', error);
-        showNotification('Failed to resolve alert.', 'error');
-    }
-}
-
-async function loadWalletData() {
-    try {
-        // This would load transaction history and update wallet balance
-        const walletBalance = document.getElementById('wallet-balance');
-        if (walletBalance) {
-            walletBalance.textContent = `R ${(currentAssociation.wallet_balance || 0).toFixed(2)}`;
-        }
-    } catch (error) {
-        console.error('Error loading wallet data:', error);
-    }
-}
-
-// Utility Functions
-function showModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-}
-
-function closeAllModals() {
-    const modals = document.querySelectorAll('.modal-overlay');
-    modals.forEach(modal => {
-        modal.style.display = 'none';
-    });
-    document.body.style.overflow = 'auto';
-}
-
+// EVENT LISTENERS SETUP
 function setupEventListeners() {
     // Header actions
     const profileBtn = document.getElementById('profile-btn');
@@ -973,22 +773,8 @@ function setupEventListeners() {
         });
     });
 
-    // Map toggle
-    const mapToggle = document.getElementById('map-toggle');
-    const mapSection = document.getElementById('map-section');
-    if (mapToggle && mapSection) {
-        mapToggle.addEventListener('click', function() {
-            const isVisible = mapSection.style.display !== 'none';
-            mapSection.style.display = isVisible ? 'none' : 'block';
-            this.textContent = isVisible ? 'Show Map' : 'Hide Map';
-            
-            if (!isVisible && !map) {
-                setTimeout(() => {
-                    initializeMap();
-                }, 100);
-            }
-        });
-    }
+    // Form submissions
+    setupFormSubmissions();
 
     // Modal close buttons
     const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
@@ -997,23 +783,16 @@ function setupEventListeners() {
             const modal = this.closest('.modal-overlay');
             if (modal) {
                 closeModal(modal.id);
+                resetForms();
             }
         });
     });
-
-    // Profile form submission
-    const profileForm = document.getElementById('profile-form');
-    if (profileForm) {
-        profileForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveAssociationProfile();
-        });
-    }
 
     // Click outside to close modals
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-overlay')) {
             closeModal(e.target.id);
+            resetForms();
         }
     });
 
@@ -1021,13 +800,151 @@ function setupEventListeners() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAllModals();
+            resetForms();
         }
     });
 }
 
+function setupFormSubmissions() {
+    // Member form
+    const memberForm = document.getElementById('add-member-form');
+    if (memberForm) {
+        memberForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                member_email: document.getElementById('member-email').value,
+                member_name: document.getElementById('member-name').value,
+                phone: document.getElementById('member-phone').value,
+                role: document.getElementById('member-role').value,
+                is_verified: document.getElementById('member-verified').checked
+            };
+
+            try {
+                if (this.getAttribute('data-edit-mode') === 'true') {
+                    const memberId = this.getAttribute('data-member-id');
+                    await updateMember(memberId, formData);
+                } else {
+                    await addMember(formData);
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
+        });
+    }
+
+    // Route form
+    const routeForm = document.getElementById('add-route-form');
+    if (routeForm) {
+        routeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                route_name: document.getElementById('route-name').value,
+                origin: document.getElementById('route-origin').value,
+                destination: document.getElementById('route-destination').value,
+                schedule: document.getElementById('route-schedule').value,
+                waypoints: document.getElementById('route-waypoints').value
+            };
+
+            try {
+                if (this.getAttribute('data-edit-mode') === 'true') {
+                    const routeId = this.getAttribute('data-route-id');
+                    await updateRoute(routeId, formData);
+                } else {
+                    await addRoute(formData);
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
+        });
+    }
+
+    // Profile form
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAssociationProfile();
+        });
+    }
+}
+
+function resetForms() {
+    // Reset member form
+    const memberForm = document.getElementById('add-member-form');
+    if (memberForm) {
+        memberForm.reset();
+        memberForm.removeAttribute('data-edit-mode');
+        memberForm.removeAttribute('data-member-id');
+        document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
+    }
+
+    // Reset route form
+    const routeForm = document.getElementById('add-route-form');
+    if (routeForm) {
+        routeForm.reset();
+        routeForm.removeAttribute('data-edit-mode');
+        routeForm.removeAttribute('data-route-id');
+        document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
+    }
+}
+
+// Modal Management Functions
+function openProfileModal() {
+    updateAssociationProfileModal(currentAssociation);
+    showModal('profile-modal');
+}
+
+function openAddRouteModal() {
+    showModal('add-route-modal');
+}
+
+function openAddMemberModal() {
+    showModal('add-member-modal');
+}
+
+function openManagePartsModal() {
+    showModal('manage-parts-modal');
+}
+
+function openAlertsModal() {
+    showModal('alerts-modal');
+    loadAlertsForModal();
+}
+
+function openWalletModal() {
+    showModal('wallet-modal');
+    loadWalletData();
+}
+
+// Utility Functions
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+    });
+    document.body.style.overflow = 'auto';
+}
+
 async function handleLogout() {
     try {
-        // Clean up real-time subscriptions
         if (realtimeSubscription) {
             await supabase.removeChannel(realtimeSubscription);
         }
@@ -1065,31 +982,77 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Placeholder functions
-function editMember(memberId) {
-    showNotification(`Edit member ${memberId} - Feature coming soon`, 'info');
-}
+// Real-time Subscriptions
+function initializeRealtimeSubscriptions() {
+    try {
+        realtimeSubscription = supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: TABLES.MEMBERS
+                },
+                (payload) => {
+                    console.log('Member update received:', payload);
+                    loadDashboardStats();
+                    loadRecentMembers();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: TABLES.ROUTES
+                },
+                (payload) => {
+                    console.log('Route update received:', payload);
+                    loadDashboardStats();
+                    loadRecentRoutes();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: TABLES.PANIC_ALERTS
+                },
+                (payload) => {
+                    console.log('Alert update received:', payload);
+                    loadDashboardStats();
+                    loadRecentAlerts();
+                }
+            )
+            .subscribe();
 
-function removeMember(memberId) {
-    if (confirm('Are you sure you want to remove this member?')) {
-        showNotification(`Remove member ${memberId} - Feature coming soon`, 'info');
+        console.log('Real-time subscriptions initialized');
+    } catch (error) {
+        console.error('Error initializing real-time subscriptions:', error);
     }
 }
 
-function editRoute(routeId) {
-    showNotification(`Edit route ${routeId} - Feature coming soon`, 'info');
+// Placeholder functions for future implementation
+async function loadRecentAlerts() {
+    // Implementation for alerts
 }
 
-function removeRoute(routeId) {
-    if (confirm('Are you sure you want to remove this route?')) {
-        showNotification(`Remove route ${routeId} - Feature coming soon`, 'info');
-    }
+async function loadAlertsForModal() {
+    // Implementation for alerts modal
+}
+
+async function loadWalletData() {
+    // Implementation for wallet
 }
 
 // Make functions globally available
 window.editMember = editMember;
-window.removeMember = removeMember;
+window.deleteMember = deleteMember;
 window.editRoute = editRoute;
-window.removeRoute = removeRoute;
+window.deleteRoute = deleteRoute;
 window.closeModal = closeModal;
-window.resolveAlert = resolveAlert;
+window.openAddRouteModal = openAddRouteModal;
+window.openAddMemberModal = openAddMemberModal;
+window.openProfileModal = openProfileModal;
