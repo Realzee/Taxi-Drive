@@ -1,54 +1,48 @@
-/* Association Dashboard Specific Styles - MATCHING script.js THEME */
-
-/* Reset and Base Styles */
+/* Association Dashboard - ALIGNMENT FIX */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Fix body positioning - Match script.js theme */
+/* FIXED: Body alignment */
 body.association-dashboard {
     font-family: 'Montserrat', sans-serif;
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%) !important;
-    background-attachment: fixed !important;
+    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
+    background-attachment: fixed;
+    width: 100%;
     max-width: 480px;
     margin: 0 auto;
-    position: relative;
     min-height: 100vh;
+    position: relative;
     overflow-x: hidden;
-    display: block !important;
-    justify-content: flex-start !important;
-    align-items: flex-start !important;
-    padding: 0 !important;
+    display: block;
 }
 
-/* Remove any conflicting container styles */
+/* FIXED: Remove conflicting container styles */
 body.association-dashboard .container {
-    all: unset;
+    all: unset !important;
 }
 
-/* Main app container matching script.js */
+/* Main app wrapper */
 .dashboard-app {
-    width: min(100% - 2rem, 480px);
+    width: 100%;
+    max-width: 480px;
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 1rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     min-height: 100vh;
     position: relative;
+    overflow: hidden;
 }
 
-/* Header Styles - Matching script.js theme */
+/* FIXED: Header positioning */
 .header {
     background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
     color: white;
     padding: 1rem;
-    position: sticky;
-    top: 0;
     width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border-radius: 1rem 1rem 0 0;
@@ -72,8 +66,6 @@ body.association-dashboard .container {
     height: 40px;
     width: auto;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.25rem;
 }
 
 .title-section {
@@ -115,12 +107,10 @@ body.association-dashboard .container {
     justify-content: center;
     width: 40px;
     height: 40px;
-    backdrop-filter: blur(10px);
 }
 
 .icon-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
 }
 
 .badge {
@@ -137,7 +127,6 @@ body.association-dashboard .container {
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    border: 2px solid #1A2A44;
 }
 
 .logout-btn {
@@ -150,26 +139,20 @@ body.association-dashboard .container {
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
 }
 
 .logout-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
 }
 
-/* Main Content */
+/* FIXED: Main content */
 .main-content {
     padding: 1.5rem;
     padding-bottom: 80px;
     width: 100%;
 }
 
-.welcome-section {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
+/* FIXED: Remove paragraph wrapper around h2 */
 .welcome-section h2 {
     color: #1A2A44;
     margin-bottom: 0.5rem;
@@ -183,7 +166,7 @@ body.association-dashboard .container {
     font-size: 1rem;
 }
 
-/* Stats Section - Glass morphism effect */
+/* Stats Section */
 .stats-section {
     margin-bottom: 2rem;
 }
@@ -203,7 +186,6 @@ body.association-dashboard .container {
 
 .stat-card {
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
     padding: 1.25rem;
@@ -216,7 +198,6 @@ body.association-dashboard .container {
 
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
 .stat-icon {
@@ -230,7 +211,6 @@ body.association-dashboard .container {
     justify-content: center;
     font-size: 1.5rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .stat-info {
@@ -253,7 +233,7 @@ body.association-dashboard .container {
     font-weight: 500;
 }
 
-/* Quick Actions - Matching script.js buttons */
+/* Quick Actions */
 .quick-actions-section {
     margin-bottom: 2rem;
 }
@@ -282,27 +262,22 @@ body.association-dashboard .container {
     background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
 }
 
 .quick-action-btn.btn-secondary {
     background: rgba(163, 201, 230, 0.2);
     border: 1px solid rgba(163, 201, 230, 0.3);
     color: #1A2A44;
-    backdrop-filter: blur(10px);
 }
 
 .quick-action-btn.btn-danger {
     background: rgba(244, 67, 54, 0.1);
     border: 1px solid rgba(244, 67, 54, 0.2);
     color: #F44336;
-    backdrop-filter: blur(10px);
 }
 
 .quick-action-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
 .quick-action-btn i {
@@ -332,16 +307,10 @@ body.association-dashboard .container {
     text-decoration: none;
     font-weight: 500;
     font-size: 0.875rem;
-    transition: color 0.3s ease;
-}
-
-.view-all:hover {
-    color: #1A2A44;
 }
 
 .list-container {
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 0.75rem;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -354,11 +323,6 @@ body.association-dashboard .container {
     padding: 1rem;
     border-bottom: 1px solid rgba(0,0,0,0.1);
     gap: 1rem;
-    transition: background-color 0.3s ease;
-}
-
-.list-item:hover {
-    background: rgba(255, 255, 255, 0.1);
 }
 
 .list-item:last-child {
@@ -376,7 +340,6 @@ body.association-dashboard .container {
     justify-content: center;
     font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .item-details {
@@ -389,64 +352,22 @@ body.association-dashboard .container {
     color: #1A2A44;
     font-weight: 600;
     font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .item-details p {
     margin: 0.25rem 0;
     color: #6c757d;
     font-size: 0.875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.member-role, .route-schedule {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.status-indicator {
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.status-active {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
-    border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.status-inactive {
-    background: rgba(255, 152, 0, 0.1);
-    color: #FF9800;
-    border: 1px solid rgba(255, 152, 0, 0.2);
-}
-
-.status-pending {
-    background: rgba(23, 162, 184, 0.1);
-    color: #17a2b8;
-    border: 1px solid rgba(23, 162, 184, 0.2);
-}
-
-.item-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* Bottom Navigation - Matching script.js */
+/* FIXED: Bottom Navigation */
 .bottom-nav {
     position: fixed;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: min(100% - 2rem, 480px);
+    width: 100%;
+    max-width: 480px;
     background: white;
     padding: 0.75rem 0;
     border-radius: 1rem 1rem 0 0;
@@ -471,110 +392,21 @@ body.association-dashboard .container {
     gap: 0.25rem;
     flex: 1;
     max-width: 80px;
-    text-decoration: none;
 }
 
 .nav-item.active {
     color: #1A2A44;
     background: #D3D3D3;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.nav-item:hover {
-    color: #1A2A44;
-    background: #D3D3D3;
-    transform: translateY(-2px);
 }
 
 .nav-item i {
     font-size: 1.25rem;
     margin-bottom: 0.25rem;
-    display: block;
-    transition: transform 0.3s ease;
-}
-
-.nav-item:hover i {
-    transform: scale(1.1);
-}
-
-.nav-item.active i {
-    color: #A3C9E6;
 }
 
 .nav-item span {
     font-size: 0.7rem;
     font-weight: 500;
-}
-
-/* Button Styles - Matching script.js */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.5rem;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    gap: 0.5rem;
-    white-space: nowrap;
-    backdrop-filter: blur(10px);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #15233a 0%, #8bb8d4 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-secondary {
-    background: rgba(163, 201, 230, 0.2);
-    border: 1px solid rgba(163, 201, 230, 0.3);
-    color: #1A2A44;
-}
-
-.btn-secondary:hover {
-    background: rgba(163, 201, 230, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-danger {
-    background: rgba(244, 67, 54, 0.1);
-    border: 1px solid rgba(244, 67, 54, 0.2);
-    color: #F44336;
-}
-
-.btn-danger:hover {
-    background: rgba(244, 67, 54, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-success {
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid rgba(76, 175, 80, 0.2);
-    color: #4CAF50;
-}
-
-.btn-success:hover {
-    background: rgba(76, 175, 80, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
 }
 
 /* Empty States */
@@ -603,11 +435,47 @@ body.association-dashboard .container {
     line-height: 1.4;
 }
 
-/* Responsive Design */
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #15233a 0%, #8bb8d4 100%);
+}
+
+.btn-secondary {
+    background: rgba(163, 201, 230, 0.2);
+    border: 1px solid rgba(163, 201, 230, 0.3);
+    color: #1A2A44;
+}
+
+.btn-danger {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
+
+/* Responsive */
 @media (max-width: 480px) {
     .dashboard-app {
-        width: 100%;
-        margin: 0;
         border-radius: 0;
     }
     
@@ -621,7 +489,6 @@ body.association-dashboard .container {
     }
     
     .stats-grid {
-        grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
     }
     
@@ -629,18 +496,7 @@ body.association-dashboard .container {
         padding: 1rem;
     }
     
-    .stat-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.25rem;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-    }
-    
     .quick-actions {
-        grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
     }
     
@@ -650,27 +506,6 @@ body.association-dashboard .container {
     }
     
     .bottom-nav {
-        width: 100%;
         border-radius: 0;
-    }
-    
-    .nav-item {
-        max-width: 70px;
-    }
-    
-    .nav-item i {
-        font-size: 1.1rem;
-    }
-    
-    .nav-item span {
-        font-size: 0.65rem;
-    }
-}
-
-/* Ensure app stays centered on larger screens */
-@media (min-width: 481px) {
-    body.association-dashboard {
-        border-left: 1px solid #dee2e6;
-        border-right: 1px solid #dee2e6;
     }
 }
