@@ -1,838 +1,462 @@
-/* Association Dashboard Specific Styles - FIXED ALIGNMENT */
-
-/* Reset and Base Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Fix body positioning */
-body.association-dashboard {
-    font-family: 'Montserrat', sans-serif;
-    background: #f8f9fa !important;
-    max-width: 480px;
-    margin: 0 auto;
-    position: relative;
-    min-height: 100vh;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    overflow-x: hidden;
-    display: block !important;
-    justify-content: flex-start !important;
-    align-items: flex-start !important;
-    padding: 0 !important;
-}
-
-/* Remove any conflicting container styles */
-body.association-dashboard .container {
-    all: unset;
-}
-
-/* Header Styles - FIXED POSITION */
-.header {
-    background: var(--dark-blue, #1A2A44);
-    color: white;
-    padding: 1rem;
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 480px;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-.logo-section {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-}
-
-.logo {
-    height: 40px;
-    width: auto;
-    border-radius: 6px;
-}
-
-.title-section {
-    display: flex;
-    flex-direction: column;
-}
-
-.app-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0;
-    line-height: 1.2;
-}
-
-.association-name {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    font-weight: 500;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.icon-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-}
-
-.icon-btn:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-.badge {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: var(--danger, #dc3545);
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    border: 2px solid var(--dark-blue, #1A2A44);
-}
-
-.logout-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.3);
-}
-
-/* Main Content - FIXED POSITIONING */
-.main-content {
-    padding: 1rem;
-    padding-top: 80px; /* Space for fixed header */
-    padding-bottom: 80px; /* Space for bottom nav */
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-}
-
-/* Remove any container conflicts */
-.dashboard-container {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-}
-
-.welcome-section {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding: 0 0.5rem;
-}
-
-.welcome-section h2 {
-    color: var(--dark-blue, #1A2A44);
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    font-size: 1.5rem;
-}
-
-.welcome-section p {
-    color: var(--gray, #6c757d);
-    margin: 0;
-    font-size: 1rem;
-}
-
-/* Stats Section */
-.stats-section {
-    margin-bottom: 2rem;
-    padding: 0 0.5rem;
-}
-
-.section-title {
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    font-size: 1.25rem;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, var(--light-blue, #A3C9E6), white);
-    border-radius: 12px;
-    padding: 1.25rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: transform 0.2s;
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-}
-
-.stat-icon {
-    background: var(--dark-blue, #1A2A44);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.stat-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--dark-blue, #1A2A44);
-    margin: 0;
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: var(--gray, #6c757d);
-    margin: 0.25rem 0 0 0;
-    font-weight: 500;
-}
-
-/* Map Section */
-.map-section {
-    margin-bottom: 2rem;
-    padding: 0 0.5rem;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.view-all {
-    color: var(--light-blue, #A3C9E6);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-/* Quick Actions */
-.quick-actions-section {
-    margin-bottom: 2rem;
-    padding: 0 0.5rem;
-}
-
-.quick-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.quick-action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem 0.75rem;
-    border-radius: 12px;
-    text-align: center;
-    font-weight: 500;
-    transition: all 0.2s;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    min-height: 100px;
-    justify-content: center;
-    background: var(--dark-blue, #1A2A44);
-    color: white;
-}
-
-.quick-action-btn.btn-secondary {
-    background: var(--light-blue, #A3C9E6);
-    color: var(--dark-blue, #1A2A44);
-}
-
-.quick-action-btn.btn-danger {
-    background: var(--danger, #dc3545);
-    color: white;
-}
-
-.quick-action-btn i {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.quick-action-btn span {
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-/* Recent Sections */
-.recent-section {
-    margin-bottom: 2rem;
-    padding: 0 0.5rem;
-}
-
-.list-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-    border: 1px solid var(--border-color, #dee2e6);
-}
-
-.list-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color, #dee2e6);
-    gap: 1rem;
-}
-
-.list-item:last-child {
-    border-bottom: none;
-}
-
-.item-icon {
-    background: var(--light-blue, #A3C9E6);
-    color: var(--dark-blue, #1A2A44);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.item-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.item-details h4 {
-    margin: 0 0 0.25rem 0;
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 600;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.item-details p {
-    margin: 0.25rem 0;
-    color: var(--gray, #6c757d);
-    font-size: 0.875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.member-role, .route-schedule {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.status-indicator {
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.status-active {
-    background: var(--success-light, #d4edda);
-    color: var(--success, #28a745);
-}
-
-.status-inactive {
-    background: var(--warning-light, #fff3cd);
-    color: var(--warning, #ffc107);
-}
-
-.status-pending {
-    background: var(--info-light, #d1ecf1);
-    color: var(--info, #17a2b8);
-}
-
-.item-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* Bottom Navigation - FIXED POSITION */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 480px;
-    background: white;
-    border-top: 1px solid var(--border-color, #dee2e6);
-    display: flex;
-    justify-content: space-around;
-    padding: 0.75rem 0;
-    z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--gray, #6c757d);
-    text-decoration: none;
-    font-size: 0.75rem;
-    position: relative;
-    cursor: pointer;
-    transition: color 0.2s;
-    padding: 0.25rem;
-    flex: 1;
-    max-width: 80px;
-}
-
-.nav-item.active {
-    color: var(--dark-blue, #1A2A44);
-}
-
-.nav-item.active::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: var(--dark-blue, #1A2A44);
-    border-radius: 50%;
-}
-
-.nav-item i {
-    font-size: 1.25rem;
-    margin-bottom: 0.25rem;
-}
-
-.nav-item span {
-    font-size: 0.7rem;
-    font-weight: 500;
-}
-
-/* Modal Styles */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 480px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    margin: 0 auto;
-}
-
-.fullscreen-modal {
-    max-width: 95vw;
-    max-height: 95vh;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-color, #dee2e6);
-    position: sticky;
-    top: 0;
-    background: white;
-    border-radius: 12px 12px 0 0;
-    z-index: 1;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 600;
-    font-size: 1.25rem;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--gray, #6c757d);
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-.modal-close:hover {
-    background: var(--border-color, #dee2e6);
-}
-
-.modal-body {
-    padding: 1.5rem;
-}
-
-/* Form Styles */
-.form-group {
-    margin-bottom: 1.25rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-.form-input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color, #dee2e6);
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-    background: white;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: var(--light-blue, #A3C9E6);
-    box-shadow: 0 0 0 2px rgba(163, 201, 230, 0.2);
-}
-
-.form-checkbox {
-    margin-right: 0.5rem;
-    transform: scale(1.2);
-}
-
-.checkbox-group {
-    display: flex;
-    align-items: center;
-}
-
-.checkbox-group label {
-    margin-bottom: 0;
-    cursor: pointer;
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color, #dee2e6);
-}
-
-/* Alert Items */
-.alert-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color, #dee2e6);
-    gap: 1rem;
-}
-
-.alert-item:last-child {
-    border-bottom: none;
-}
-
-.alert-icon {
-    background: var(--danger-light, #f8d7da);
-    color: var(--danger, #dc3545);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-}
-
-.alert-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.alert-details h4 {
-    margin: 0 0 0.25rem 0;
-    color: var(--danger, #dc3545);
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.alert-details p {
-    margin: 0.25rem 0;
-    color: var(--gray, #6c757d);
-    font-size: 0.875rem;
-}
-
-.alert-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* Empty States */
-.empty-state {
-    text-align: center;
-    padding: 3rem 2rem;
-    color: var(--gray, #6c757d);
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.empty-state h3 {
-    margin: 0 0 0.5rem 0;
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 600;
-    font-size: 1.25rem;
-}
-
-.empty-state p {
-    margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.4;
-}
-
-/* Wallet Styles */
-.wallet-balance {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding: 2rem;
-    background: linear-gradient(135deg, var(--light-blue, #A3C9E6), white);
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-.wallet-balance h4 {
-    margin: 0 0 1rem 0;
-    color: var(--dark-blue, #1A2A44);
-    font-weight: 600;
-}
-
-.balance-amount {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--dark-blue, #1A2A44);
-    margin-top: 0.5rem;
-}
-
-.wallet-actions {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.wallet-actions .btn {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-}
-
-/* Button Styles */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    gap: 0.5rem;
-    white-space: nowrap;
-}
-
-.btn-primary {
-    background: var(--dark-blue, #1A2A44);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #152238;
-    transform: translateY(-1px);
-}
-
-.btn-secondary {
-    background: var(--light-blue, #A3C9E6);
-    color: var(--dark-blue, #1A2A44);
-}
-
-.btn-secondary:hover {
-    background: #95bde0;
-    transform: translateY(-1px);
-}
-
-.btn-danger {
-    background: var(--danger, #dc3545);
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-    transform: translateY(-1px);
-}
-
-.btn-success {
-    background: var(--success, #28a745);
-    color: white;
-}
-
-.btn-success:hover {
-    background: #218838;
-    transform: translateY(-1px);
-}
-
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-    body.association-dashboard {
-        box-shadow: none;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxiDrive Association</title>
     
-    .header {
-        padding: 1rem;
-    }
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    .main-content {
-        padding: 1rem;
-        padding-top: 80px;
-        padding-bottom: 80px;
-    }
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
+    <!-- Montserrat Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    .stat-card {
-        padding: 1rem;
-    }
-    
-    .stat-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.25rem;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-    }
-    
-    .quick-actions {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
-    
-    .quick-action-btn {
-        padding: 1rem 0.5rem;
-        min-height: 90px;
-    }
-    
-    .modal-content {
-        margin: 0.5rem;
-    }
-    
-    .nav-item {
-        max-width: 70px;
-    }
-    
-    .nav-item i {
-        font-size: 1.1rem;
-    }
-    
-    .nav-item span {
-        font-size: 0.65rem;
-    }
-}
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/association-dashboard.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo" id="main-logo">
+                <img src="" alt="Association Logo" class="logo association-logo" id="association-logo" style="display: none;">
+                <div class="title-section">
+                    <h1 class="app-title">TaxiDrive</h1>
+                    <span class="association-name" id="association-name">Association</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <!-- Notifications with Badge -->
+                <button class="icon-btn" id="alerts-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="alert-badge" style="display: none;">
+                        <span id="alert-count">0</span>
+                    </span>
+                </button>
+                
+                <!-- Profile -->
+                <button class="icon-btn" id="profile-btn">
+                    <i class="fas fa-user"></i>
+                </button>
+                
+                <!-- Logout -->
+                <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
 
-/* Ensure app stays centered on larger screens */
-@media (min-width: 481px) {
-    body.association-dashboard {
-        border-left: 1px solid var(--border-color, #dee2e6);
-        border-right: 1px solid var(--border-color, #dee2e6);
-    }
-}
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="dashboard-container">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <p><h2>Welcome, <span id="user-name">Admin</span></h2></p>
+                <p>Manage your association efficiently</p>
+            </section>
+
+            <!-- Dashboard Stats -->
+            <section class="stats-section">
+                <h3 class="section-title">Dashboard Overview</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-vehicles">0</h4>
+                            <p class="stat-label">Registered Vehicles</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-members">0</h4>
+                            <p class="stat-label">Registered Members</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-routes">0</h4>
+                            <p class="stat-label">Active Routes</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 class="stat-value" id="stat-alarms">0</h4>
+                            <p class="stat-label">Passenger Alarms</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Map Section -->
+            <section class="map-section" id="map-section" style="display: none;">
+                <div class="section-header">
+                    <h3 class="section-title">Live Vehicle Locations</h3>
+                    <button class="btn btn-primary" id="map-toggle">Hide Map</button>
+                </div>
+                <div id="map" style="height: 300px; border-radius: 8px;"></div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions-section">
+                <h3 class="section-title">Quick Actions</h3>
+                <div class="quick-actions">
+                    <button class="quick-action-btn btn btn-primary" data-action="add-route">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Route</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-primary" data-action="add-member">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Add Member</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-secondary" data-action="manage-parts">
+                        <i class="fas fa-cogs"></i>
+                        <span>Manage Parts</span>
+                    </button>
+                    
+                    <button class="quick-action-btn btn btn-danger" data-action="view-alerts">
+                        <i class="fas fa-bell"></i>
+                        <span>View Alerts</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Recent Members -->
+            <section class="recent-section">
+                <div class="section-header">
+                    <h3 class="section-title">Recent Members</h3>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+                <div class="list-container" id="recent-members-content">
+                    <!-- Members will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>No Members Yet</h3>
+                        <p>Start by adding members to your association.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Routes -->
+            <section class="recent-section">
+                <div class="section-header">
+                    <h3 class="section-title">Active Routes</h3>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+                <div class="list-container" id="recent-routes-content">
+                    <!-- Routes will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-route"></i>
+                        <h3>No Routes Yet</h3>
+                        <p>Create your first route to get started.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-target="dashboard">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" data-target="map">
+            <i class="fas fa-map"></i>
+            <span>Map</span>
+        </div>
+        <div class="nav-item" data-target="wallet">
+            <i class="fas fa-wallet"></i>
+            <span>Wallet</span>
+        </div>
+        <div class="nav-item" data-target="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </nav>
+
+    <!-- Modals -->
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Association Profile</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-association-name">Association Name</label>
+                        <input type="text" id="profile-association-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-email">Association Email</label>
+                        <input type="email" id="profile-association-email" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-phone">Association Phone</label>
+                        <input type="tel" id="profile-association-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-address">Association Address</label>
+                        <textarea id="profile-association-address" class="form-input" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-association-description">Description</label>
+                        <textarea id="profile-association-description" class="form-input" rows="3"></textarea>
+                    </div>
+                    
+                    <h4>Administrator Details</h4>
+                    
+                    <div class="form-group">
+                        <label for="profile-admin-name">Admin Name</label>
+                        <input type="text" id="profile-admin-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-admin-phone">Admin Phone</label>
+                        <input type="tel" id="profile-admin-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Modal -->
+    <div id="map-modal" class="modal-overlay">
+        <div class="modal-content fullscreen-modal">
+            <div class="modal-header">
+                <h3>Live Vehicle Map</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="full-map" style="height: 80vh; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Route Modal -->
+    <div id="add-route-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Route</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-route-form">
+                    <div class="form-group">
+                        <label for="route-name">Route Name</label>
+                        <input type="text" id="route-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-origin">Origin</label>
+                        <input type="text" id="route-origin" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-destination">Destination</label>
+                        <input type="text" id="route-destination" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-schedule">Schedule</label>
+                        <input type="text" id="route-schedule" class="form-input" placeholder="e.g., Daily 6AM-10PM" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="route-waypoints">Waypoints (Optional)</label>
+                        <textarea id="route-waypoints" class="form-input" rows="3" placeholder="Enter waypoints separated by commas"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Route</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="add-member-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Member</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form">
+                    <div class="form-group">
+                        <label for="member-email">Member Email</label>
+                        <input type="email" id="member-email" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-name">Member Name</label>
+                        <input type="text" id="member-name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-phone">Phone Number</label>
+                        <input type="tel" id="member-phone" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-role">Role</label>
+                        <select id="member-role" class="form-input" required>
+                            <option value="driver">Driver</option>
+                            <option value="owner">Owner</option>
+                            <option value="member">Member</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="member-verified" class="form-checkbox">
+                        <label for="member-verified">Verified Member</label>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Parts Modal -->
+    <div id="manage-parts-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Manage Parts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="parts-header">
+                    <button class="btn btn-primary" id="add-part-btn">
+                        <i class="fas fa-plus"></i> Add Part
+                    </button>
+                </div>
+                <div class="parts-list" id="parts-list">
+                    <div class="empty-state">
+                        <i class="fas fa-cogs"></i>
+                        <h3>No Parts Added</h3>
+                        <p>Start by adding parts to your inventory.</p>
+                    </div>
+                </div>
+                <div class="parts-summary">
+                    <div class="summary-item">
+                        <span>Subtotal:</span>
+                        <span id="parts-subtotal">R 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>VAT (15%):</span>
+                        <span id="parts-vat">R 0.00</span>
+                    </div>
+                    <div class="summary-item total">
+                        <span>Total:</span>
+                        <span id="parts-total">R 0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Modal -->
+    <div id="alerts-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Panic Alerts</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alerts-list" id="alerts-modal-content">
+                    <!-- Alerts will be loaded here dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>No Active Alerts</h3>
+                        <p>All clear! No panic alerts at the moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Association Wallet</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="wallet-balance">
+                    <h4>Current Balance</h4>
+                    <div class="balance-amount" id="wallet-balance">R 0.00</div>
+                </div>
+                
+                <div class="wallet-actions">
+                    <button class="btn btn-primary" id="withdraw-btn">
+                        <i class="fas fa-money-bill-wave"></i> Withdraw Funds
+                    </button>
+                    <button class="btn btn-secondary" id="view-transactions-btn">
+                        <i class="fas fa-history"></i> Transaction History
+                    </button>
+                </div>
+                
+                <div class="recent-transactions">
+                    <h4>Recent Transactions</h4>
+                    <div class="transactions-list" id="transactions-list">
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <h3>No Transactions</h3>
+                            <p>Transaction history will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main Dashboard Script -->
+    <script src="./js/association-dashboard.js"></script>
+</body>
+</html>
