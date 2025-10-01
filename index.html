@@ -8,21 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="./css/style.css">
-    <!-- Ensure style.css includes modal styles and updated logo styles as described -->
+    <!-- Ensure style.css includes modal styles as described in the previous response -->
 </head>
 <body>
     <div class="container">
         <div class="logo">
-            <img src="./assets/Logo1.png" alt="TaxiDrive Logo" class="main-logo">
+            <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
         </div>
         <h1>Login</h1>
-
-        <!-- Welcome Section with Association Name and Logo -->
-        <div class="welcome-section" id="welcome-section" style="display: none;">
-            <h2>Welcome</h2>
-            <p>Association: <span id="association-name-display"></span></p>
-            <img id="association-logo-display" src="" alt="Association Logo" style="display: none; max-width: 100px; max-height: 100px; border-radius: 8px; margin-top: 10px;">
-        </div>
 
         <!-- Toggle between Login and Signup -->
         <div class="toggle-buttons">
@@ -282,16 +275,14 @@
             console.log('Page loaded successfully at:', new Date().toLocaleString());
 
             const container = document.querySelector('.container');
-            const logo = document.querySelector('.main-logo');
+            const logo = document.querySelector('.logo img');
             const loginForm = document.getElementById('login-form');
             const signupAssociationModal = document.getElementById('signup-association-modal');
-            const welcomeSection = document.getElementById('welcome-section');
 
             console.log('Container visibility:', getComputedStyle(container).display);
             console.log('Logo visibility:', getComputedStyle(logo).display);
             console.log('Login form visibility:', loginForm ? getComputedStyle(loginForm).display : 'NOT FOUND');
             console.log('Signup association modal visibility:', signupAssociationModal ? getComputedStyle(signupAssociationModal).display : 'NOT FOUND');
-            console.log('Welcome section visibility:', welcomeSection ? getComputedStyle(welcomeSection).display : 'NOT FOUND');
 
             if (logo) {
                 logo.addEventListener('error', function() {
