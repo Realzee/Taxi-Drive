@@ -239,34 +239,6 @@ function initializeApplication() {
 
 // Utility to close all modals
 function closeAllModals() {
-    const modals = [
-        'signup-role-modal',
-        'signup-passenger-modal',
-        'signup-driver-modal',
-        'signup-owner-modal',
-        'signup-association-modal',
-        'signup-modal'
-    ];
-    modals.forEach(id => {
-        const modal = document.getElementById(id);
-        if (modal) modal.style.display = 'none';
-    });
-}
-
-// Utility to show a modal
-function showModal(modalId) {
-    console.log(`Showing modal: ${modalId}`);
-    closeAllModals(); // Close other modals first
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    } else {
-        console.error(`Modal ${modalId} not found`);
-    }
-}
-
-function closeAllModals() {
     console.log('Closing all modals');
     const modals = [
         'signup-role-modal',
@@ -286,6 +258,20 @@ function closeAllModals() {
     if (loginForm) loginForm.style.display = 'block';
     document.body.style.overflow = 'auto';
 }
+
+// Utility to show a modal
+function showModal(modalId) {
+    console.log(`Showing modal: ${modalId}`);
+    closeAllModals(); // Close other modals first
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error(`Modal ${modalId} not found`);
+    }
+}
+
 // Utility to show error message
 function showError(elementId, message) {
     const errorElement = document.getElementById(elementId);
@@ -308,50 +294,8 @@ function showSuccess(message, loginDetails = '') {
     }
 }
 
-// In script.js, add this function to update the welcome section
-function updateWelcomeSection(userData) {
-    console.log('Updating welcome section with user data:', userData);
-    const welcomeSection = document.getElementById('welcome-section');
-    const associationNameDisplay = document.getElementById('association-name-display');
-    const associationLogoDisplay = document.getElementById('association-logo-display');
-
-    if (welcomeSection && associationNameDisplay && associationLogoDisplay) {
-        if (userData.role === 'association' && userData.association) {
-            welcomeSection.style.display = 'block';
-            associationNameDisplay.textContent = userData.association.name || 'Unknown Association';
-            if (userData.association.logo_url) {
-                associationLogoDisplay.src = userData.association.logo_url;
-                associationLogoDisplay.style.display = 'block';
-            } else {
-                associationLogoDisplay.style.display = 'none';
-            }
-        } else {
-            welcomeSection.style.display = 'none';
-        }
-    } else {
-        console.error('Welcome section elements not found');
-    }
-}
-
-// Modify the login event listener to call updateWelcomeSection
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const role = document.getElementById('login-role').value;
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const errorMessage = document.getElementById('login-error-message');
-
-    try {
-        const userData = await login(email, password, role);
-        console.log('Login successful:', userData);
-        errorMessage.textContent = '';
-        updateWelcomeSection(userData); // Update welcome section after login
-        // Redirect to dashboard or show welcome section
-        if (role === 'association') {
-            window.location.href = './association-dashboard.html';
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        errorMessage.textContent = error.message || 'Login failed. Please try again.';
-    }
-});
+// Make functions globally available
+window.showModal = showModal;
+window.closeAllModals = closeAllModals;
+window.showError = showError;
+window.showSuccess = showSuccess;
