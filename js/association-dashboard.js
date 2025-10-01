@@ -1,4 +1,4 @@
-// Association Dashboard - ENHANCED VERSION WITH ROBUST AUTH AND LOGGING
+// Association Dashboard - UPDATED VERSION WITH PROFILE LOGO UPLOAD
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
@@ -7,16 +7,15 @@ let supabase;
 try {
     const { createClient } = window.supabase;
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase client initialized successfully');
+    console.log('Supabase client initialized successfully');
 } catch (error) {
-    console.error('❌ Failed to initialize Supabase client:', error);
-    showNotification('Failed to connect to database. Using demo mode.', 'error');
+    console.error('Failed to initialize Supabase client:', error);
 }
 
 // Global variables
 let currentUser = null;
 let currentAssociation = null;
-let currentAssociationId = null;
+let currentAssociationId = null; // For profile updates
 let realtimeSubscription = null;
 
 // Demo data storage for fallback
@@ -27,24 +26,19 @@ let demoData = {
 
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing association dashboard...');
     initializeDashboard();
 });
 
 // Authentication check
 async function checkAssociationAuthentication() {
-    console.log('🔍 Checking association authentication...');
     try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError || !user) {
-            console.error('❌ No authenticated user:', authError?.message || 'No user data');
-            showNotification('Please log in to continue.', 'error');
+            console.log('No authenticated user, redirecting to login');
             window.location.href = 'index.html';
             return null;
         }
-
-        console.log('✅ Authenticated user:', user.email, 'ID:', user.id);
 
         const { data: userData, error: userError } = await supabase
             .from('users')
@@ -52,27 +46,15 @@ async function checkAssociationAuthentication() {
             .eq('id', user.id)
             .single();
 
-        if (userError) {
-            console.error('❌ User data fetch error:', userError);
-            showNotification('User profile not found. Contact support.', 'error');
-            await supabase.auth.signOut();
-            window.location.href = 'index.html';
-            return null;
-        }
-
-        if (userData?.role !== 'association') {
-            console.error('❌ User is not an association, role:', userData.role);
-            showNotification('Access denied: Not an association account.', 'error');
-            await supabase.auth.signOut();
+        if (userError || userData?.role !== 'association') {
+            console.log('User is not an association, redirecting');
             window.location.href = 'dashboard.html';
             return null;
         }
 
-        console.log('✅ User is association:', userData);
         return { ...user, ...userData };
     } catch (error) {
-        console.error('❌ Authentication check error:', error);
-        showNotification('Authentication error. Please try again.', 'error');
+        console.error('Authentication check error:', error);
         window.location.href = 'index.html';
         return null;
     }
@@ -82,13 +64,10 @@ async function checkAssociationAuthentication() {
 async function initializeDashboard() {
     try {
         const user = await checkAssociationAuthentication();
-        if (!user) {
-            console.error('❌ Initialization aborted: No valid user');
-            return;
-        }
+        if (!user) return;
 
         currentUser = user;
-        console.log('✅ Association user authenticated:', user.email);
+        console.log('Association user authenticated:', user.email);
 
         await loadUserData();
         await loadAssociationData();
@@ -97,10 +76,9 @@ async function initializeDashboard() {
         await loadDashboardData();
 
         showNotification('Dashboard loaded successfully!', 'success');
-        console.log('✅ Dashboard initialization complete');
 
     } catch (error) {
-        console.error('❌ Error initializing dashboard:', error);
+        console.error('Error initializing dashboard:', error);
         showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
     }
 }
@@ -108,9 +86,8 @@ async function initializeDashboard() {
 async function loadUserData() {
     try {
         updateUserHeader(currentUser);
-        console.log('✅ User header updated');
     } catch (error) {
-        console.error('❌ Error loading user data:', error);
+        console.error('Error loading user data:', error);
         updateUserHeader({
             name: currentUser.email.split('@')[0],
             email: currentUser.email
@@ -135,37 +112,37 @@ function updateUserHeader(userData) {
     }
     
     userInfoElement.innerHTML = `<small>${userData.name || userData.email}</small>`;
-    console.log('✅ User header set:', userData.name || userData.email);
 }
 
 async function loadAssociationData() {
     try {
-        console.log('🔍 Loading association data for admin:', currentUser.id);
+        console.log('Loading association data for admin:', currentUser.id);
         
         let associationData = null;
 
+        // First, check if associations table exists and is accessible
         const tableCheck = await checkTableAccessibility();
         if (!tableCheck.accessible) {
-            console.log('⚠️ Associations table not accessible, using demo mode');
+            console.log('Associations table not accessible, using demo mode');
             currentAssociation = createDemoAssociation();
             currentAssociationId = 'demo-mode';
             updateAssociationProfile(currentAssociation);
             return;
         }
 
+        // Try to get association by admin_id
         const { data, error } = await supabase
             .from('associations')
-            .select('id, name, email, phone, address, admin_id, admin_name, admin_phone, admin_id_number, description, logo_url, created_at, updated_at')
+            .select('*')
             .eq('admin_id', currentUser.id)
             .single();
 
         if (error) {
-            console.error('❌ No association found:', error);
-            showNotification('No association found. Creating new one.', 'warning');
+            console.log('No association found, creating new one');
             associationData = await createNewAssociation();
         } else {
             associationData = data;
-            console.log('✅ Found existing association:', data.name, 'ID:', data.id);
+            console.log('Found existing association:', data);
         }
 
         currentAssociation = associationData;
@@ -173,14 +150,15 @@ async function loadAssociationData() {
         updateAssociationProfile(currentAssociation);
         
     } catch (error) {
-        console.error('❌ Error loading association data:', error);
-        showNotification('Using demo mode due to database error.', 'warning');
+        console.error('Error loading association data:', error);
+        showNotification('Using demo mode. Database setup may be incomplete.', 'warning');
         currentAssociation = createDemoAssociation();
         currentAssociationId = 'demo-mode';
         updateAssociationProfile(currentAssociation);
     }
 }
 
+// Check if we can access the associations table
 async function checkTableAccessibility() {
     try {
         const { data, error } = await supabase
@@ -189,11 +167,10 @@ async function checkTableAccessibility() {
             .limit(1);
 
         return {
-            accessible: !error,
+            accessible: true,
             exists: !error || error.code !== 'PGRST204'
         };
     } catch (error) {
-        console.error('❌ Table accessibility check failed:', error);
         return {
             accessible: false,
             exists: false
@@ -204,18 +181,16 @@ async function checkTableAccessibility() {
 async function createNewAssociation() {
     try {
         const newAssociation = {
-            name: 'My Taxi Association',
+            association_name: 'My Taxi Association',
             email: currentUser.email,
             phone: '',
             address: '',
             admin_id: currentUser.id,
             admin_name: currentUser.name || currentUser.email.split('@')[0],
             admin_phone: '',
-            admin_id_number: '',
             description: '',
             logo_url: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            wallet_balance: 0
         };
 
         const { data, error } = await supabase
@@ -225,50 +200,44 @@ async function createNewAssociation() {
             .single();
 
         if (error) {
-            console.error('❌ Failed to create association:', error);
-            throw error;
+            console.error('Failed to create association:', error);
+            return createDemoAssociation();
         }
 
         showNotification('New association created successfully!', 'success');
-        console.log('✅ New association created:', data.name, 'ID:', data.id);
         return data;
         
     } catch (error) {
-        console.error('❌ Error creating association:', error);
+        console.error('Error creating association:', error);
         return createDemoAssociation();
     }
 }
 
 function createDemoAssociation() {
-    const demoAssociation = {
+    return {
         id: 'demo-mode',
-        name: 'My Taxi Association',
+        association_name: 'My Taxi Association',
         email: currentUser.email,
         phone: '+27 12 345 6789',
         address: '123 Main Street, Johannesburg',
         admin_id: currentUser.id,
         admin_name: currentUser.name || currentUser.email.split('@')[0],
         admin_phone: '+27 82 123 4567',
-        admin_id_number: '1234567890123',
         description: 'Your taxi association management dashboard',
         logo_url: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        wallet_balance: 12500.50,
         is_demo: true
     };
-    console.log('✅ Created demo association:', demoAssociation.name);
-    return demoAssociation;
 }
 
 function updateAssociationProfile(associationData) {
     const associationNameElement = document.getElementById('association-name');
     if (associationNameElement) {
-        associationNameElement.textContent = associationData.name || 'Taxi Association';
+        associationNameElement.textContent = associationData.association_name || 'Taxi Association';
     }
 
     updateAssociationLogo(associationData.logo_url);
     updateAssociationProfileModal(associationData);
-    console.log('✅ Association profile updated:', associationData.name);
 }
 
 function updateAssociationLogo(logoUrl) {
@@ -279,7 +248,6 @@ function updateAssociationLogo(logoUrl) {
         if (associationLogoElement) {
             associationLogoElement.src = logoUrl;
             associationLogoElement.style.display = 'block';
-            console.log('✅ Association logo set:', logoUrl);
         }
         if (mainLogoElement) {
             mainLogoElement.style.display = 'none';
@@ -291,19 +259,19 @@ function updateAssociationLogo(logoUrl) {
         if (mainLogoElement) {
             mainLogoElement.style.display = 'block';
         }
-        console.log('⚠️ No logo URL, showing default logo');
     }
 }
 
 function updateAssociationProfileModal(associationData) {
     const elements = {
-        'profile-association-name': associationData.name || '',
+        'profile-association-name': associationData.association_name || '',
         'profile-association-email': associationData.email || '',
         'profile-association-phone': associationData.phone || '',
         'profile-association-address': associationData.address || '',
         'profile-association-description': associationData.description || '',
         'profile-admin-name': associationData.admin_name || '',
-        'profile-admin-phone': associationData.admin_phone || ''
+        'profile-admin-phone': associationData.admin_phone || '',
+        'wallet-balance': `R ${(associationData.wallet_balance || 0).toFixed(2)}`
     };
 
     Object.keys(elements).forEach(id => {
@@ -317,18 +285,14 @@ function updateAssociationProfileModal(associationData) {
         }
     });
 
+    // Handle logo preview in profile modal
     const editLogoPreviewImg = document.getElementById('edit-logo-preview-img');
     const editLogoPreviewContainer = document.getElementById('edit-logo-preview-container');
-    if (editLogoPreviewImg && editLogoPreviewContainer) {
-        if (associationData.logo_url) {
-            editLogoPreviewImg.src = associationData.logo_url;
-            editLogoPreviewContainer.style.display = 'block';
-            console.log('✅ Profile modal logo preview set:', associationData.logo_url);
-        } else {
-            editLogoPreviewContainer.style.display = 'none';
-            editLogoPreviewImg.src = '';
-            console.log('⚠️ No logo for profile modal preview');
-        }
+    if (editLogoPreviewImg && editLogoPreviewContainer && associationData.logo_url) {
+        editLogoPreviewImg.src = associationData.logo_url;
+        editLogoPreviewContainer.style.display = 'block';
+    } else if (editLogoPreviewImg && editLogoPreviewContainer) {
+        editLogoPreviewContainer.style.display = 'none';
     }
 }
 
@@ -340,10 +304,8 @@ async function loadDashboardData() {
             loadRecentMembers(),
             loadRecentRoutes()
         ]);
-        console.log('✅ Dashboard data loaded');
     } catch (error) {
-        console.error('❌ Error loading dashboard data:', error);
-        showNotification('Failed to load dashboard data. Showing demo data.', 'warning');
+        console.error('Error loading dashboard data:', error);
     }
 }
 
@@ -356,7 +318,6 @@ async function loadDashboardStats() {
                 activeRoutes: demoData.routes.length || 5,
                 passengerAlarms: 2
             });
-            console.log('✅ Demo stats loaded');
             return;
         }
 
@@ -373,17 +334,15 @@ async function loadDashboardStats() {
             activeRoutes: routes.data?.length || 0,
             passengerAlarms: alerts.data?.length || 0
         });
-        console.log('✅ Real stats loaded');
         
     } catch (error) {
-        console.error('❌ Error loading dashboard stats:', error);
+        console.error('Error loading dashboard stats:', error);
         updateDashboardStats({
             registeredVehicles: 12,
             registeredMembers: 8,
             activeRoutes: 5,
             passengerAlarms: 2
         });
-        console.log('✅ Fallback to demo stats');
     }
 }
 
@@ -401,7 +360,6 @@ function updateDashboardStats(stats) {
             element.textContent = statElements[id];
         }
     });
-    console.log('✅ Dashboard stats updated:', stats);
 }
 
 // MEMBER MANAGEMENT
@@ -412,7 +370,6 @@ async function loadRecentMembers() {
                 demoData.members = getInitialDemoMembers();
             }
             renderRecentMembers(demoData.members.slice(0, 3));
-            console.log('✅ Demo members loaded');
             return;
         }
 
@@ -425,12 +382,10 @@ async function loadRecentMembers() {
 
         if (error) throw error;
         renderRecentMembers(members || []);
-        console.log('✅ Real members loaded:', members.length);
         
     } catch (error) {
-        console.error('❌ Error loading recent members:', error);
+        console.error('Error loading recent members:', error);
         renderRecentMembers(getInitialDemoMembers().slice(0, 3));
-        console.log('✅ Fallback to demo members');
     }
 }
 
@@ -468,10 +423,7 @@ function getInitialDemoMembers() {
 
 function renderRecentMembers(members) {
     const recentMembersContent = document.getElementById('recent-members-content');
-    if (!recentMembersContent) {
-        console.error('❌ Recent members content element not found');
-        return;
-    }
+    if (!recentMembersContent) return;
     
     if (!members || members.length === 0) {
         recentMembersContent.innerHTML = `
@@ -481,7 +433,6 @@ function renderRecentMembers(members) {
                 <p>Start by adding members to your association.</p>
             </div>
         `;
-        console.log('✅ Rendered empty members state');
         return;
     }
 
@@ -513,7 +464,6 @@ function renderRecentMembers(members) {
     });
 
     recentMembersContent.innerHTML = membersHtml;
-    console.log('✅ Rendered members:', members.length);
 }
 
 async function addMember(memberData) {
@@ -525,7 +475,6 @@ async function addMember(memberData) {
                 created_at: new Date().toISOString()
             };
             demoData.members.unshift(newMember);
-            console.log('✅ Added demo member:', newMember.member_name);
         } else {
             const memberWithAssociation = {
                 ...memberData,
@@ -537,7 +486,6 @@ async function addMember(memberData) {
                 .insert([memberWithAssociation]);
 
             if (error) throw error;
-            console.log('✅ Added real member:', memberData.member_name);
         }
 
         showNotification('Member added successfully!', 'success');
@@ -546,7 +494,7 @@ async function addMember(memberData) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error adding member:', error);
+        console.error('Error adding member:', error);
         showNotification('Failed to add member.', 'error');
     }
 }
@@ -569,7 +517,6 @@ async function editMember(memberId) {
 
         if (!member) {
             showNotification('Member not found.', 'error');
-            console.error('❌ Member not found:', memberId);
             return;
         }
 
@@ -585,10 +532,9 @@ async function editMember(memberId) {
 
         document.querySelector('#add-member-modal .modal-header h3').textContent = 'Edit Member';
         openAddMemberModal();
-        console.log('✅ Opened edit member modal for:', memberId);
         
     } catch (error) {
-        console.error('❌ Error loading member for edit:', error);
+        console.error('Error loading member for edit:', error);
         showNotification('Failed to load member data.', 'error');
     }
 }
@@ -599,7 +545,6 @@ async function updateMember(memberId, memberData) {
             const memberIndex = demoData.members.findIndex(m => m.id === memberId);
             if (memberIndex !== -1) {
                 demoData.members[memberIndex] = { ...demoData.members[memberIndex], ...memberData };
-                console.log('✅ Updated demo member:', memberId);
             }
         } else {
             const { error } = await supabase
@@ -607,7 +552,6 @@ async function updateMember(memberId, memberData) {
                 .update(memberData)
                 .eq('id', memberId);
             if (error) throw error;
-            console.log('✅ Updated real member:', memberId);
         }
 
         showNotification('Member updated successfully!', 'success');
@@ -616,7 +560,7 @@ async function updateMember(memberId, memberData) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error updating member:', error);
+        console.error('Error updating member:', error);
         showNotification('Failed to update member.', 'error');
     }
 }
@@ -627,14 +571,12 @@ async function deleteMember(memberId) {
     try {
         if (currentAssociation.is_demo) {
             demoData.members = demoData.members.filter(m => m.id !== memberId);
-            console.log('✅ Deleted demo member:', memberId);
         } else {
             const { error } = await supabase
                 .from('members')
                 .delete()
                 .eq('id', memberId);
             if (error) throw error;
-            console.log('✅ Deleted real member:', memberId);
         }
 
         showNotification('Member deleted successfully!', 'success');
@@ -642,7 +584,7 @@ async function deleteMember(memberId) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error deleting member:', error);
+        console.error('Error deleting member:', error);
         showNotification('Failed to delete member.', 'error');
     }
 }
@@ -655,7 +597,6 @@ async function loadRecentRoutes() {
                 demoData.routes = getInitialDemoRoutes();
             }
             renderRecentRoutes(demoData.routes.slice(0, 3));
-            console.log('✅ Demo routes loaded');
             return;
         }
 
@@ -669,12 +610,10 @@ async function loadRecentRoutes() {
 
         if (error) throw error;
         renderRecentRoutes(routes || []);
-        console.log('✅ Real routes loaded:', routes.length);
         
     } catch (error) {
-        console.error('❌ Error loading recent routes:', error);
+        console.error('Error loading recent routes:', error);
         renderRecentRoutes(getInitialDemoRoutes().slice(0, 3));
-        console.log('✅ Fallback to demo routes');
     }
 }
 
@@ -703,10 +642,7 @@ function getInitialDemoRoutes() {
 
 function renderRecentRoutes(routes) {
     const recentRoutesContent = document.getElementById('recent-routes-content');
-    if (!recentRoutesContent) {
-        console.error('❌ Recent routes content element not found');
-        return;
-    }
+    if (!recentRoutesContent) return;
     
     if (!routes || routes.length === 0) {
         recentRoutesContent.innerHTML = `
@@ -716,7 +652,6 @@ function renderRecentRoutes(routes) {
                 <p>Create your first route to get started.</p>
             </div>
         `;
-        console.log('✅ Rendered empty routes state');
         return;
     }
 
@@ -745,7 +680,6 @@ function renderRecentRoutes(routes) {
     });
 
     recentRoutesContent.innerHTML = routesHtml;
-    console.log('✅ Rendered routes:', routes.length);
 }
 
 async function addRoute(routeData) {
@@ -758,7 +692,6 @@ async function addRoute(routeData) {
                 created_at: new Date().toISOString()
             };
             demoData.routes.unshift(newRoute);
-            console.log('✅ Added demo route:', newRoute.route_name);
         } else {
             const routeWithAssociation = {
                 ...routeData,
@@ -770,7 +703,6 @@ async function addRoute(routeData) {
                 .from('routes')
                 .insert([routeWithAssociation]);
             if (error) throw error;
-            console.log('✅ Added real route:', routeData.route_name);
         }
 
         showNotification('Route added successfully!', 'success');
@@ -779,7 +711,7 @@ async function addRoute(routeData) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error adding route:', error);
+        console.error('Error adding route:', error);
         showNotification('Failed to add route.', 'error');
     }
 }
@@ -802,7 +734,6 @@ async function editRoute(routeId) {
 
         if (!route) {
             showNotification('Route not found.', 'error');
-            console.error('❌ Route not found:', routeId);
             return;
         }
 
@@ -818,10 +749,9 @@ async function editRoute(routeId) {
 
         document.querySelector('#add-route-modal .modal-header h3').textContent = 'Edit Route';
         openAddRouteModal();
-        console.log('✅ Opened edit route modal for:', routeId);
         
     } catch (error) {
-        console.error('❌ Error loading route for edit:', error);
+        console.error('Error loading route for edit:', error);
         showNotification('Failed to load route data.', 'error');
     }
 }
@@ -832,7 +762,6 @@ async function updateRoute(routeId, routeData) {
             const routeIndex = demoData.routes.findIndex(r => r.id === routeId);
             if (routeIndex !== -1) {
                 demoData.routes[routeIndex] = { ...demoData.routes[routeIndex], ...routeData };
-                console.log('✅ Updated demo route:', routeId);
             }
         } else {
             const { error } = await supabase
@@ -840,7 +769,6 @@ async function updateRoute(routeId, routeData) {
                 .update(routeData)
                 .eq('id', routeId);
             if (error) throw error;
-            console.log('✅ Updated real route:', routeId);
         }
 
         showNotification('Route updated successfully!', 'success');
@@ -849,7 +777,7 @@ async function updateRoute(routeId, routeData) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error updating route:', error);
+        console.error('Error updating route:', error);
         showNotification('Failed to update route.', 'error');
     }
 }
@@ -859,15 +787,13 @@ async function deleteRoute(routeId) {
 
     try {
         if (currentAssociation.is_demo) {
-            demoData.routes = demoData.routes.filter(r => r.id === routeId);
-            console.log('✅ Deleted demo route:', routeId);
+            demoData.routes = demoData.routes.filter(r => r.id !== routeId);
         } else {
             const { error } = await supabase
                 .from('routes')
                 .delete()
                 .eq('id', routeId);
             if (error) throw error;
-            console.log('✅ Deleted real route:', routeId);
         }
 
         showNotification('Route deleted successfully!', 'success');
@@ -875,25 +801,25 @@ async function deleteRoute(routeId) {
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('❌ Error deleting route:', error);
+        console.error('Error deleting route:', error);
         showNotification('Failed to delete route.', 'error');
     }
 }
 
-// ASSOCIATION PROFILE MANAGEMENT
+// ASSOCIATION PROFILE MANAGEMENT - UPDATED WITH LOGO UPLOAD
 async function saveAssociationProfile() {
     try {
         const logoInput = document.getElementById('edit-association-logo');
         const logoFile = logoInput?.files[0];
 
+        // Validate logo file size
         if (logoFile && logoFile.size > 2 * 1024 * 1024) {
             showNotification('Logo file size exceeds 2MB limit.', 'error');
-            console.error('❌ Logo file too large:', logoFile.size);
             return;
         }
 
         const formData = {
-            name: document.getElementById('profile-association-name')?.value || '',
+            association_name: document.getElementById('profile-association-name')?.value || '',
             email: document.getElementById('profile-association-email')?.value || '',
             phone: document.getElementById('profile-association-phone')?.value || '',
             address: document.getElementById('profile-association-address')?.value || '',
@@ -903,9 +829,10 @@ async function saveAssociationProfile() {
             updated_at: new Date().toISOString()
         };
 
-        let logoUrl = currentAssociation.logo_url;
+        let logoUrl = currentAssociation.logo_url; // Keep existing logo unless new one is uploaded
 
         if (!currentAssociation.is_demo && logoFile) {
+            // Upload new logo
             const fileName = `${currentAssociationId}/${Date.now()}_${logoFile.name}`;
             const { data: storageData, error: storageError } = await supabase.storage
                 .from('logos')
@@ -915,12 +842,12 @@ async function saveAssociationProfile() {
                 });
 
             if (storageError) {
-                console.error('❌ Logo upload error:', storageError);
+                console.error('Logo upload error:', storageError);
                 showNotification('Failed to upload logo. Profile saved without logo.', 'warning');
             } else {
                 const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
                 logoUrl = publicUrlData.publicUrl;
-                console.log('✅ New logo uploaded:', logoUrl);
+                console.log('New logo uploaded:', logoUrl);
             }
         }
 
@@ -935,25 +862,23 @@ async function saveAssociationProfile() {
                 .update(updateData)
                 .eq('id', currentAssociationId);
             if (error) throw error;
-            console.log('✅ Updated association profile in database:', currentAssociationId);
         }
 
+        // Update current association data
         Object.assign(currentAssociation, formData, { logo_url: logoUrl });
         updateAssociationProfile(currentAssociation);
         
         showNotification('Profile updated successfully!', 'success');
         closeModal('profile-modal');
-        console.log('✅ Profile modal closed after save');
         
     } catch (error) {
-        console.error('❌ Error updating profile:', error);
+        console.error('Error updating profile:', error);
         showNotification('Failed to update profile.', 'error');
     }
 }
 
 // EVENT LISTENERS SETUP
 function setupEventListeners() {
-    console.log('🔧 Setting up event listeners...');
     // Header actions
     const profileBtn = document.getElementById('profile-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -968,7 +893,6 @@ function setupEventListeners() {
     quickActionBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const action = this.getAttribute('data-action');
-            console.log('⚡ Quick action clicked:', action);
             switch(action) {
                 case 'add-route': openAddRouteModal(); break;
                 case 'add-member': openAddMemberModal(); break;
@@ -983,7 +907,6 @@ function setupEventListeners() {
     navItems.forEach(item => {
         item.addEventListener('click', function() {
             const target = this.getAttribute('data-target');
-            console.log('🧭 Navigation clicked:', target);
             
             navItems.forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
@@ -1008,7 +931,6 @@ function setupEventListeners() {
             if (modal) {
                 closeModal(modal.id);
                 resetForms();
-                console.log('✅ Modal closed via button:', modal.id);
             }
         });
     });
@@ -1018,7 +940,6 @@ function setupEventListeners() {
         if (e.target.classList.contains('modal-overlay')) {
             closeModal(e.target.id);
             resetForms();
-            console.log('✅ Modal closed via click outside:', e.target.id);
         }
     });
 
@@ -1027,13 +948,11 @@ function setupEventListeners() {
         if (e.key === 'Escape') {
             closeAllModals();
             resetForms();
-            console.log('✅ All modals closed via ESC key');
         }
     });
 
-    // Profile modal logo preview
+    // Profile modal logo preview (one-time setup)
     setupProfileLogoPreview();
-    console.log('✅ Event listeners setup complete');
 }
 
 function setupProfileLogoPreview() {
@@ -1050,8 +969,6 @@ function setupProfileLogoPreview() {
                 if (file.size > 2 * 1024 * 1024) {
                     showNotification('Logo file size exceeds 2MB limit.', 'error');
                     logoInput.value = '';
-                    logoInfo.textContent = '';
-                    console.error('❌ Logo file too large:', file.size);
                     return;
                 }
                 const reader = new FileReader();
@@ -1059,7 +976,6 @@ function setupProfileLogoPreview() {
                     logoPreviewImg.src = e.target.result;
                     logoPreviewContainer.style.display = 'block';
                     logoInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-                    console.log('✅ Logo preview updated:', file.name);
                 };
                 reader.readAsDataURL(file);
             }
@@ -1070,14 +986,12 @@ function setupProfileLogoPreview() {
             logoPreviewContainer.style.display = 'none';
             logoPreviewImg.src = '';
             logoInfo.textContent = '';
-            console.log('✅ Logo preview removed');
         });
-    } else {
-        console.warn('⚠️ Profile logo preview elements missing');
     }
 }
 
 function setupFormSubmissions() {
+    // Member form
     const memberForm = document.getElementById('add-member-form');
     if (memberForm) {
         memberForm.addEventListener('submit', async function(e) {
@@ -1099,12 +1013,12 @@ function setupFormSubmissions() {
                     await addMember(formData);
                 }
             } catch (error) {
-                console.error('❌ Form submission error:', error);
-                showNotification('Failed to process member form.', 'error');
+                console.error('Form submission error:', error);
             }
         });
     }
 
+    // Route form
     const routeForm = document.getElementById('add-route-form');
     if (routeForm) {
         routeForm.addEventListener('submit', async function(e) {
@@ -1126,12 +1040,12 @@ function setupFormSubmissions() {
                     await addRoute(formData);
                 }
             } catch (error) {
-                console.error('❌ Form submission error:', error);
-                showNotification('Failed to process route form.', 'error');
+                console.error('Form submission error:', error);
             }
         });
     }
 
+    // Profile form
     const profileForm = document.getElementById('profile-form');
     if (profileForm) {
         profileForm.addEventListener('submit', function(e) {
@@ -1142,92 +1056,80 @@ function setupFormSubmissions() {
 }
 
 function resetForms() {
+    // Reset member form
     const memberForm = document.getElementById('add-member-form');
     if (memberForm) {
         memberForm.reset();
         memberForm.removeAttribute('data-edit-mode');
         memberForm.removeAttribute('data-member-id');
         document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
-        console.log('✅ Member form reset');
     }
 
+    // Reset route form
     const routeForm = document.getElementById('add-route-form');
     if (routeForm) {
         routeForm.reset();
         routeForm.removeAttribute('data-edit-mode');
         routeForm.removeAttribute('data-route-id');
         document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
-        console.log('✅ Route form reset');
     }
 
+    // Reset profile form
     const profileForm = document.getElementById('profile-form');
     if (profileForm) {
         profileForm.reset();
-        const logoInput = document.getElementById('edit-association-logo');
-        const logoPreviewContainer = document.getElementById('edit-logo-preview-container');
-        const logoPreviewImg = document.getElementById('edit-logo-preview-img');
-        const logoInfo = document.getElementById('edit-logo-info');
-        if (logoInput) logoInput.value = '';
-        if (logoPreviewContainer) logoPreviewContainer.style.display = 'none';
-        if (logoPreviewImg) logoPreviewImg.src = '';
-        if (logoInfo) logoInfo.textContent = '';
-        console.log('✅ Profile form reset');
     }
 }
 
-// MODAL MANAGEMENT FUNCTIONS
+// MODAL MANAGEMENT FUNCTIONS - UPDATED WITH PROFILE LOGO HANDLING
 function openProfileModal() {
-    console.log('🔍 Opening profile modal');
+    console.log('Opening profile modal');
     showModal('profile-modal');
     updateAssociationProfileModal(currentAssociation);
+    
+    // Load current profile data into form
     const logoInput = document.getElementById('edit-association-logo');
-    if (logoInput) logoInput.value = '';
+    if (logoInput) logoInput.value = ''; // Clear any previous file selection
 }
 
 function openMapModal() {
-    console.log('🔍 Opening map modal');
     showModal('map-modal');
 }
 
 function openAddRouteModal() {
-    console.log('🔍 Opening add route modal');
     showModal('add-route-modal');
 }
 
 function openAddMemberModal() {
-    console.log('🔍 Opening add member modal');
     showModal('add-member-modal');
 }
 
 function openManagePartsModal() {
-    console.log('🔍 Opening manage parts modal');
     showModal('manage-parts-modal');
 }
 
 function openAlertsModal() {
-    console.log('🔍 Opening alerts modal');
     showModal('alerts-modal');
 }
 
 function openWalletModal() {
-    console.log('🔍 Opening wallet modal');
     showModal('wallet-modal');
 }
 
+// UTILITY FUNCTIONS
 function showModal(modalId) {
-    console.log(`✅ Showing modal: ${modalId}`);
+    console.log(`Showing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     } else {
-        console.error(`❌ Modal ${modalId} not found`);
-        showNotification(`Modal ${modalId} not found.`, 'error');
+        console.error(`Modal ${modalId} not found`);
     }
 }
 
 function closeModal(modalId) {
-    console.log(`✅ Closing modal: ${modalId}`);
+    console.log(`Closing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
@@ -1241,17 +1143,16 @@ function closeAllModals() {
         modal.style.display = 'none';
     });
     document.body.style.overflow = 'auto';
-    console.log('✅ All modals closed');
 }
 
 async function handleLogout() {
     try {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        console.log('✅ Logged out successfully');
+        
         window.location.href = 'index.html';
     } catch (error) {
-        console.error('❌ Error logging out:', error);
+        console.error('Error logging out:', error);
         showNotification('Error logging out. Please try again.', 'error');
     }
 }
@@ -1289,7 +1190,6 @@ function showNotification(message, type = 'info') {
             notification.remove();
         }
     }, 5000);
-    console.log(`✅ Notification shown: ${message} (${type})`);
 }
 
 // Make functions globally available
