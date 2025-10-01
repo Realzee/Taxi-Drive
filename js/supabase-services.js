@@ -82,6 +82,34 @@ function initializeFunctions(supabase) {
         }
     }
 
+    async function createUserProfile(userId, email, role, additionalData = {}) {
+        try {
+            console.log('🔄 Creating user profile...');
+            const profileData = {
+                id: userId,
+                email: email,
+                role: role,
+                profile_complete: false,
+                ...additionalData
+            };
+
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert([profileData]);
+
+            if (profileError) {
+                console.error('❌ Profile creation failed:', profileError);
+                return false;
+            }
+
+            console.log('✅ User profile created successfully');
+            return true;
+        } catch (error) {
+            console.error('❌ Error creating profile:', error);
+            return false;
+        }
+    }
+
     async function login(email, password, role) {
         const errorElementId = 'login-error-message';
         
@@ -115,14 +143,42 @@ function initializeFunctions(supabase) {
                 .single();
 
             if (profileError) {
-                console.error('❌ Database query failed:', profileError);
+                console.log('❌ Profile query failed:', profileError);
+                
+                // If profile doesn't exist, try to create one automatically
                 if (profileError.code === 'PGRST116') {
-                    showError(errorElementId, 'User profile not properly set up. Please contact support.');
+                    console.log('🔄 Profile not found, creating one automatically...');
+                    const profileCreated = await createUserProfile(authData.user.id, email, role);
+                    
+                    if (profileCreated) {
+                        console.log('✅ Profile created automatically, retrying login...');
+                        // Retry the profile query
+                        const { data: newProfileData, error: newProfileError } = await supabase
+                            .from('profiles')
+                            .select('id, email, role, name, created_at')
+                            .eq('email', email)
+                            .single();
+
+                        if (newProfileError) {
+                            console.error('❌ Still cannot access profile after creation:', newProfileError);
+                            showError(errorElementId, 'Profile setup incomplete. Please try again.');
+                            await supabase.auth.signOut();
+                            return null;
+                        }
+
+                        console.log('✅ Using newly created profile');
+                        // Continue with the new profile data
+                        var profileData = newProfileData;
+                    } else {
+                        showError(errorElementId, 'Unable to create user profile. Please contact support.');
+                        await supabase.auth.signOut();
+                        return null;
+                    }
                 } else {
                     showError(errorElementId, 'Database error: ' + profileError.message);
+                    await supabase.auth.signOut();
+                    return null;
                 }
-                await supabase.auth.signOut();
-                return null;
             }
 
             console.log('✅ User found in profiles:', profileData);
@@ -146,9 +202,9 @@ function initializeFunctions(supabase) {
                     .single();
 
                 if (assocError) {
-                    console.error('❌ Failed to fetch association data:', assocError);
-                    // Continue without association data - it might not exist yet
-                    console.log('⚠️ No association data found, continuing login');
+                    console.log('❌ No association data found:', assocError);
+                    // This is normal for new association accounts
+                    console.log('ℹ️ No association data found - this is normal for new accounts');
                 } else {
                     associationData = assocData;
                     console.log('✅ Association data fetched:', associationData);
@@ -186,13 +242,19 @@ function initializeFunctions(supabase) {
                 return null;
             }
 
-            console.log('✅ Auth account created:', authData.user.id);
+            console.log('✅ Auth account created:', authData.user?.id);
+
+            if (!authData.user) {
+                showError(errorElementId, 'User creation failed - no user data returned');
+                return null;
+            }
 
             console.log('📝 Step 2: Creating profile record...');
             const profileData = {
                 id: authData.user.id,
                 email,
-                role
+                role,
+                profile_complete: true
             };
             
             // Add optional fields based on role
@@ -202,12 +264,28 @@ function initializeFunctions(supabase) {
             const { error: profileError } = await supabase.from('profiles').insert(profileData);
             if (profileError) {
                 console.error('❌ Profile creation error:', profileError);
-                showError(errorElementId, profileError.message || 'Failed to save user profile');
-                // Don't delete auth user as it might be created but profile failed
-                return null;
+                
+                // If profile already exists, try to update it
+                if (profileError.code === '23505') { // Unique violation
+                    console.log('🔄 Profile already exists, updating role...');
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({ role: role })
+                        .eq('id', authData.user.id);
+                    
+                    if (updateError) {
+                        console.error('❌ Profile update failed:', updateError);
+                        showError(errorElementId, 'Account exists but role update failed: ' + updateError.message);
+                        return null;
+                    }
+                    console.log('✅ Profile updated successfully');
+                } else {
+                    showError(errorElementId, profileError.message || 'Failed to save user profile');
+                    return null;
+                }
+            } else {
+                console.log('✅ Profile created successfully');
             }
-
-            console.log('✅ Profile created successfully');
 
             showSuccess(`${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully`, `Login with: ${email}`);
             console.log(`${role} registered successfully`);
@@ -304,12 +382,34 @@ function initializeFunctions(supabase) {
 
             if (profileError) {
                 console.error('❌ Profile record creation error:', profileError);
-                showError(errorElementId, `Failed to save admin profile: ${profileError.message}`);
-                await supabase.auth.admin.deleteUser(adminId);
-                return null;
+                
+                // If profile already exists, try to update it
+                if (profileError.code === '23505') {
+                    console.log('🔄 Profile already exists, updating...');
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({
+                            name: adminName,
+                            phone: adminPhone,
+                            role: 'association',
+                            profile_complete: true
+                        })
+                        .eq('id', adminId);
+                    
+                    if (updateError) {
+                        showError(errorElementId, `Failed to update existing profile: ${updateError.message}`);
+                        await supabase.auth.admin.deleteUser(adminId);
+                        return null;
+                    }
+                    console.log('✅ Profile updated successfully');
+                } else {
+                    showError(errorElementId, `Failed to save admin profile: ${profileError.message}`);
+                    await supabase.auth.admin.deleteUser(adminId);
+                    return null;
+                }
+            } else {
+                console.log('✅ Admin profile record created:', profileResult);
             }
-
-            console.log('✅ Admin profile record created:', profileResult);
 
             let logoUrl = null;
             if (logo) {
@@ -356,8 +456,7 @@ function initializeFunctions(supabase) {
             if (assocError) {
                 console.error('❌ Association creation error:', assocError);
                 showError(errorElementId, `Failed to save association data: ${assocError.message}`);
-                await supabase.from('profiles').delete().eq('id', adminId);
-                await supabase.auth.admin.deleteUser(adminId);
+                // Don't delete the user profile as it might be used for other purposes
                 return null;
             }
 
