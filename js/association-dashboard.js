@@ -32,29 +32,38 @@ document.addEventListener('DOMContentLoaded', function() {
 // Authentication check
 async function checkAssociationAuthentication() {
     try {
+        console.log('Starting authentication check...');
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError || !user) {
-            console.log('No authenticated user, redirecting to login');
+            console.log('No authenticated user, redirecting to login. Error:', authError?.message || 'No user found');
             window.location.href = 'index.html';
             return null;
         }
 
+        console.log('User found:', user.id, user.email);
         const { data: userData, error: userError } = await supabase
             .from('users')
             .select('role, name, email')
             .eq('id', user.id)
             .single();
 
-        if (userError || userData?.role !== 'association') {
-            console.log('User is not an association, redirecting');
+        if (userError) {
+            console.error('User query failed:', userError.message, userError.details);
+            window.location.href = 'index.html';
+            return null;
+        }
+
+        if (userData?.role !== 'association') {
+            console.log(`Role mismatch. Expected: association, Got: ${userData.role}`);
             window.location.href = 'dashboard.html';
             return null;
         }
 
+        console.log('Authentication successful:', userData);
         return { ...user, ...userData };
     } catch (error) {
-        console.error('Authentication check error:', error);
+        console.error('Authentication check error:', error.message, error.stack);
         window.location.href = 'index.html';
         return null;
     }
