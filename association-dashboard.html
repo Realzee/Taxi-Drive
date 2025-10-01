@@ -63,7 +63,7 @@
             <!-- Welcome Section -->
             <section class="welcome-section">
     <h2>Association: <span class="association-name">Admin</span></h2>
-    <p>Efficient Association Management Manage your association efficiently</p>
+    <p>Efficient Association Management</p>
 </section>
             <!-- Dashboard Stats -->
             <section class="stats-section">
@@ -256,6 +256,24 @@
             </div>
         </div>
     </div>
+
+    <div class="form-group">
+    <h4><i class="fas fa-image"></i> Association Logo</h4>
+    <label for="edit-association-logo">Upload Logo</label>
+    <input type="file" id="edit-association-logo" name="logo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.svg">
+    <small>Accepted formats: JPG, PNG, GIF, SVG (Max 2MB)</small>
+    <div id="edit-logo-preview-container" style="display: none; text-align: center;">
+        <div class="logo-preview">
+            <img id="edit-logo-preview-img" src="" alt="Logo Preview" style="max-width: 150px; max-height: 150px; border-radius: 12px;">
+            <div>
+                <button type="button" id="edit-remove-logo-btn" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+                <span id="edit-logo-info"></span>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Map Modal -->
     <div id="map-modal" class="modal-overlay">
