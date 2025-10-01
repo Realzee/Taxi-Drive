@@ -255,10 +255,14 @@ function closeAllModals() {
 
 // Utility to show a modal
 function showModal(modalId) {
+    console.log(`Attempting to show modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
+        console.log(`Modal ${modalId} found, setting display to flex`);
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+    } else {
+        console.error(`Modal ${modalId} not found in DOM`);
     }
 }
 

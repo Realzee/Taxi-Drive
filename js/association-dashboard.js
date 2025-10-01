@@ -1044,10 +1044,13 @@ function openWalletModal() {
 
 // UTILITY FUNCTIONS
 function showModal(modalId) {
+    console.log(`Showing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+    } else {
+        console.error(`Modal ${modalId} not found`);
     }
 }
 
@@ -1059,14 +1062,14 @@ function closeModal(modalId) {
     }
 }
 
-function closeAllModals() {
-    const modals = document.querySelectorAll('.modal-overlay');
-    modals.forEach(modal => {
+function closeModal(modalId) {
+    console.log(`Closing modal: ${modalId}`);
+    const modal = document.getElementById(modalId);
+    if (modal) {
         modal.style.display = 'none';
-    });
-    document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'auto';
+    }
 }
-
 async function handleLogout() {
     try {
         const { error } = await supabase.auth.signOut();
