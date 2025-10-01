@@ -1,4 +1,4 @@
-// Association Dashboard - UPDATED VERSION WITH PROFILE LOGO UPLOAD
+// Association Dashboard - UPDATED FOR NEW SCHEMA
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
@@ -15,7 +15,7 @@ try {
 // Global variables
 let currentUser = null;
 let currentAssociation = null;
-let currentAssociationId = null; // For profile updates
+let currentAssociationId = null;
 let realtimeSubscription = null;
 
 // Demo data storage for fallback
@@ -42,26 +42,28 @@ async function checkAssociationAuthentication() {
         }
 
         console.log('User found:', user.id, user.email);
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role, name, email')
+        
+        // Get user profile from profiles table
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
             .eq('id', user.id)
             .single();
 
-        if (userError) {
-            console.error('User query failed:', userError.message, userError.details);
+        if (profileError) {
+            console.error('Profile query failed:', profileError.message, profileError.details);
             window.location.href = 'index.html';
             return null;
         }
 
-        if (userData?.role !== 'association') {
-            console.log(`Role mismatch. Expected: association, Got: ${userData.role}`);
+        if (profileData?.role !== 'association') {
+            console.log(`Role mismatch. Expected: association, Got: ${profileData.role}`);
             window.location.href = 'dashboard.html';
             return null;
         }
 
-        console.log('Authentication successful:', userData);
-        return { ...user, ...userData };
+        console.log('Authentication successful:', profileData);
+        return { ...user, ...profileData };
     } catch (error) {
         console.error('Authentication check error:', error.message, error.stack);
         window.location.href = 'index.html';
@@ -98,7 +100,7 @@ async function loadUserData() {
     } catch (error) {
         console.error('Error loading user data:', error);
         updateUserHeader({
-            name: currentUser.email.split('@')[0],
+            name: currentUser.name || currentUser.email.split('@')[0],
             email: currentUser.email
         });
     }
@@ -815,7 +817,7 @@ async function deleteRoute(routeId) {
     }
 }
 
-// ASSOCIATION PROFILE MANAGEMENT - UPDATED WITH LOGO UPLOAD
+// ASSOCIATION PROFILE MANAGEMENT
 async function saveAssociationProfile() {
     try {
         const logoInput = document.getElementById('edit-association-logo');
@@ -1082,78 +1084,93 @@ function resetForms() {
         routeForm.removeAttribute('data-route-id');
         document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
     }
-
-    // Reset profile form
-    const profileForm = document.getElementById('profile-form');
-    if (profileForm) {
-        profileForm.reset();
-    }
 }
 
-// MODAL MANAGEMENT FUNCTIONS - UPDATED WITH PROFILE LOGO HANDLING
+// MODAL MANAGEMENT
 function openProfileModal() {
-    console.log('Opening profile modal');
-    showModal('profile-modal');
-    updateAssociationProfileModal(currentAssociation);
-    
-    // Load current profile data into form
-    const logoInput = document.getElementById('edit-association-logo');
-    if (logoInput) logoInput.value = ''; // Clear any previous file selection
-}
-
-function openMapModal() {
-    showModal('map-modal');
-}
-
-function openAddRouteModal() {
-    showModal('add-route-modal');
+    openModal('profile-modal');
 }
 
 function openAddMemberModal() {
-    showModal('add-member-modal');
+    openModal('add-member-modal');
 }
 
-function openManagePartsModal() {
-    showModal('manage-parts-modal');
+function openAddRouteModal() {
+    openModal('add-route-modal');
 }
 
 function openAlertsModal() {
-    showModal('alerts-modal');
+    openModal('alerts-modal');
+    loadAlertsData();
+}
+
+function openMapModal() {
+    openModal('map-modal');
+    loadMapData();
 }
 
 function openWalletModal() {
-    showModal('wallet-modal');
+    openModal('wallet-modal');
+    loadWalletData();
 }
 
-// UTILITY FUNCTIONS
-function showModal(modalId) {
-    console.log(`Showing modal: ${modalId}`);
+function openManagePartsModal() {
+    openModal('parts-modal');
+    loadPartsData();
+}
+
+function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    } else {
-        console.error(`Modal ${modalId} not found`);
+        setTimeout(() => modal.classList.add('active'), 10);
     }
 }
 
 function closeModal(modalId) {
-    console.log(`Closing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
     }
 }
 
 function closeAllModals() {
     const modals = document.querySelectorAll('.modal-overlay');
     modals.forEach(modal => {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
     });
-    document.body.style.overflow = 'auto';
 }
 
+// NOTIFICATION SYSTEM
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, 4000);
+}
+
+// LOGOUT FUNCTION
 async function handleLogout() {
     try {
         const { error } = await supabase.auth.signOut();
@@ -1161,56 +1178,172 @@ async function handleLogout() {
         
         window.location.href = 'index.html';
     } catch (error) {
-        console.error('Error logging out:', error);
-        showNotification('Error logging out. Please try again.', 'error');
+        console.error('Logout error:', error);
+        window.location.href = 'index.html';
     }
 }
 
-function showNotification(message, type = 'info') {
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notification => notification.remove());
+// DEMO DATA FUNCTIONS (for fallback)
+function loadAlertsData() {
+    const alertsContent = document.getElementById('alerts-content');
+    if (!alertsContent) return;
 
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    
-    const icons = {
-        success: 'check-circle',
-        error: 'exclamation-triangle',
-        warning: 'exclamation-circle',
-        info: 'info-circle'
-    };
-
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${icons[type] || 'info-circle'}"></i>
-            <span>${message}</span>
+    alertsContent.innerHTML = `
+        <div class="list-item">
+            <div class="item-icon">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+            </div>
+            <div class="item-details">
+                <h4>Panic Alert - Route 12</h4>
+                <p>Passenger reported emergency situation</p>
+                <p class="text-muted">2 minutes ago</p>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-primary btn-sm">Respond</button>
+            </div>
         </div>
-        <button class="notification-close">&times;</button>
+        <div class="list-item">
+            <div class="item-icon">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+            </div>
+            <div class="item-details">
+                <h4>Vehicle Breakdown - ABC 123 GP</h4>
+                <p>Vehicle reported mechanical issues</p>
+                <p class="text-muted">15 minutes ago</p>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-primary btn-sm">Respond</button>
+            </div>
+        </div>
     `;
-
-    document.body.appendChild(notification);
-
-    notification.querySelector('.notification-close').addEventListener('click', function() {
-        notification.remove();
-    });
-
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
 }
 
-// Make functions globally available
+function loadMapData() {
+    const mapContent = document.getElementById('map-content');
+    if (!mapContent) return;
+
+    mapContent.innerHTML = `
+        <div class="map-placeholder">
+            <i class="fas fa-map-marked-alt"></i>
+            <h3>Live Vehicle Tracking</h3>
+            <p>Active vehicles will appear here in real-time</p>
+            <div class="demo-vehicles">
+                <div class="vehicle-marker">
+                    <i class="fas fa-taxi"></i>
+                    <span>ABC 123 GP</span>
+                </div>
+                <div class="vehicle-marker">
+                    <i class="fas fa-taxi"></i>
+                    <span>DEF 456 GP</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function loadWalletData() {
+    const walletContent = document.getElementById('wallet-content');
+    if (!walletContent) return;
+
+    walletContent.innerHTML = `
+        <div class="wallet-summary">
+            <h3>Association Wallet</h3>
+            <div class="balance-display">
+                <span class="balance-amount">R ${(currentAssociation?.wallet_balance || 0).toFixed(2)}</span>
+                <p class="balance-label">Available Balance</p>
+            </div>
+        </div>
+        <div class="transaction-history">
+            <h4>Recent Transactions</h4>
+            <div class="transaction-list">
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas fa-arrow-down text-success"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <h5>Member Dues</h5>
+                        <p>Monthly collection</p>
+                        <span class="transaction-date">Today</span>
+                    </div>
+                    <div class="transaction-amount text-success">
+                        +R 2,500.00
+                    </div>
+                </div>
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas fa-arrow-up text-danger"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <h5>Maintenance</h5>
+                        <p>Vehicle parts</p>
+                        <span class="transaction-date">Yesterday</span>
+                    </div>
+                    <div class="transaction-amount text-danger">
+                        -R 850.00
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function loadPartsData() {
+    const partsContent = document.getElementById('parts-content');
+    if (!partsContent) return;
+
+    partsContent.innerHTML = `
+        <div class="parts-summary">
+            <h3>Parts Inventory</h3>
+            <div class="inventory-stats">
+                <div class="stat-card">
+                    <h4>15</h4>
+                    <p>Total Parts</p>
+                </div>
+                <div class="stat-card">
+                    <h4>3</h4>
+                    <p>Low Stock</p>
+                </div>
+            </div>
+        </div>
+        <div class="parts-list">
+            <h4>Recent Parts</h4>
+            <div class="list-item">
+                <div class="item-icon">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <div class="item-details">
+                    <h4>Brake Pads</h4>
+                    <p>Part #: BP-2024-001</p>
+                    <p class="text-warning">Low Stock: 2 remaining</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-primary btn-sm">Order</button>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="item-icon">
+                    <i class="fas fa-tire"></i>
+                </div>
+                <div class="item-details">
+                    <h4>Tires</h4>
+                    <p>Part #: TIRE-2024-015</p>
+                    <p class="text-success">In Stock: 8 available</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-primary btn-sm">Order</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Export functions for global access
+window.openAddMemberModal = openAddMemberModal;
+window.openAddRouteModal = openAddRouteModal;
+window.openManagePartsModal = openManagePartsModal;
 window.editMember = editMember;
 window.deleteMember = deleteMember;
 window.editRoute = editRoute;
 window.deleteRoute = deleteRoute;
+window.handleLogout = handleLogout;
 window.closeModal = closeModal;
-window.openAddRouteModal = openAddRouteModal;
-window.openAddMemberModal = openAddMemberModal;
-window.openProfileModal = openProfileModal;
-window.openMapModal = openMapModal;
-window.openManagePartsModal = openManagePartsModal;
-window.openAlertsModal = openAlertsModal;
-window.openWalletModal = openWalletModal;
