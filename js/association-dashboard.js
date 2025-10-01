@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
 
-// Authentication check
+// Authentication check - UPDATED FOR NEW SCHEMA
 async function checkAssociationAuthentication() {
     try {
         console.log('Starting authentication check...');
@@ -43,7 +43,7 @@ async function checkAssociationAuthentication() {
 
         console.log('User found:', user.id, user.email);
         
-        // Get user profile from profiles table
+        // Get user profile from profiles table (NEW SCHEMA)
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -125,23 +125,14 @@ function updateUserHeader(userData) {
     userInfoElement.innerHTML = `<small>${userData.name || userData.email}</small>`;
 }
 
+// Load association data - UPDATED FOR NEW SCHEMA
 async function loadAssociationData() {
     try {
         console.log('Loading association data for admin:', currentUser.id);
         
         let associationData = null;
 
-        // First, check if associations table exists and is accessible
-        const tableCheck = await checkTableAccessibility();
-        if (!tableCheck.accessible) {
-            console.log('Associations table not accessible, using demo mode');
-            currentAssociation = createDemoAssociation();
-            currentAssociationId = 'demo-mode';
-            updateAssociationProfile(currentAssociation);
-            return;
-        }
-
-        // Try to get association by admin_id
+        // Try to get association by admin_id (NEW SCHEMA)
         const { data, error } = await supabase
             .from('associations')
             .select('*')
@@ -166,26 +157,6 @@ async function loadAssociationData() {
         currentAssociation = createDemoAssociation();
         currentAssociationId = 'demo-mode';
         updateAssociationProfile(currentAssociation);
-    }
-}
-
-// Check if we can access the associations table
-async function checkTableAccessibility() {
-    try {
-        const { data, error } = await supabase
-            .from('associations')
-            .select('id')
-            .limit(1);
-
-        return {
-            accessible: true,
-            exists: !error || error.code !== 'PGRST204'
-        };
-    } catch (error) {
-        return {
-            accessible: false,
-            exists: false
-        };
     }
 }
 
@@ -332,6 +303,7 @@ async function loadDashboardStats() {
             return;
         }
 
+        // UPDATED QUERIES FOR NEW SCHEMA
         const [vehicles, members, routes, alerts] = await Promise.all([
             supabase.from('vehicles').select('id').eq('association_id', currentAssociation.id),
             supabase.from('members').select('id').eq('association_id', currentAssociation.id),
@@ -373,7 +345,7 @@ function updateDashboardStats(stats) {
     });
 }
 
-// MEMBER MANAGEMENT
+// MEMBER MANAGEMENT - UPDATED FOR NEW SCHEMA
 async function loadRecentMembers() {
     try {
         if (currentAssociation.is_demo) {
@@ -600,7 +572,7 @@ async function deleteMember(memberId) {
     }
 }
 
-// ROUTE MANAGEMENT
+// ROUTE MANAGEMENT - UPDATED FOR NEW SCHEMA
 async function loadRecentRoutes() {
     try {
         if (currentAssociation.is_demo) {
@@ -817,7 +789,7 @@ async function deleteRoute(routeId) {
     }
 }
 
-// ASSOCIATION PROFILE MANAGEMENT
+// ASSOCIATION PROFILE MANAGEMENT - UPDATED FOR NEW SCHEMA
 async function saveAssociationProfile() {
     try {
         const logoInput = document.getElementById('edit-association-logo');
@@ -888,7 +860,7 @@ async function saveAssociationProfile() {
     }
 }
 
-// EVENT LISTENERS SETUP
+// EVENT LISTENERS SETUP (NO CHANGES NEEDED)
 function setupEventListeners() {
     // Header actions
     const profileBtn = document.getElementById('profile-btn');
@@ -962,7 +934,7 @@ function setupEventListeners() {
         }
     });
 
-    // Profile modal logo preview (one-time setup)
+    // Profile modal logo preview
     setupProfileLogoPreview();
 }
 
@@ -1084,93 +1056,78 @@ function resetForms() {
         routeForm.removeAttribute('data-route-id');
         document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
     }
+
+    // Reset profile form
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.reset();
+    }
 }
 
-// MODAL MANAGEMENT
+// MODAL MANAGEMENT FUNCTIONS (NO CHANGES NEEDED)
 function openProfileModal() {
-    openModal('profile-modal');
-}
-
-function openAddMemberModal() {
-    openModal('add-member-modal');
-}
-
-function openAddRouteModal() {
-    openModal('add-route-modal');
-}
-
-function openAlertsModal() {
-    openModal('alerts-modal');
-    loadAlertsData();
+    console.log('Opening profile modal');
+    showModal('profile-modal');
+    updateAssociationProfileModal(currentAssociation);
+    
+    // Load current profile data into form
+    const logoInput = document.getElementById('edit-association-logo');
+    if (logoInput) logoInput.value = ''; // Clear any previous file selection
 }
 
 function openMapModal() {
-    openModal('map-modal');
-    loadMapData();
+    showModal('map-modal');
 }
 
-function openWalletModal() {
-    openModal('wallet-modal');
-    loadWalletData();
+function openAddRouteModal() {
+    showModal('add-route-modal');
+}
+
+function openAddMemberModal() {
+    showModal('add-member-modal');
 }
 
 function openManagePartsModal() {
-    openModal('parts-modal');
-    loadPartsData();
+    showModal('manage-parts-modal');
 }
 
-function openModal(modalId) {
+function openAlertsModal() {
+    showModal('alerts-modal');
+}
+
+function openWalletModal() {
+    showModal('wallet-modal');
+}
+
+// UTILITY FUNCTIONS (NO CHANGES NEEDED)
+function showModal(modalId) {
+    console.log(`Showing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error(`Modal ${modalId} not found`);
     }
 }
 
 function closeModal(modalId) {
+    console.log(`Closing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 }
 
 function closeAllModals() {
     const modals = document.querySelectorAll('.modal-overlay');
     modals.forEach(modal => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
+        modal.style.display = 'none';
     });
+    document.body.style.overflow = 'auto';
 }
 
-// NOTIFICATION SYSTEM
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <span>${message}</span>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 300);
-    }, 4000);
-}
-
-// LOGOUT FUNCTION
 async function handleLogout() {
     try {
         const { error } = await supabase.auth.signOut();
@@ -1178,172 +1135,56 @@ async function handleLogout() {
         
         window.location.href = 'index.html';
     } catch (error) {
-        console.error('Logout error:', error);
-        window.location.href = 'index.html';
+        console.error('Error logging out:', error);
+        showNotification('Error logging out. Please try again.', 'error');
     }
 }
 
-// DEMO DATA FUNCTIONS (for fallback)
-function loadAlertsData() {
-    const alertsContent = document.getElementById('alerts-content');
-    if (!alertsContent) return;
+function showNotification(message, type = 'info') {
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
 
-    alertsContent.innerHTML = `
-        <div class="list-item">
-            <div class="item-icon">
-                <i class="fas fa-exclamation-triangle text-danger"></i>
-            </div>
-            <div class="item-details">
-                <h4>Panic Alert - Route 12</h4>
-                <p>Passenger reported emergency situation</p>
-                <p class="text-muted">2 minutes ago</p>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-primary btn-sm">Respond</button>
-            </div>
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-triangle',
+        warning: 'exclamation-circle',
+        info: 'info-circle'
+    };
+
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${icons[type] || 'info-circle'}"></i>
+            <span>${message}</span>
         </div>
-        <div class="list-item">
-            <div class="item-icon">
-                <i class="fas fa-exclamation-triangle text-warning"></i>
-            </div>
-            <div class="item-details">
-                <h4>Vehicle Breakdown - ABC 123 GP</h4>
-                <p>Vehicle reported mechanical issues</p>
-                <p class="text-muted">15 minutes ago</p>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-primary btn-sm">Respond</button>
-            </div>
-        </div>
+        <button class="notification-close">&times;</button>
     `;
+
+    document.body.appendChild(notification);
+
+    notification.querySelector('.notification-close').addEventListener('click', function() {
+        notification.remove();
+    });
+
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
-function loadMapData() {
-    const mapContent = document.getElementById('map-content');
-    if (!mapContent) return;
-
-    mapContent.innerHTML = `
-        <div class="map-placeholder">
-            <i class="fas fa-map-marked-alt"></i>
-            <h3>Live Vehicle Tracking</h3>
-            <p>Active vehicles will appear here in real-time</p>
-            <div class="demo-vehicles">
-                <div class="vehicle-marker">
-                    <i class="fas fa-taxi"></i>
-                    <span>ABC 123 GP</span>
-                </div>
-                <div class="vehicle-marker">
-                    <i class="fas fa-taxi"></i>
-                    <span>DEF 456 GP</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function loadWalletData() {
-    const walletContent = document.getElementById('wallet-content');
-    if (!walletContent) return;
-
-    walletContent.innerHTML = `
-        <div class="wallet-summary">
-            <h3>Association Wallet</h3>
-            <div class="balance-display">
-                <span class="balance-amount">R ${(currentAssociation?.wallet_balance || 0).toFixed(2)}</span>
-                <p class="balance-label">Available Balance</p>
-            </div>
-        </div>
-        <div class="transaction-history">
-            <h4>Recent Transactions</h4>
-            <div class="transaction-list">
-                <div class="transaction-item">
-                    <div class="transaction-icon">
-                        <i class="fas fa-arrow-down text-success"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <h5>Member Dues</h5>
-                        <p>Monthly collection</p>
-                        <span class="transaction-date">Today</span>
-                    </div>
-                    <div class="transaction-amount text-success">
-                        +R 2,500.00
-                    </div>
-                </div>
-                <div class="transaction-item">
-                    <div class="transaction-icon">
-                        <i class="fas fa-arrow-up text-danger"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <h5>Maintenance</h5>
-                        <p>Vehicle parts</p>
-                        <span class="transaction-date">Yesterday</span>
-                    </div>
-                    <div class="transaction-amount text-danger">
-                        -R 850.00
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function loadPartsData() {
-    const partsContent = document.getElementById('parts-content');
-    if (!partsContent) return;
-
-    partsContent.innerHTML = `
-        <div class="parts-summary">
-            <h3>Parts Inventory</h3>
-            <div class="inventory-stats">
-                <div class="stat-card">
-                    <h4>15</h4>
-                    <p>Total Parts</p>
-                </div>
-                <div class="stat-card">
-                    <h4>3</h4>
-                    <p>Low Stock</p>
-                </div>
-            </div>
-        </div>
-        <div class="parts-list">
-            <h4>Recent Parts</h4>
-            <div class="list-item">
-                <div class="item-icon">
-                    <i class="fas fa-cog"></i>
-                </div>
-                <div class="item-details">
-                    <h4>Brake Pads</h4>
-                    <p>Part #: BP-2024-001</p>
-                    <p class="text-warning">Low Stock: 2 remaining</p>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-primary btn-sm">Order</button>
-                </div>
-            </div>
-            <div class="list-item">
-                <div class="item-icon">
-                    <i class="fas fa-tire"></i>
-                </div>
-                <div class="item-details">
-                    <h4>Tires</h4>
-                    <p>Part #: TIRE-2024-015</p>
-                    <p class="text-success">In Stock: 8 available</p>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-primary btn-sm">Order</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Export functions for global access
-window.openAddMemberModal = openAddMemberModal;
-window.openAddRouteModal = openAddRouteModal;
-window.openManagePartsModal = openManagePartsModal;
+// Make functions globally available
 window.editMember = editMember;
 window.deleteMember = deleteMember;
 window.editRoute = editRoute;
 window.deleteRoute = deleteRoute;
-window.handleLogout = handleLogout;
 window.closeModal = closeModal;
+window.openAddRouteModal = openAddRouteModal;
+window.openAddMemberModal = openAddMemberModal;
+window.openProfileModal = openProfileModal;
+window.openMapModal = openMapModal;
+window.openManagePartsModal = openManagePartsModal;
+window.openAlertsModal = openAlertsModal;
+window.openWalletModal = openWalletModal;
