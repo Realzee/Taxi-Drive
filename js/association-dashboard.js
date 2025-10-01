@@ -1,4 +1,4 @@
-// Association Dashboard - FIXED VERSION WITH PROPER DATABASE HANDLING
+// Association Dashboard - COMPLETE WORKING VERSION
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
@@ -721,8 +721,398 @@ async function addRoute(routeData) {
     }
 }
 
-// ... (Keep all the other functions from the previous version - they remain the same)
-// [Include all the remaining functions from the previous JavaScript version]
+async function editRoute(routeId) {
+    try {
+        let route;
+        
+        if (currentAssociation.is_demo) {
+            route = demoData.routes.find(r => r.id === routeId);
+        } else {
+            const { data, error } = await supabase
+                .from('routes')
+                .select('*')
+                .eq('id', routeId)
+                .single();
+            if (error) throw error;
+            route = data;
+        }
+
+        if (!route) {
+            showNotification('Route not found.', 'error');
+            return;
+        }
+
+        // Populate edit form
+        document.getElementById('route-name').value = route.route_name || '';
+        document.getElementById('route-origin').value = route.origin || '';
+        document.getElementById('route-destination').value = route.destination || '';
+        document.getElementById('route-schedule').value = route.schedule || '';
+        document.getElementById('route-waypoints').value = route.waypoints || '';
+
+        // Change form to edit mode
+        const form = document.getElementById('add-route-form');
+        form.setAttribute('data-edit-mode', 'true');
+        form.setAttribute('data-route-id', routeId);
+
+        document.querySelector('#add-route-modal .modal-header h3').textContent = 'Edit Route';
+        openAddRouteModal();
+        
+    } catch (error) {
+        console.error('Error loading route for edit:', error);
+        showNotification('Failed to load route data.', 'error');
+    }
+}
+
+async function updateRoute(routeId, routeData) {
+    try {
+        if (currentAssociation.is_demo) {
+            // Update demo data
+            const routeIndex = demoData.routes.findIndex(r => r.id === routeId);
+            if (routeIndex !== -1) {
+                demoData.routes[routeIndex] = { ...demoData.routes[routeIndex], ...routeData };
+            }
+        } else {
+            // Update database
+            const { error } = await supabase
+                .from('routes')
+                .update(routeData)
+                .eq('id', routeId);
+            if (error) throw error;
+        }
+
+        showNotification('Route updated successfully!', 'success');
+        closeModal('add-route-modal');
+        await loadRecentRoutes();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error updating route:', error);
+        showNotification('Failed to update route.', 'error');
+    }
+}
+
+async function deleteRoute(routeId) {
+    if (!confirm('Are you sure you want to delete this route?')) return;
+
+    try {
+        if (currentAssociation.is_demo) {
+            // Remove from demo data
+            demoData.routes = demoData.routes.filter(r => r.id !== routeId);
+        } else {
+            // Delete from database
+            const { error } = await supabase
+                .from('routes')
+                .delete()
+                .eq('id', routeId);
+            if (error) throw error;
+        }
+
+        showNotification('Route deleted successfully!', 'success');
+        await loadRecentRoutes();
+        await loadDashboardStats();
+        
+    } catch (error) {
+        console.error('Error deleting route:', error);
+        showNotification('Failed to delete route.', 'error');
+    }
+}
+
+// ASSOCIATION PROFILE MANAGEMENT
+async function saveAssociationProfile() {
+    try {
+        const formData = {
+            association_name: document.getElementById('profile-association-name')?.value || '',
+            email: document.getElementById('profile-association-email')?.value || '',
+            phone: document.getElementById('profile-association-phone')?.value || '',
+            address: document.getElementById('profile-association-address')?.value || '',
+            description: document.getElementById('profile-association-description')?.value || '',
+            admin_name: document.getElementById('profile-admin-name')?.value || '',
+            admin_phone: document.getElementById('profile-admin-phone')?.value || '',
+            updated_at: new Date().toISOString()
+        };
+
+        if (!currentAssociation.is_demo) {
+            const { error } = await supabase
+                .from('associations')
+                .update(formData)
+                .eq('id', currentAssociation.id);
+            if (error) throw error;
+        }
+
+        // Update current association data
+        Object.assign(currentAssociation, formData);
+        updateAssociationProfile(currentAssociation);
+        
+        showNotification('Profile updated successfully!', 'success');
+        closeModal('profile-modal');
+        
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showNotification('Failed to update profile.', 'error');
+    }
+}
+
+// EVENT LISTENERS SETUP
+function setupEventListeners() {
+    // Header actions
+    const profileBtn = document.getElementById('profile-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const alertsBtn = document.getElementById('alerts-btn');
+
+    if (profileBtn) profileBtn.addEventListener('click', openProfileModal);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (alertsBtn) alertsBtn.addEventListener('click', openAlertsModal);
+
+    // Quick actions
+    const quickActionBtns = document.querySelectorAll('.quick-action-btn');
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            switch(action) {
+                case 'add-route': openAddRouteModal(); break;
+                case 'add-member': openAddMemberModal(); break;
+                case 'manage-parts': openManagePartsModal(); break;
+                case 'view-alerts': openAlertsModal(); break;
+            }
+        });
+    });
+
+    // Bottom navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            
+            navItems.forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+            
+            switch(target) {
+                case 'dashboard': break;
+                case 'map': openMapModal(); break;
+                case 'wallet': openWalletModal(); break;
+                case 'profile': openProfileModal(); break;
+            }
+        });
+    });
+
+    // Form submissions
+    setupFormSubmissions();
+
+    // Modal close buttons
+    const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modal = this.closest('.modal-overlay');
+            if (modal) {
+                closeModal(modal.id);
+                resetForms();
+            }
+        });
+    });
+
+    // Click outside to close modals
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeModal(e.target.id);
+            resetForms();
+        }
+    });
+
+    // ESC key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+            resetForms();
+        }
+    });
+}
+
+function setupFormSubmissions() {
+    // Member form
+    const memberForm = document.getElementById('add-member-form');
+    if (memberForm) {
+        memberForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                member_email: document.getElementById('member-email').value,
+                member_name: document.getElementById('member-name').value,
+                phone: document.getElementById('member-phone').value,
+                role: document.getElementById('member-role').value,
+                is_verified: document.getElementById('member-verified').checked
+            };
+
+            try {
+                if (this.getAttribute('data-edit-mode') === 'true') {
+                    const memberId = this.getAttribute('data-member-id');
+                    await updateMember(memberId, formData);
+                } else {
+                    await addMember(formData);
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
+        });
+    }
+
+    // Route form
+    const routeForm = document.getElementById('add-route-form');
+    if (routeForm) {
+        routeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                route_name: document.getElementById('route-name').value,
+                origin: document.getElementById('route-origin').value,
+                destination: document.getElementById('route-destination').value,
+                schedule: document.getElementById('route-schedule').value,
+                waypoints: document.getElementById('route-waypoints').value
+            };
+
+            try {
+                if (this.getAttribute('data-edit-mode') === 'true') {
+                    const routeId = this.getAttribute('data-route-id');
+                    await updateRoute(routeId, formData);
+                } else {
+                    await addRoute(formData);
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
+        });
+    }
+
+    // Profile form
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAssociationProfile();
+        });
+    }
+}
+
+function resetForms() {
+    // Reset member form
+    const memberForm = document.getElementById('add-member-form');
+    if (memberForm) {
+        memberForm.reset();
+        memberForm.removeAttribute('data-edit-mode');
+        memberForm.removeAttribute('data-member-id');
+        document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
+    }
+
+    // Reset route form
+    const routeForm = document.getElementById('add-route-form');
+    if (routeForm) {
+        routeForm.reset();
+        routeForm.removeAttribute('data-edit-mode');
+        routeForm.removeAttribute('data-route-id');
+        document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
+    }
+}
+
+// MODAL MANAGEMENT FUNCTIONS
+function openProfileModal() {
+    updateAssociationProfileModal(currentAssociation);
+    showModal('profile-modal');
+}
+
+function openMapModal() {
+    showModal('map-modal');
+}
+
+function openAddRouteModal() {
+    showModal('add-route-modal');
+}
+
+function openAddMemberModal() {
+    showModal('add-member-modal');
+}
+
+function openManagePartsModal() {
+    showModal('manage-parts-modal');
+}
+
+function openAlertsModal() {
+    showModal('alerts-modal');
+}
+
+function openWalletModal() {
+    showModal('wallet-modal');
+}
+
+// UTILITY FUNCTIONS
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+    });
+    document.body.style.overflow = 'auto';
+}
+
+async function handleLogout() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        
+        window.location.href = 'index.html';
+    } catch (error) {
+        console.error('Error logging out:', error);
+        showNotification('Error logging out. Please try again.', 'error');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-triangle',
+        warning: 'exclamation-circle',
+        info: 'info-circle'
+    };
+
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${icons[type] || 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close">&times;</button>
+    `;
+
+    document.body.appendChild(notification);
+
+    notification.querySelector('.notification-close').addEventListener('click', function() {
+        notification.remove();
+    });
+
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
 
 // Make functions globally available
 window.editMember = editMember;
