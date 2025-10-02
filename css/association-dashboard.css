@@ -42,15 +42,15 @@ body.association-dashboard .container {
     background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
     color: white;
     padding: 0.75rem 1rem;
-    width: 100%; /* Explicitly set to 100% of parent */
-    max-width: 480px; /* Match the app's max-width */
+    width: 100%;
+    max-width: 480px; /* Match dashboard-app's max-width */
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border-radius: 1rem 1rem 0 0;
     position: fixed;
     top: 0;
-    left: 0;
-    margin: 0 auto; /* Center align with the app */
+    left: 50%;
+    transform: translateX(-50%); /* Center the header */
 }
 
 .header-content {
@@ -896,6 +896,8 @@ body.association-dashboard .container {
     border-left: 4px solid #ffc107;
 }
 
+
+
 @keyframes slideIn {
     from {
         transform: translateX(50%) translateY(-20px);
@@ -921,6 +923,14 @@ body.association-dashboard .container {
         padding: 1rem;
         padding-bottom: 80px;
     }
+
+    /* Dashboard Container - Define width explicitly */
+.dashboard-container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
     
     .stats-grid {
         grid-template-columns: 1fr 1fr;
