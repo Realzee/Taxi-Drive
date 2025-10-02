@@ -70,9 +70,9 @@ body.association-dashboard .container {
 }
 
 #main-logo {
-    height: 40px; /* Reset to original size for simplicity */
+    height: 80px; /* Reset to original size for simplicity */
     width: auto;
-    border-radius: 6px;
+    border-radius: 10px;
     display: block !important;
     visibility: visible !important;
 }
@@ -275,7 +275,7 @@ body.association-dashboard .container {
     padding: 1rem;
     padding-bottom: 80px;
     width: 100%;
-    padding-top: 90px;
+    padding-top: 100px; /* Increased to accommodate bigger logo */
 }
 .welcome-section {
     text-align: center;
@@ -919,10 +919,6 @@ body.association-dashboard .container {
         border-radius: 0;
     }
     
-    .main-content {
-        padding: 1rem;
-        padding-bottom: 80px;
-    }
 
     /* Dashboard Container - Define width explicitly */
 .dashboard-container {
