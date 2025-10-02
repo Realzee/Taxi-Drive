@@ -55,11 +55,78 @@ body.association-dashboard .container {
     width: 100%;
 }
 
+/* Logo Styles - UPDATED */
 .logo-section {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex: 1;
+    position: relative;
+}
+
+/* Main logo - ALWAYS visible */
+#main-logo {
+    height: 40px;
+    width: auto;
+    border-radius: 6px;
+    display: block !important; /* Force display */
+    visibility: visible !important; /* Force visibility */
+}
+
+/* Association logo - bigger and centered */
+.association-logo {
+    height: 60px !important; /* Bigger than main logo */
+    width: 60px !important;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: none; /* Hidden by default */
+}
+
+/* When association logo is loaded, position it */
+.association-logo[src]:not([src=""]) {
+    display: block !important;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+/* Adjust title section when association logo is present */
+.association-logo[src]:not([src=""]) ~ .title-section {
+    margin-left: 70px; /* Make space for the centered logo */
+}
+
+/* Header content adjustment for logo layout */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    position: relative;
+}
+
+/* Logo preview in modals - bigger */
+#edit-logo-preview-img,
+#logo-preview-img {
+    max-width: 200px !important;
+    max-height: 200px !important;
+    border-radius: 12px;
+    border: 3px solid rgba(163, 201, 230, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Welcome section logo display */
+#association-logo-display {
+    max-width: 120px !important;
+    max-height: 120px !important;
+    border-radius: 12px;
+    border: 3px solid rgba(163, 201, 230, 0.5);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    margin: 15px auto;
+    display: block;
 }
 
 .logo {
