@@ -235,6 +235,34 @@ async function createUserProfileWithRLS(userId, email, role) {
     }
 }
 
+async function getAssociationData(adminId) {
+    try {
+        console.log('🔄 Fetching association data for admin:', adminId);
+        
+        const { data: assocData, error: assocError } = await supabase
+            .from('associations')
+            .select('association_name, logo_url, email, phone, address')
+            .eq('admin_id', adminId)
+            .single();
+
+        if (assocError) {
+            if (assocError.code === 'PGRST116') {
+                // No association found - this is normal for new accounts
+                console.log('ℹ️ No association data found - this is normal for new accounts');
+                return null;
+            } else {
+                console.error('❌ Association query failed:', assocError);
+                return null;
+            }
+        }
+
+        console.log('✅ Association data fetched:', assocData);
+        return assocData;
+    } catch (error) {
+        console.error('❌ Error fetching association data:', error);
+        return null;
+    }
+}
         async function signupSimple(role, formData) {
             const { email, password, license_number, company_name } = formData;
             const errorElementId = `signup-${role}-error-message`;
