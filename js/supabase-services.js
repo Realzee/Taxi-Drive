@@ -116,121 +116,124 @@ function initializeFunctions(supabase) {
             }
         }
 
-        async function login(email, password, role) {
-            const errorElementId = 'login-error-message';
-            
-            console.log('🔐 LOGIN ATTEMPT STARTED ==========');
-            console.log('📧 Email:', email);
-            console.log('🔑 Password length:', password ? password.length : 0);
-            console.log('👤 Requested role:', role);
-            console.log('⏰ Time:', new Date().toLocaleString());
+        // In supabase-services.js - update the login function
+async function login(email, password, role) {
+    const errorElementId = 'login-error-message';
+    
+    console.log('🔐 LOGIN ATTEMPT STARTED ==========');
 
-            try {
-                console.log('🔄 Step 1: Authenticating with Supabase Auth...');
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
-                    email, 
-                    password 
-                });
+    try {
+        console.log('🔄 Step 1: Authenticating with Supabase Auth...');
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+            email, 
+            password 
+        });
 
-                if (authError) {
-                    console.error('❌ Auth failed:', authError);
-                    showError(errorElementId, authError.message || 'Authentication failed');
-                    return null;
-                }
+        if (authError) {
+            console.error('❌ Auth failed:', authError);
+            showError(errorElementId, authError.message || 'Authentication failed');
+            return null;
+        }
 
-                console.log('✅ Auth successful!');
-                console.log('👤 User ID:', authData.user.id);
+        console.log('✅ Auth successful! User ID:', authData.user.id);
 
-                console.log('🔄 Step 2: Checking user profile in database...');
-                let profileData;
-                const { data: profileDataResult, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('id, email, role, name, created_at')
-                    .eq('email', email)
-                    .single();
+        // Try to get or create profile with better error handling
+        let profileData = await getOrCreateUserProfile(authData.user, email, role);
+        if (!profileData) {
+            showError(errorElementId, 'Unable to access user profile. Please contact administrator.');
+            await supabase.auth.signOut();
+            return null;
+        }
 
-                if (profileError) {
-                    console.log('❌ Profile query failed:', profileError);
-                    
-                    // If profile doesn't exist, try to create one automatically
-                    if (profileError.code === 'PGRST116') {
-                        console.log('🔄 Profile not found, creating one automatically...');
-                        const profileCreated = await createUserProfile(authData.user.id, email, role);
-                        
-                        if (profileCreated) {
-                            console.log('✅ Profile created automatically, retrying login...');
-                            // Retry the profile query
-                            const { data: newProfileData, error: newProfileError } = await supabase
-                                .from('profiles')
-                                .select('id, email, role, name, created_at')
-                                .eq('email', email)
-                                .single();
+        console.log('✅ Profile verified:', profileData);
 
-                            if (newProfileError) {
-                                console.error('❌ Still cannot access profile after creation:', newProfileError);
-                                showError(errorElementId, 'Profile setup incomplete. Please try again.');
-                                await supabase.auth.signOut();
-                                return null;
-                            }
+        // Verify role
+        if (profileData.role !== role) {
+            console.error('❌ Role mismatch!');
+            showError(errorElementId, `Invalid role. Your account is registered as ${profileData.role}, but you're trying to login as ${role}`);
+            await supabase.auth.signOut();
+            return null;
+        }
 
-                            console.log('✅ Using newly created profile');
-                            profileData = newProfileData;
-                        } else {
-                            showError(errorElementId, 'Unable to create user profile. Please contact support.');
-                            await supabase.auth.signOut();
-                            return null;
-                        }
-                    } else {
-                        showError(errorElementId, 'Database error: ' + profileError.message);
-                        await supabase.auth.signOut();
-                        return null;
-                    }
-                } else {
-                    profileData = profileDataResult;
-                    console.log('✅ User found in profiles:', profileData);
-                }
+        console.log('✅ Role verified successfully!');
 
-                console.log('🔄 Step 3: Verifying role...');
-                if (profileData.role !== role) {
-                    console.error('❌ Role mismatch!');
-                    showError(errorElementId, `Invalid role. Your account is registered as ${profileData.role}, but you're trying to login as ${role}`);
-                    await supabase.auth.signOut();
-                    return null;
-                }
-                console.log('✅ Role verified successfully!');
+        // Get association data if applicable
+        let associationData = null;
+        if (role === 'association') {
+            associationData = await getAssociationData(profileData.id);
+        }
 
-                let associationData = null;
-                if (role === 'association') {
-                    console.log('🔄 Step 4: Fetching association data...');
-                    const { data: assocData, error: assocError } = await supabase
-                        .from('associations')
-                        .select('association_name, logo_url')
-                        .eq('admin_id', profileData.id)
-                        .single();
+        console.log('🎉 LOGIN SUCCESSFUL!');
+        return {
+            user: authData.user,
+            role: profileData.role,
+            association: associationData
+        };
 
-                    if (assocError) {
-                        console.log('❌ No association data found:', assocError);
-                        // This is normal for new association accounts
-                        console.log('ℹ️ No association data found - this is normal for new accounts');
-                    } else {
-                        associationData = assocData;
-                        console.log('✅ Association data fetched:', associationData);
-                    }
-                }
+    } catch (err) {
+        console.error('💥 UNEXPECTED LOGIN ERROR:', err);
+        showError(errorElementId, 'An unexpected error occurred: ' + err.message);
+        return null;
+    }
+}
 
-                console.log('🎉 LOGIN SUCCESSFUL!');
-                return {
-                    user: authData.user,
-                    role: profileData.role,
-                    association: associationData
-                };
+async function getOrCreateUserProfile(user, email, role) {
+    try {
+        // Try to get existing profile
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-            } catch (err) {
-                console.error('💥 UNEXPECTED LOGIN ERROR:', err);
-                showError(errorElementId, 'An unexpected error occurred: ' + err.message);
+        if (profileError) {
+            if (profileError.code === 'PGRST116') {
+                // Profile doesn't exist, try to create it
+                console.log('🔄 Profile not found, creating one...');
+                return await createUserProfileWithRLS(user.id, email, role);
+            } else {
+                console.error('❌ Profile query failed:', profileError);
                 return null;
             }
         }
+
+        return profileData;
+    } catch (error) {
+        console.error('❌ Error in getOrCreateUserProfile:', error);
+        return null;
+    }
+}
+
+async function createUserProfileWithRLS(userId, email, role) {
+    try {
+        // Try direct insertion first
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert([{
+                id: userId,
+                email: email,
+                role: role,
+                profile_complete: true
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Profile creation failed (RLS likely blocking):', error);
+            
+            // If RLS is blocking, we can't proceed
+            if (error.code === '42501') {
+                throw new Error('Database permissions issue. Please contact administrator to set up proper RLS policies.');
+            }
+            throw error;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('❌ Failed to create profile:', error);
+        throw error;
+    }
+}
 
         async function signupSimple(role, formData) {
             const { email, password, license_number, company_name } = formData;
