@@ -812,28 +812,46 @@ async function saveAssociationProfile() {
             updated_at: new Date().toISOString()
         };
 
-        let logoUrl = currentAssociation.logo_url; // Keep existing logo unless new one is uploaded
+        let logoUrl = currentAssociation.logo_url;
 
         if (!currentAssociation.is_demo && logoFile) {
-            // Upload new logo
-            const fileName = `${currentAssociationId}/${Date.now()}_${logoFile.name}`;
-            const { data: storageData, error: storageError } = await supabase.storage
-                .from('logos')
-                .upload(fileName, logoFile, { 
-                    cacheControl: '3600', 
-                    upsert: false 
-                });
+            try {
+                console.log('📝 Uploading logo...');
+                const fileName = `${currentAssociationId}/${Date.now()}_${logoFile.name}`;
+                
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from('logos')
+                    .upload(fileName, logoFile, { 
+                        cacheControl: '3600', 
+                        upsert: false 
+                    });
 
-            if (storageError) {
-                console.error('Logo upload error:', storageError);
-                showNotification('Failed to upload logo. Profile saved without logo.', 'warning');
-            } else {
-                const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
-                logoUrl = publicUrlData.publicUrl;
-                console.log('New logo uploaded:', logoUrl);
+                if (storageError) {
+                    console.error('❌ Logo upload error:', storageError);
+                    
+                    // If RLS error, provide helpful message
+                    if (storageError.message.includes('row-level security')) {
+                        showNotification('Logo upload failed due to security policies. Please contact administrator.', 'warning');
+                    } else {
+                        showNotification('Failed to upload logo. Please try again.', 'warning');
+                    }
+                    
+                    // Continue without logo - don't block profile save
+                    console.log('⚠️ Continuing without logo upload');
+                } else {
+                    const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
+                    logoUrl = publicUrlData.publicUrl;
+                    console.log('✅ Logo uploaded:', logoUrl);
+                    showNotification('Logo uploaded successfully!', 'success');
+                }
+            } catch (uploadError) {
+                console.error('❌ Logo upload failed:', uploadError);
+                showNotification('Logo upload failed. Please try again.', 'warning');
+                // Continue without logo
             }
         }
 
+        // Update association data regardless of logo upload success
         if (!currentAssociation.is_demo) {
             const updateData = {
                 ...formData,
