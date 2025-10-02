@@ -220,6 +220,59 @@ function updateAssociationProfile(associationData) {
 
     updateAssociationLogo(associationData.logo_url);
     updateAssociationProfileModal(associationData);
+    createLargeLogoDisplay(associationData);
+}
+
+function createLargeLogoDisplay(associationData) {
+    // Remove existing logo display if any
+    const existingDisplay = document.getElementById('association-logo-display-section');
+    if (existingDisplay) {
+        existingDisplay.remove();
+    }
+
+    // Create the large logo display section
+    const logoDisplaySection = document.createElement('div');
+    logoDisplaySection.id = 'association-logo-display-section';
+    logoDisplaySection.className = 'association-logo-display';
+
+    let logoHtml = '';
+    
+    if (associationData.logo_url) {
+        // Association has a logo - show it big
+        logoHtml = `
+            <img src="${associationData.logo_url}" 
+                 alt="${associationData.association_name || 'Association'} Logo" 
+                 class="association-logo-large"
+                 onerror="this.style.display='none'">
+            <h2 class="association-name-display">${associationData.association_name || 'Taxi Association'}</h2>
+            ${associationData.email ? `<p class="association-email-display">${associationData.email}</p>` : ''}
+        `;
+    } else {
+        // No logo - show association name prominently
+        logoHtml = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="width: 120px; height: 120px; border-radius: 20px; background: linear-gradient(135deg, var(--dark-blue) 0%, var(--light-blue) 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; border: 4px solid rgba(255, 255, 255, 0.8); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);">
+                    <i class="fas fa-building" style="font-size: 3rem; color: white;"></i>
+                </div>
+                <h2 class="association-name-display">${associationData.association_name || 'Taxi Association'}</h2>
+                ${associationData.email ? `<p class="association-email-display">${associationData.email}</p>` : ''}
+                <p style="color: #666; font-size: 0.9rem; margin-top: 10px;">Upload a logo in profile settings</p>
+            </div>
+        `;
+    }
+
+    logoDisplaySection.innerHTML = logoHtml;
+
+    // Insert before the Dashboard Overview section
+    const dashboardOverview = document.querySelector('.stats-section');
+    const mainContent = document.querySelector('.main-content .dashboard-container');
+    
+    if (dashboardOverview && mainContent) {
+        mainContent.insertBefore(logoDisplaySection, dashboardOverview);
+    } else if (mainContent) {
+        // Fallback: insert at the beginning of main content
+        mainContent.insertBefore(logoDisplaySection, mainContent.firstChild);
+    }
 }
 
 function updateAssociationLogo(logoUrl) {
@@ -231,6 +284,21 @@ function updateAssociationLogo(logoUrl) {
         mainLogoElement.style.display = 'block';
         mainLogoElement.style.visibility = 'visible';
         mainLogoElement.style.opacity = '1';
+    }
+
+    // Hide the small header association logo since we have the big display
+    if (associationLogoElement) {
+        associationLogoElement.style.display = 'none';
+    }
+
+    // Update the large logo display if it exists
+    const largeLogoDisplay = document.getElementById('association-logo-display-section');
+    if (largeLogoDisplay && logoUrl) {
+        const logoImg = largeLogoDisplay.querySelector('.association-logo-large');
+        if (logoImg) {
+            logoImg.src = logoUrl;
+            logoImg.style.display = 'block';
+        }
     }
 
     // Association logo appears centered when available
