@@ -226,20 +226,34 @@ function updateAssociationLogo(logoUrl) {
     const associationLogoElement = document.getElementById('association-logo');
     const mainLogoElement = document.getElementById('main-logo');
 
-    if (logoUrl) {
-        if (associationLogoElement) {
+    // Main logo ALWAYS stays visible
+    if (mainLogoElement) {
+        mainLogoElement.style.display = 'block';
+        mainLogoElement.style.visibility = 'visible';
+        mainLogoElement.style.opacity = '1';
+    }
+
+    // Association logo appears centered when available
+    if (associationLogoElement) {
+        if (logoUrl) {
             associationLogoElement.src = logoUrl;
             associationLogoElement.style.display = 'block';
-        }
-        if (mainLogoElement) {
-            mainLogoElement.style.display = 'none';
-        }
-    } else {
-        if (associationLogoElement) {
+            associationLogoElement.style.visibility = 'visible';
+            associationLogoElement.style.opacity = '1';
+            
+            // Add loading error handling
+            associationLogoElement.onerror = function() {
+                console.error('Failed to load association logo:', logoUrl);
+                this.style.display = 'none';
+            };
+            
+            associationLogoElement.onload = function() {
+                console.log('Association logo loaded successfully');
+            };
+        } else {
+            // No association logo - hide it
             associationLogoElement.style.display = 'none';
-        }
-        if (mainLogoElement) {
-            mainLogoElement.style.display = 'block';
+            associationLogoElement.src = '';
         }
     }
 }
