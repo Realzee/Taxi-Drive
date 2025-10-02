@@ -913,7 +913,13 @@ body.association-dashboard .container {
     border-left: 4px solid #ffc107;
 }
 
-
+/* User location marker */
+.user-location-marker {
+    background-color: #007bff; /* Blue dot */
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
 
 @keyframes slideIn {
     from {
