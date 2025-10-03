@@ -1,4 +1,4 @@
-// Association Dashboard - UPDATED FOR NEW SCHEMA
+// Association Dashboard - UPDATED FOR NEW SCHEMA AND MEMBER AUTH
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
@@ -43,7 +43,7 @@ async function checkAssociationAuthentication() {
 
         console.log('User found:', user.id, user.email);
         
-        // Get user profile from profiles table (NEW SCHEMA)
+        // Get user profile from profiles table
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -131,8 +131,6 @@ async function loadAssociationData() {
         console.log('Loading association data for admin:', currentUser.id);
         
         let associationData = null;
-
-        // Try to get association by admin_id (NEW SCHEMA)
         const { data, error } = await supabase
             .from('associations')
             .select('*')
@@ -224,13 +222,11 @@ function updateAssociationProfile(associationData) {
 }
 
 function createLargeLogoDisplay(associationData) {
-    // Remove existing logo display if any
     const existingDisplay = document.getElementById('association-logo-display-section');
     if (existingDisplay) {
         existingDisplay.remove();
     }
 
-    // Create the large logo display section
     const logoDisplaySection = document.createElement('div');
     logoDisplaySection.id = 'association-logo-display-section';
     logoDisplaySection.className = 'association-logo-display';
@@ -238,7 +234,6 @@ function createLargeLogoDisplay(associationData) {
     let logoHtml = '';
     
     if (associationData.logo_url) {
-        // Association has a logo - show it big
         logoHtml = `
             <img src="${associationData.logo_url}" 
                  alt="${associationData.association_name || 'Association'} Logo" 
@@ -248,7 +243,6 @@ function createLargeLogoDisplay(associationData) {
             ${associationData.email ? `<p class="association-email-display">${associationData.email}</p>` : ''}
         `;
     } else {
-        // No logo - show association name prominently
         logoHtml = `
             <div style="text-align: center; padding: 20px;">
                 <div style="width: 120px; height: 120px; border-radius: 20px; background: linear-gradient(135deg, var(--dark-blue) 0%, var(--light-blue) 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; border: 4px solid rgba(255, 255, 255, 0.8); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);">
@@ -262,15 +256,12 @@ function createLargeLogoDisplay(associationData) {
     }
 
     logoDisplaySection.innerHTML = logoHtml;
-
-    // Insert before the Dashboard Overview section
     const dashboardOverview = document.querySelector('.stats-section');
     const mainContent = document.querySelector('.main-content .dashboard-container');
     
     if (dashboardOverview && mainContent) {
         mainContent.insertBefore(logoDisplaySection, dashboardOverview);
     } else if (mainContent) {
-        // Fallback: insert at the beginning of main content
         mainContent.insertBefore(logoDisplaySection, mainContent.firstChild);
     }
 }
@@ -279,19 +270,16 @@ function updateAssociationLogo(logoUrl) {
     const associationLogoElement = document.getElementById('association-logo');
     const mainLogoElement = document.getElementById('main-logo');
 
-    // Main logo ALWAYS stays visible
     if (mainLogoElement) {
         mainLogoElement.style.display = 'block';
         mainLogoElement.style.visibility = 'visible';
         mainLogoElement.style.opacity = '1';
     }
 
-    // Hide the small header association logo since we have the big display
     if (associationLogoElement) {
         associationLogoElement.style.display = 'none';
     }
 
-    // Update the large logo display if it exists
     const largeLogoDisplay = document.getElementById('association-logo-display-section');
     if (largeLogoDisplay && logoUrl) {
         const logoImg = largeLogoDisplay.querySelector('.association-logo-large');
@@ -301,66 +289,18 @@ function updateAssociationLogo(logoUrl) {
         }
     }
 
-    // Association logo appears centered when available
-    if (associationLogoElement) {
-        if (logoUrl) {
-            associationLogoElement.src = logoUrl;
-            associationLogoElement.style.display = 'block';
-            associationLogoElement.style.visibility = 'visible';
-            associationLogoElement.style.opacity = '1';
-            
-            // Add loading error handling
-            associationLogoElement.onerror = function() {
-                console.error('Failed to load association logo:', logoUrl);
-                this.style.display = 'none';
-            };
-            
-            associationLogoElement.onload = function() {
-                console.log('Association logo loaded successfully');
-            };
-        } else {
-            // No association logo - hide it
-            associationLogoElement.style.display = 'none';
-            associationLogoElement.src = '';
-        }
+    if (associationLogoElement && logoUrl) {
+        associationLogoElement.src = logoUrl;
+        associationLogoElement.style.display = 'block';
+        associationLogoElement.style.visibility = 'visible';
+        associationLogoElement.style.opacity = '1';
+        associationLogoElement.onerror = function() {
+            console.error('Failed to load association logo');
+            this.style.display = 'none';
+        };
     }
 }
 
-function updateAssociationProfileModal(associationData) {
-    const elements = {
-        'profile-association-name': associationData.association_name || '',
-        'profile-association-email': associationData.email || '',
-        'profile-association-phone': associationData.phone || '',
-        'profile-association-address': associationData.address || '',
-        'profile-association-description': associationData.description || '',
-        'profile-admin-name': associationData.admin_name || '',
-        'profile-admin-phone': associationData.admin_phone || '',
-        'wallet-balance': `R ${(associationData.wallet_balance || 0).toFixed(2)}`
-    };
-
-    Object.keys(elements).forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            if (element.type === 'text' || element.type === 'email' || element.type === 'tel' || element.tagName === 'TEXTAREA') {
-                element.value = elements[id];
-            } else {
-                element.textContent = elements[id];
-            }
-        }
-    });
-
-    // Handle logo preview in profile modal
-    const editLogoPreviewImg = document.getElementById('edit-logo-preview-img');
-    const editLogoPreviewContainer = document.getElementById('edit-logo-preview-container');
-    if (editLogoPreviewImg && editLogoPreviewContainer && associationData.logo_url) {
-        editLogoPreviewImg.src = associationData.logo_url;
-        editLogoPreviewContainer.style.display = 'block';
-    } else if (editLogoPreviewImg && editLogoPreviewContainer) {
-        editLogoPreviewContainer.style.display = 'none';
-    }
-}
-
-// Dashboard Data Loading
 async function loadDashboardData() {
     try {
         await Promise.all([
@@ -385,7 +325,6 @@ async function loadDashboardStats() {
             return;
         }
 
-        // UPDATED QUERIES FOR NEW SCHEMA
         const [vehicles, members, routes, alerts] = await Promise.all([
             supabase.from('vehicles').select('id').eq('association_id', currentAssociation.id),
             supabase.from('members').select('id').eq('association_id', currentAssociation.id),
@@ -427,7 +366,7 @@ function updateDashboardStats(stats) {
     });
 }
 
-// MEMBER MANAGEMENT - UPDATED FOR NEW SCHEMA
+// MEMBER MANAGEMENT - UPDATED FOR NEW SCHEMA AND AUTH
 async function loadRecentMembers() {
     try {
         if (currentAssociation.is_demo) {
@@ -458,29 +397,29 @@ function getInitialDemoMembers() {
     return [
         {
             id: 'demo-member-1',
-            member_name: 'John Driver',
-            member_email: 'john@taxi.com',
+            name: 'John Driver',
+            email: 'john@taxi.com',
             phone: '+27 82 111 2222',
             role: 'driver',
-            is_verified: true,
+            verified: true,
             created_at: new Date().toISOString()
         },
         {
             id: 'demo-member-2', 
-            member_name: 'Sarah Owner',
-            member_email: 'sarah@taxi.com',
+            name: 'Sarah Owner',
+            email: 'sarah@taxi.com',
             phone: '+27 82 333 4444',
             role: 'owner',
-            is_verified: true,
+            verified: true,
             created_at: new Date().toISOString()
         },
         {
             id: 'demo-member-3',
-            member_name: 'Mike Member',
-            member_email: 'mike@taxi.com', 
+            name: 'Mike Member',
+            email: 'mike@taxi.com', 
             phone: '+27 82 555 6666',
             role: 'member',
-            is_verified: false,
+            verified: false,
             created_at: new Date().toISOString()
         }
     ];
@@ -503,8 +442,8 @@ function renderRecentMembers(members) {
 
     let membersHtml = '';
     members.forEach(member => {
-        const statusClass = member.is_verified ? 'status-active' : 'status-pending';
-        const statusText = member.is_verified ? 'Verified' : 'Pending';
+        const statusClass = member.verified ? 'status-active' : 'status-pending';
+        const statusText = member.verified ? 'Verified' : 'Pending';
         
         membersHtml += `
             <div class="list-item">
@@ -512,8 +451,8 @@ function renderRecentMembers(members) {
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="item-details">
-                    <h4>${member.member_name || 'Unnamed Member'}</h4>
-                    <p>${member.member_email || 'N/A'}</p>
+                    <h4>${member.name || 'Unnamed Member'}</h4>
+                    <p>${member.email || 'N/A'}</p>
                     <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${statusText}</span></p>
                 </div>
                 <div class="item-actions">
@@ -531,102 +470,207 @@ function renderRecentMembers(members) {
     recentMembersContent.innerHTML = membersHtml;
 }
 
-async function addMember(memberData) {
+async function manageMemberAuth(email, password, memberId = null) {
     try {
-        if (currentAssociation.is_demo) {
-            const newMember = {
-                id: 'member-' + Date.now(),
-                ...memberData,
-                created_at: new Date().toISOString()
-            };
-            demoData.members.unshift(newMember);
+        if (memberId) {
+            // Update existing auth user (only password if provided)
+            if (password) {
+                const { error } = await supabase.auth.admin.updateUserById(memberId, {
+                    password
+                });
+                if (error) {
+                    console.error('Error updating auth user:', error);
+                    throw new Error('Failed to update member password: ' + error.message);
+                }
+                console.log('Auth user password updated for:', memberId);
+            }
+            return memberId;
         } else {
-            const memberWithAssociation = {
-                ...memberData,
-                association_id: currentAssociation.id
-            };
+            // Create new auth user
+            if (password.length < 8) {
+                throw new Error('Password must be at least 8 characters long');
+            }
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                email,
+                password,
+                email_confirm: true // Auto-confirm for simplicity; adjust based on security needs
+            });
+            if (authError) {
+                console.error('Error creating auth user:', authError);
+                throw new Error('Failed to create auth user: ' + authError.message);
+            }
+            console.log('Auth user created:', authData.user.id);
+            return authData.user.id;
+        }
+    } catch (error) {
+        console.error('Error in manageMemberAuth:', error);
+        throw error;
+    }
+}
 
-            const { error } = await supabase
-                .from('members')
-                .insert([memberWithAssociation]);
+async function addMember(formData) {
+    try {
+        if (!currentAssociationId) {
+            showNotification('No association found. Please try again.', 'error');
+            return;
+        }
 
-            if (error) throw error;
+        // Create auth user first
+        const memberId = await manageMemberAuth(formData.email, formData.password);
+        if (!memberId) {
+            showNotification('Failed to create member authentication.', 'error');
+            return;
+        }
+
+        // Create member in profiles table with role 'owner'
+        const profileData = {
+            id: memberId,
+            email: formData.email,
+            role: formData.role || 'owner', // Default to owner for login to owner app
+            profile_complete: true
+        };
+
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([profileData]);
+
+        if (profileError) {
+            console.error('Profile creation failed:', profileError);
+            // Clean up auth user if profile creation fails
+            await supabase.auth.admin.deleteUser(memberId);
+            showNotification('Failed to create member profile: ' + profileError.message, 'error');
+            document.getElementById('member-error-message').style.display = 'block';
+            document.getElementById('member-error-message').textContent = profileError.message;
+            return;
+        }
+
+        // Create member in members table
+        const memberData = {
+            association_id: currentAssociationId,
+            id: memberId,
+            email: formData.email,
+            name: formData.name,
+            phone: formData.phone || '',
+            role: formData.role || 'owner',
+            verified: formData.verified || false
+        };
+
+        const { error: memberError } = await supabase
+            .from('members')
+            .insert([memberData]);
+
+        if (memberError) {
+            console.error('Member creation failed:', memberError);
+            // Clean up auth user and profile
+            await supabase.auth.admin.deleteUser(memberId);
+            await supabase.from('profiles').delete().eq('id', memberId);
+            showNotification('Failed to add member: ' + memberError.message, 'error');
+            document.getElementById('member-error-message').style.display = 'block';
+            document.getElementById('member-error-message').textContent = memberError.message;
+            return;
         }
 
         showNotification('Member added successfully!', 'success');
         closeModal('add-member-modal');
+        resetForms();
         await loadRecentMembers();
         await loadDashboardStats();
-        
     } catch (error) {
         console.error('Error adding member:', error);
-        showNotification('Failed to add member.', 'error');
+        showNotification(error.message || 'Error adding member.', 'error');
+        document.getElementById('member-error-message').style.display = 'block';
+        document.getElementById('member-error-message').textContent = error.message || 'Error adding member.';
     }
 }
 
 async function editMember(memberId) {
     try {
-        let member;
-        
-        if (currentAssociation.is_demo) {
-            member = demoData.members.find(m => m.id === memberId);
-        } else {
-            const { data, error } = await supabase
-                .from('members')
-                .select('*')
-                .eq('id', memberId)
-                .single();
-            if (error) throw error;
-            member = data;
-        }
+        const { data: member, error } = await supabase
+            .from('members')
+            .select('*')
+            .eq('id', memberId)
+            .single();
 
-        if (!member) {
-            showNotification('Member not found.', 'error');
+        if (error) {
+            console.error('Error fetching member:', error);
+            showNotification('Failed to load member data.', 'error');
             return;
         }
-
-        document.getElementById('member-email').value = member.member_email || '';
-        document.getElementById('member-name').value = member.member_name || '';
-        document.getElementById('member-phone').value = member.phone || '';
-        document.getElementById('member-role').value = member.role || 'member';
-        document.getElementById('member-verified').checked = member.is_verified || false;
 
         const form = document.getElementById('add-member-form');
         form.setAttribute('data-edit-mode', 'true');
         form.setAttribute('data-member-id', memberId);
 
+        document.getElementById('member-email').value = member.email;
+        document.getElementById('member-password').value = ''; // Password field empty for security
+        document.getElementById('member-name').value = member.name;
+        document.getElementById('member-phone').value = member.phone || '';
+        document.getElementById('member-role').value = member.role;
+        document.getElementById('member-verified').checked = member.verified;
+
+        document.getElementById('member-error-message').style.display = 'none';
         document.querySelector('#add-member-modal .modal-header h3').textContent = 'Edit Member';
-        openAddMemberModal();
-        
+        showModal('add-member-modal');
     } catch (error) {
-        console.error('Error loading member for edit:', error);
-        showNotification('Failed to load member data.', 'error');
+        console.error('Error editing member:', error);
+        showNotification('Error loading member data.', 'error');
     }
 }
 
-async function updateMember(memberId, memberData) {
+async function updateMember(memberId, formData) {
     try {
-        if (currentAssociation.is_demo) {
-            const memberIndex = demoData.members.findIndex(m => m.id === memberId);
-            if (memberIndex !== -1) {
-                demoData.members[memberIndex] = { ...demoData.members[memberIndex], ...memberData };
-            }
-        } else {
-            const { error } = await supabase
-                .from('members')
-                .update(memberData)
-                .eq('id', memberId);
-            if (error) throw error;
+        // Update auth user if password is provided
+        if (formData.password) {
+            await manageMemberAuth(formData.email, formData.password, memberId);
+        }
+
+        // Update profile role and email if changed
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ role: formData.role || 'owner', email: formData.email })
+            .eq('id', memberId);
+
+        if (profileError) {
+            console.error('Profile update failed:', profileError);
+            showNotification('Failed to update member profile: ' + profileError.message, 'error');
+            document.getElementById('member-error-message').style.display = 'block';
+            document.getElementById('member-error-message').textContent = profileError.message;
+            return;
+        }
+
+        // Update member in members table
+        const memberData = {
+            email: formData.email,
+            name: formData.name,
+            phone: formData.phone || '',
+            role: formData.role || 'owner',
+            verified: formData.verified || false
+        };
+
+        const { error: memberError } = await supabase
+            .from('members')
+            .update(memberData)
+            .eq('id', memberId)
+            .eq('association_id', currentAssociationId);
+
+        if (memberError) {
+            console.error('Member update failed:', memberError);
+            showNotification('Failed to update member: ' + memberError.message, 'error');
+            document.getElementById('member-error-message').style.display = 'block';
+            document.getElementById('member-error-message').textContent = memberError.message;
+            return;
         }
 
         showNotification('Member updated successfully!', 'success');
         closeModal('add-member-modal');
+        resetForms();
         await loadRecentMembers();
         await loadDashboardStats();
-        
     } catch (error) {
         console.error('Error updating member:', error);
-        showNotification('Failed to update member.', 'error');
+        showNotification(error.message || 'Error updating member.', 'error');
+        document.getElementById('member-error-message').style.display = 'block';
+        document.getElementById('member-error-message').textContent = error.message || 'Error updating member.';
     }
 }
 
@@ -634,23 +678,45 @@ async function deleteMember(memberId) {
     if (!confirm('Are you sure you want to delete this member?')) return;
 
     try {
-        if (currentAssociation.is_demo) {
-            demoData.members = demoData.members.filter(m => m.id !== memberId);
-        } else {
-            const { error } = await supabase
-                .from('members')
-                .delete()
-                .eq('id', memberId);
-            if (error) throw error;
+        // Delete from members table
+        const { error: memberError } = await supabase
+            .from('members')
+            .delete()
+            .eq('id', memberId)
+            .eq('association_id', currentAssociationId);
+
+        if (memberError) {
+            console.error('Error deleting member:', memberError);
+            showNotification('Failed to delete member: ' + memberError.message, 'error');
+            return;
+        }
+
+        // Delete profile
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', memberId);
+
+        if (profileError) {
+            console.error('Error deleting profile:', profileError);
+            showNotification('Failed to delete member profile: ' + profileError.message, 'error');
+            return;
+        }
+
+        // Delete auth user
+        const { error: authError } = await supabase.auth.admin.deleteUser(memberId);
+        if (authError) {
+            console.error('Error deleting auth user:', authError);
+            showNotification('Failed to delete auth user: ' + authError.message, 'error');
+            return;
         }
 
         showNotification('Member deleted successfully!', 'success');
         await loadRecentMembers();
         await loadDashboardStats();
-        
     } catch (error) {
         console.error('Error deleting member:', error);
-        showNotification('Failed to delete member.', 'error');
+        showNotification('Error deleting member.', 'error');
     }
 }
 
@@ -877,20 +943,19 @@ async function saveAssociationProfile() {
         const logoInput = document.getElementById('edit-association-logo');
         const logoFile = logoInput?.files[0];
 
-        // Validate logo file size
         if (logoFile && logoFile.size > 2 * 1024 * 1024) {
             showNotification('Logo file size exceeds 2MB limit.', 'error');
             return;
         }
 
         const formData = {
-            association_name: document.getElementById('profile-association-name')?.value || '',
-            email: document.getElementById('profile-association-email')?.value || '',
-            phone: document.getElementById('profile-association-phone')?.value || '',
-            address: document.getElementById('profile-association-address')?.value || '',
-            description: document.getElementById('profile-association-description')?.value || '',
-            admin_name: document.getElementById('profile-admin-name')?.value || '',
-            admin_phone: document.getElementById('profile-admin-phone')?.value || '',
+            association_name: document.getElementById('edit-association-name')?.value || '',
+            email: document.getElementById('edit-association-email')?.value || '',
+            phone: document.getElementById('edit-association-phone')?.value || '',
+            address: document.getElementById('edit-association-address')?.value || '',
+            description: document.getElementById('edit-association-description')?.value || '',
+            admin_name: document.getElementById('edit-admin-name')?.value || '',
+            admin_phone: document.getElementById('edit-admin-phone')?.value || '',
             updated_at: new Date().toISOString()
         };
 
@@ -910,15 +975,11 @@ async function saveAssociationProfile() {
 
                 if (storageError) {
                     console.error('❌ Logo upload error:', storageError);
-                    
-                    // If RLS error, provide helpful message
                     if (storageError.message.includes('row-level security')) {
                         showNotification('Logo upload failed due to security policies. Please contact administrator.', 'warning');
                     } else {
                         showNotification('Failed to upload logo. Please try again.', 'warning');
                     }
-                    
-                    // Continue without logo - don't block profile save
                     console.log('⚠️ Continuing without logo upload');
                 } else {
                     const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(fileName);
@@ -929,11 +990,9 @@ async function saveAssociationProfile() {
             } catch (uploadError) {
                 console.error('❌ Logo upload failed:', uploadError);
                 showNotification('Logo upload failed. Please try again.', 'warning');
-                // Continue without logo
             }
         }
 
-        // Update association data regardless of logo upload success
         if (!currentAssociation.is_demo) {
             const updateData = {
                 ...formData,
@@ -947,7 +1006,6 @@ async function saveAssociationProfile() {
             if (error) throw error;
         }
 
-        // Update current association data
         Object.assign(currentAssociation, formData, { logo_url: logoUrl });
         updateAssociationProfile(currentAssociation);
         
@@ -960,9 +1018,7 @@ async function saveAssociationProfile() {
     }
 }
 
-// EVENT LISTENERS SETUP (NO CHANGES NEEDED)
 function setupEventListeners() {
-    // Header actions
     const profileBtn = document.getElementById('profile-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const alertsBtn = document.getElementById('alerts-btn');
@@ -971,7 +1027,6 @@ function setupEventListeners() {
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
     if (alertsBtn) alertsBtn.addEventListener('click', openAlertsModal);
 
-    // Quick actions
     const quickActionBtns = document.querySelectorAll('.quick-action-btn');
     quickActionBtns.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -985,7 +1040,6 @@ function setupEventListeners() {
         });
     });
 
-    // Bottom navigation
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', function() {
@@ -1003,10 +1057,8 @@ function setupEventListeners() {
         });
     });
 
-    // Form submissions
     setupFormSubmissions();
 
-    // Modal close buttons
     const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
     closeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1018,7 +1070,6 @@ function setupEventListeners() {
         });
     });
 
-    // Click outside to close modals
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-overlay')) {
             closeModal(e.target.id);
@@ -1026,7 +1077,6 @@ function setupEventListeners() {
         }
     });
 
-    // ESC key to close modals
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAllModals();
@@ -1034,18 +1084,16 @@ function setupEventListeners() {
         }
     });
 
-    // Profile modal logo preview
     setupProfileLogoPreview();
 }
 
 function setupProfileLogoPreview() {
     const logoInput = document.getElementById('edit-association-logo');
-    const logoPreviewContainer = document.getElementById('edit-logo-preview-container');
+    const logoPreviewContainer = document.getElementById('edit-logo-preview');
     const logoPreviewImg = document.getElementById('edit-logo-preview-img');
     const removeLogoBtn = document.getElementById('edit-remove-logo-btn');
-    const logoInfo = document.getElementById('edit-logo-info');
 
-    if (logoInput && logoPreviewContainer && logoPreviewImg && removeLogoBtn && logoInfo) {
+    if (logoInput && logoPreviewContainer && logoPreviewImg && removeLogoBtn) {
         logoInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -1058,7 +1106,6 @@ function setupProfileLogoPreview() {
                 reader.onload = (e) => {
                     logoPreviewImg.src = e.target.result;
                     logoPreviewContainer.style.display = 'block';
-                    logoInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
                 };
                 reader.readAsDataURL(file);
             }
@@ -1068,24 +1115,23 @@ function setupProfileLogoPreview() {
             logoInput.value = '';
             logoPreviewContainer.style.display = 'none';
             logoPreviewImg.src = '';
-            logoInfo.textContent = '';
         });
     }
 }
 
 function setupFormSubmissions() {
-    // Member form
     const memberForm = document.getElementById('add-member-form');
     if (memberForm) {
         memberForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = {
-                member_email: document.getElementById('member-email').value,
-                member_name: document.getElementById('member-name').value,
+                email: document.getElementById('member-email').value,
+                password: document.getElementById('member-password').value,
+                name: document.getElementById('member-name').value,
                 phone: document.getElementById('member-phone').value,
                 role: document.getElementById('member-role').value,
-                is_verified: document.getElementById('member-verified').checked
+                verified: document.getElementById('member-verified').checked
             };
 
             try {
@@ -1097,11 +1143,13 @@ function setupFormSubmissions() {
                 }
             } catch (error) {
                 console.error('Form submission error:', error);
+                showNotification('Error processing member: ' + error.message, 'error');
+                document.getElementById('member-error-message').style.display = 'block';
+                document.getElementById('member-error-message').textContent = error.message;
             }
         });
     }
 
-    // Route form
     const routeForm = document.getElementById('add-route-form');
     if (routeForm) {
         routeForm.addEventListener('submit', async function(e) {
@@ -1124,11 +1172,11 @@ function setupFormSubmissions() {
                 }
             } catch (error) {
                 console.error('Form submission error:', error);
+                showNotification('Error processing route: ' + error.message, 'error');
             }
         });
     }
 
-    // Profile form
     const profileForm = document.getElementById('profile-form');
     if (profileForm) {
         profileForm.addEventListener('submit', function(e) {
@@ -1139,16 +1187,15 @@ function setupFormSubmissions() {
 }
 
 function resetForms() {
-    // Reset member form
     const memberForm = document.getElementById('add-member-form');
     if (memberForm) {
         memberForm.reset();
         memberForm.removeAttribute('data-edit-mode');
         memberForm.removeAttribute('data-member-id');
         document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
+        document.getElementById('member-error-message').style.display = 'none';
     }
 
-    // Reset route form
     const routeForm = document.getElementById('add-route-form');
     if (routeForm) {
         routeForm.reset();
@@ -1157,28 +1204,54 @@ function resetForms() {
         document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
     }
 
-    // Reset profile form
     const profileForm = document.getElementById('profile-form');
     if (profileForm) {
         profileForm.reset();
     }
 }
 
-// MODAL MANAGEMENT FUNCTIONS (NO CHANGES NEEDED)
+function updateAssociationProfileModal(associationData) {
+    const elements = {
+        'edit-association-name': associationData.association_name || '',
+        'edit-association-email': associationData.email || '',
+        'edit-association-phone': associationData.phone || '',
+        'edit-association-address': associationData.address || '',
+        'edit-association-description': associationData.description || '',
+        'edit-admin-name': associationData.admin_name || '',
+        'edit-admin-phone': associationData.admin_phone || ''
+    };
+
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = elements[id];
+        }
+    });
+
+    const logoPreviewContainer = document.getElementById('edit-logo-preview');
+    const logoPreviewImg = document.getElementById('edit-logo-preview-img');
+    if (logoPreviewContainer && logoPreviewImg && associationData.logo_url) {
+        logoPreviewImg.src = associationData.logo_url;
+        logoPreviewContainer.style.display = 'block';
+    } else if (logoPreviewContainer && logoPreviewImg) {
+        logoPreviewContainer.style.display = 'none';
+        logoPreviewImg.src = '';
+    }
+}
+
 function openProfileModal() {
     console.log('Opening profile modal');
     showModal('profile-modal');
     updateAssociationProfileModal(currentAssociation);
     
-    // Load current profile data into form
     const logoInput = document.getElementById('edit-association-logo');
-    if (logoInput) logoInput.value = ''; // Clear any previous file selection
+    if (logoInput) logoInput.value = '';
 }
 
-// Global map variable to manage Leaflet instance
 let mapInstance = null;
-let userLocationMarker = null; // Marker for user's current location
-let userLocationWatcher = null; // Geolocation watcher ID
+let userLocationMarker = null;
+let userLocationWatcher = null;
+let userAccuracyCircle = null;
 
 function initializeMap() {
     const mapContainer = document.getElementById('map');
@@ -1187,16 +1260,13 @@ function initializeMap() {
         return;
     }
 
-    // Initialize Leaflet map
-    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
+    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10);
 
-    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
     }).addTo(mapInstance);
 
-    // Fetch vehicle locations from Supabase (if applicable)
     async function loadVehicles() {
         try {
             const { data: vehicles, error } = await supabase
@@ -1225,16 +1295,12 @@ function initializeMap() {
 
     loadVehicles();
 
-    // Get and track user's current location
     if (navigator.geolocation) {
-        // Initial location
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                const { latitude, longitude } = position.coords;
-                // Center map on user's location
+                const { latitude, longitude, accuracy } = position.coords;
                 mapInstance.setView([latitude, longitude], 13);
 
-                // Add or update marker for current location
                 if (userLocationMarker) {
                     userLocationMarker.setLatLng([latitude, longitude]);
                 } else {
@@ -1249,6 +1315,17 @@ function initializeMap() {
                       .bindPopup('Your Current Location');
                 }
 
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+                } else {
+                    userAccuracyCircle = L.circle([latitude, longitude], {
+                        radius: accuracy,
+                        color: '#007bff',
+                        fillOpacity: 0.1,
+                        weight: 1
+                    }).addTo(mapInstance);
+                }
+
                 showNotification('Your location is now displayed on the map.', 'success');
             },
             (error) => {
@@ -1257,14 +1334,16 @@ function initializeMap() {
             }
         );
 
-        // Watch for location updates
         userLocationWatcher = navigator.geolocation.watchPosition(
             (position) => {
-                const { latitude, longitude } = position.coords;
+                const { latitude, longitude, accuracy } = position.coords;
                 if (userLocationMarker) {
                     userLocationMarker.setLatLng([latitude, longitude]);
-                    mapInstance.panTo([latitude, longitude]); // Optional: Keep map centered
                 }
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+                }
+                mapInstance.panTo([latitude, longitude]);
             },
             (error) => {
                 console.error('Geolocation watch error:', error);
@@ -1281,13 +1360,11 @@ function initializeMap() {
         showNotification('Your browser does not support location services.', 'error');
     }
 
-    // Ensure map resizes correctly
     setTimeout(() => {
         mapInstance.invalidateSize();
     }, 100);
 }
 
-// Clean up watcher when modal is closed
 function closeMapModal() {
     closeModal('map-modal');
     if (userLocationWatcher) {
@@ -1297,7 +1374,6 @@ function closeMapModal() {
     }
 }
 
-// Update openMapModal to initialize map
 function openMapModal() {
     console.log('Opening map modal');
     showModal('map-modal');
@@ -1309,23 +1385,35 @@ function openMapModal() {
     }
 }
 
-let userAccuracyCircle = null;
-// In getCurrentPosition/watchPosition success callback:
-const accuracy = position.coords.accuracy;
-if (userAccuracyCircle) {
-    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-} else {
-    userAccuracyCircle = L.circle([latitude, longitude], {
-        radius: accuracy,
-        color: '#007bff',
-        fillOpacity: 0.1,
-        weight: 1
-    }).addTo(mapInstance);
-}
-
 function centerOnUserLocation() {
     if (userLocationMarker) {
         mapInstance.panTo(userLocationMarker.getLatLng());
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    if (userLocationMarker) {
+                        userLocationMarker.setLatLng([latitude, longitude]);
+                    }
+                    if (userAccuracyCircle) {
+                        userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+                    } else {
+                        userAccuracyCircle = L.circle([latitude, longitude], {
+                            radius: accuracy,
+                            color: '#007bff',
+                            fillOpacity: 0.1,
+                            weight: 1
+                        }).addTo(mapInstance);
+                    }
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    showNotification('Unable to center on location.', 'error');
+                }
+            );
+        }
+    } else {
+        showNotification('Location not available.', 'error');
     }
 }
 
@@ -1349,7 +1437,6 @@ function openWalletModal() {
     showModal('wallet-modal');
 }
 
-// UTILITY FUNCTIONS (NO CHANGES NEEDED)
 function showModal(modalId) {
     console.log(`Showing modal: ${modalId}`);
     const modal = document.getElementById(modalId);
@@ -1438,3 +1525,4 @@ window.openMapModal = openMapModal;
 window.openManagePartsModal = openManagePartsModal;
 window.openAlertsModal = openAlertsModal;
 window.openWalletModal = openWalletModal;
+window.centerOnUserLocation = centerOnUserLocation;
