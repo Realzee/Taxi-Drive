@@ -1,8 +1,7 @@
-javascript
 // Supabase Services - Centralized Supabase operations for Association Dashboard
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-const API_BASE_URL = '/api'; // Replace with your server endpoint base URL
+const API_BASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co'; // Replace with your server endpoint base URL
 
 // Initialize Supabase client
 let supabase;
