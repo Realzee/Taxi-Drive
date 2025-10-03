@@ -7,6 +7,8 @@ if (window.associationDashboardLoaded) {
 } else {
     window.associationDashboardLoaded = true;
 
+    console.log('Loading association-dashboard.js at:', new Date().toLocaleString());
+
     // Global variables
     let currentUser = null;
     let currentAssociation = null;
@@ -120,7 +122,7 @@ if (window.associationDashboardLoaded) {
         } catch (error) {
             console.error('Error loading association data:', error);
             window.showNotification('Using demo mode. Database setup may be incomplete.', 'warning');
-            currentAssociation = window.createDemoAssociation();
+            currentAssociation = window.demoData.association;
             currentAssociationId = 'demo-mode';
             updateAssociationProfile(currentAssociation);
         }
@@ -217,6 +219,32 @@ if (window.associationDashboardLoaded) {
         }
     }
 
+    function updateAssociationProfileModal(associationData) {
+        const profileForm = document.getElementById('edit-profile-form');
+        if (profileForm && associationData) {
+            document.getElementById('edit-association-name').value = associationData.association_name || '';
+            document.getElementById('edit-association-email').value = associationData.email || '';
+            document.getElementById('edit-association-phone').value = associationData.phone || '';
+            document.getElementById('edit-association-address').value = associationData.address || '';
+            document.getElementById('edit-association-description').value = associationData.description || '';
+            document.getElementById('edit-admin-name').value = associationData.admin_name || '';
+            document.getElementById('edit-admin-phone').value = associationData.admin_phone || '';
+
+            const logoPreviewImg = document.getElementById('edit-logo-preview-img');
+            const logoPreviewContainer = document.getElementById('edit-logo-preview-container');
+            const logoInfo = document.getElementById('edit-logo-info');
+
+            if (associationData.logo_url && logoPreviewImg && logoPreviewContainer) {
+                logoPreviewImg.src = associationData.logo_url;
+                logoPreviewContainer.style.display = 'block';
+                logoInfo.textContent = 'Current logo';
+            } else if (logoPreviewContainer) {
+                logoPreviewContainer.style.display = 'none';
+                logoInfo.textContent = '';
+            }
+        }
+    }
+
     async function loadDashboardData() {
         try {
             await Promise.all([
@@ -264,10 +292,12 @@ if (window.associationDashboardLoaded) {
     async function loadRecentMembers() {
         try {
             const members = await window.getRecentMembers(currentAssociationId, currentAssociation.is_demo);
+            demoData.members = members;
             renderRecentMembers(members);
         } catch (error) {
             console.error('Error loading recent members:', error);
-            renderRecentMembers(window.getInitialDemoMembers().slice(0, 3));
+            demoData.members = window.demoData.members.slice(0, 3);
+            renderRecentMembers(demoData.members);
         }
     }
 
@@ -302,10 +332,10 @@ if (window.associationDashboardLoaded) {
                         <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${statusText}</span></p>
                     </div>
                     <div class="item-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="editMember('${member.id}')">
+                        <button class="btn btn-secondary btn-sm" onclick="window.editMember('${member.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteMember('${member.id}')">
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteMember('${member.id}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -384,10 +414,12 @@ if (window.associationDashboardLoaded) {
     async function loadRecentRoutes() {
         try {
             const routes = await window.getRecentRoutes(currentAssociationId, currentAssociation.is_demo);
+            demoData.routes = routes;
             renderRecentRoutes(routes);
         } catch (error) {
             console.error('Error loading recent routes:', error);
-            renderRecentRoutes(window.getInitialDemoRoutes().slice(0, 3));
+            demoData.routes = window.demoData.routes.slice(0, 3);
+            renderRecentRoutes(demoData.routes);
         }
     }
 
@@ -419,10 +451,10 @@ if (window.associationDashboardLoaded) {
                         <p class="route-schedule">${route.schedule}</p>
                     </div>
                     <div class="item-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="editRoute('${route.id}')">
+                        <button class="btn btn-secondary btn-sm" onclick="window.editRoute('${route.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteRoute('${route.id}')">
+                        <button class="btn btn-danger btn-sm" onclick="window.deleteRoute('${route.id}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -542,6 +574,10 @@ if (window.associationDashboardLoaded) {
     }
 
     function setupEventListeners() {
+        console.log('Setting up event listeners...');
+        console.log('showModal available:', !!window.showModal);
+        console.log('closeModal available:', !!window.closeModal);
+
         const profileBtn = document.getElementById('profile-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const alertsBtn = document.getElementById('alerts-btn');
@@ -552,75 +588,111 @@ if (window.associationDashboardLoaded) {
 
         const quickActionBtns = document.querySelectorAll('.quick-action-btn');
         quickActionBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const action = this.getAttribute('data-action');
-                switch(action) {
-                    case 'add-route': window.openAddRouteModal(); break;
-                    case 'add-member': window.openAddMemberModal(); break;
-                    case 'manage-parts': window.openManagePartsModal(); break;
-                    case 'view-alerts': window.openAlertsModal(); break;
+            btn.addEventListener('click', () => {
+                const action = btn.getAttribute('data-action');
+                if (action === 'add-member') {
+                    window.showModal('add-member-modal');
+                } else if (action === 'add-route') {
+                    window.showModal('add-route-modal');
+                } else if (action === 'view-map') {
+                    window.showModal('map-modal');
                 }
             });
         });
 
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', function() {
-                const target = this.getAttribute('data-target');
-                
-                navItems.forEach(nav => nav.classList.remove('active'));
-                this.classList.add('active');
-                
-                switch(target) {
-                    case 'dashboard': break;
-                    case 'map': window.openMapModal(); break;
-                    case 'wallet': window.openWalletModal(); break;
-                    case 'profile': window.openProfileModal(); break;
+        const addMemberForm = document.getElementById('add-member-form');
+        if (addMemberForm) {
+            addMemberForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const editMode = addMemberForm.getAttribute('data-edit-mode') === 'true';
+                const memberId = addMemberForm.getAttribute('data-member-id');
+
+                const formData = {
+                    email: document.getElementById('member-email')?.value,
+                    password: document.getElementById('member-password')?.value,
+                    name: document.getElementById('member-name')?.value,
+                    phone: document.getElementById('member-phone')?.value,
+                    role: document.getElementById('member-role')?.value,
+                    verified: document.getElementById('member-verified')?.checked
+                };
+
+                if (!formData.email || (!formData.password && !editMode)) {
+                    window.showError('member-error-message', 'Email and password are required.');
+                    return;
                 }
-            });
-        });
 
-        setupFormSubmissions();
-        setupProfileLogoPreview();
-
-        const closeBtns = document.querySelectorAll('.modal-close, .btn-cancel');
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const modal = this.closest('.modal-overlay');
-                if (modal) {
-                    window.closeModal(modal.id);
+                try {
+                    if (editMode) {
+                        await updateMember(memberId, formData);
+                    } else {
+                        await window.addMember(currentAssociationId, formData, currentAssociation.is_demo);
+                        window.showNotification('Member added successfully!', 'success');
+                        window.closeModal('add-member-modal');
+                    }
                     resetForms();
+                    await loadRecentMembers();
+                    await loadDashboardStats();
+                } catch (error) {
+                    console.error('Error handling member form:', error);
+                    window.showError('member-error-message', error.message || 'Error processing member.');
                 }
             });
-        });
+        }
 
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                window.closeModal(e.target.id);
-                resetForms();
-            }
-        });
+        const addRouteForm = document.getElementById('add-route-form');
+        if (addRouteForm) {
+            addRouteForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const editMode = addRouteForm.getAttribute('data-edit-mode') === 'true';
+                const routeId = addRouteForm.getAttribute('data-route-id');
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                window.closeAllModals();
-                resetForms();
-            }
-        });
-    }
+                const routeData = {
+                    route_name: document.getElementById('route-name')?.value,
+                    origin: document.getElementById('route-origin')?.value,
+                    destination: document.getElementById('route-destination')?.value,
+                    schedule: document.getElementById('route-schedule')?.value,
+                    waypoints: document.getElementById('route-waypoints')?.value
+                };
 
-    function setupProfileLogoPreview() {
+                if (!routeData.route_name || !routeData.origin || !routeData.destination) {
+                    window.showError('route-error-message', 'Route name, origin, and destination are required.');
+                    return;
+                }
+
+                try {
+                    if (editMode) {
+                        await updateRoute(routeId, routeData);
+                    } else {
+                        await addRoute(routeData);
+                    }
+                    resetForms();
+                } catch (error) {
+                    console.error('Error handling route form:', error);
+                    window.showError('route-error-message', error.message || 'Error processing route.');
+                }
+            });
+        }
+
+        const editProfileForm = document.getElementById('edit-profile-form');
+        if (editProfileForm) {
+            editProfileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveAssociationProfile();
+            });
+        }
+
         const logoInput = document.getElementById('edit-association-logo');
-        const logoPreviewContainer = document.getElementById('edit-logo-preview');
         const logoPreviewImg = document.getElementById('edit-logo-preview-img');
+        const logoPreviewContainer = document.getElementById('edit-logo-preview-container');
         const removeLogoBtn = document.getElementById('edit-remove-logo-btn');
+        const logoInfo = document.getElementById('edit-logo-info');
 
-        if (logoInput && logoPreviewContainer && logoPreviewImg && removeLogoBtn) {
+        if (logoInput && logoPreviewImg && logoPreviewContainer && removeLogoBtn && logoInfo) {
             logoInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     if (file.size > 2 * 1024 * 1024) {
-                        window.showNotification('Logo file size exceeds 2MB limit.', 'error');
+                        window.showError('profile-error-message', 'Logo file size exceeds 2MB limit.');
                         logoInput.value = '';
                         return;
                     }
@@ -628,6 +700,7 @@ if (window.associationDashboardLoaded) {
                     reader.onload = (e) => {
                         logoPreviewImg.src = e.target.result;
                         logoPreviewContainer.style.display = 'block';
+                        logoInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
                     };
                     reader.readAsDataURL(file);
                 }
@@ -637,298 +710,47 @@ if (window.associationDashboardLoaded) {
                 logoInput.value = '';
                 logoPreviewContainer.style.display = 'none';
                 logoPreviewImg.src = '';
+                logoInfo.textContent = '';
             });
         }
-    }
 
-    function setupFormSubmissions() {
-        const memberForm = document.getElementById('add-member-form');
-        if (memberForm) {
-            memberForm.addEventListener('submit', async function(e) {
+        const closeButtons = document.querySelectorAll('.modal-close-btn');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
                 e.preventDefault();
-                
-                const formData = {
-                    email: document.getElementById('member-email')?.value,
-                    password: document.getElementById('member-password')?.value,
-                    name: document.getElementById('member-name')?.value,
-                    phone: document.getElementById('member-phone')?.value,
-                    role: document.getElementById('member-role')?.value || 'owner',
-                    verified: document.getElementById('member-verified')?.checked || false
-                };
-
-                try {
-                    if (this.getAttribute('data-edit-mode') === 'true') {
-                        const memberId = this.getAttribute('data-member-id');
-                        await updateMember(memberId, formData);
-                    } else {
-                        await window.addMember(currentAssociationId, formData, currentAssociation.is_demo);
-                        window.showNotification('Member added successfully!', 'success');
-                        window.closeModal('add-member-modal');
-                        resetForms();
-                        await loadRecentMembers();
-                        await loadDashboardStats();
-                    }
-                } catch (error) {
-                    console.error('Form submission error:', error);
-                    const errorElement = document.getElementById('member-error-message');
-                    if (errorElement) {
-                        window.showError('member-error-message', error.message || 'Error processing member.');
-                    } else {
-                        window.showNotification(error.message || 'Error processing member.', 'error');
-                    }
+                e.stopPropagation();
+                const modalId = button.getAttribute('data-modal');
+                if (modalId) {
+                    window.closeModal(modalId);
                 }
             });
-        }
+        });
 
-        const routeForm = document.getElementById('add-route-form');
-        if (routeForm) {
-            routeForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const formData = {
-                    route_name: document.getElementById('route-name')?.value,
-                    origin: document.getElementById('route-origin')?.value,
-                    destination: document.getElementById('route-destination')?.value,
-                    schedule: document.getElementById('route-schedule')?.value,
-                    waypoints: document.getElementById('route-waypoints')?.value
-                };
-
-                try {
-                    if (this.getAttribute('data-edit-mode') === 'true') {
-                        const routeId = this.getAttribute('data-route-id');
-                        await updateRoute(routeId, formData);
-                    } else {
-                        await addRoute(formData);
-                    }
-                } catch (error) {
-                    console.error('Form submission error:', error);
-                    window.showNotification(error.message || 'Error processing route.', 'error');
-                }
-            });
-        }
-
-        const profileForm = document.getElementById('profile-form');
-        if (profileForm) {
-            profileForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveAssociationProfile();
-            });
+        // Map Modal
+        const mapModal = document.getElementById('map-modal');
+        if (mapModal) {
+            mapModal.addEventListener('shown', window.initializeMap);
         }
     }
 
     function resetForms() {
-        const memberForm = document.getElementById('add-member-form');
-        if (memberForm) {
-            memberForm.reset();
-            memberForm.removeAttribute('data-edit-mode');
-            memberForm.removeAttribute('data-member-id');
-            document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
-            const errorElement = document.getElementById('member-error-message');
-            if (errorElement) {
-                errorElement.style.display = 'none';
-            }
-        }
-
-        const routeForm = document.getElementById('add-route-form');
-        if (routeForm) {
-            routeForm.reset();
-            routeForm.removeAttribute('data-edit-mode');
-            routeForm.removeAttribute('data-route-id');
-            document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
-        }
-
-        const profileForm = document.getElementById('profile-form');
-        if (profileForm) {
-            profileForm.reset();
-        }
-    }
-
-    function updateAssociationProfileModal(associationData) {
-        const elements = {
-            'edit-association-name': associationData.association_name || '',
-            'edit-association-email': associationData.email || '',
-            'edit-association-phone': associationData.phone || '',
-            'edit-association-address': associationData.address || '',
-            'edit-association-description': associationData.description || '',
-            'edit-admin-name': associationData.admin_name || '',
-            'edit-admin-phone': associationData.admin_phone || ''
-        };
-
-        Object.keys(elements).forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.value = elements[id];
+        const forms = document.querySelectorAll('#add-member-form, #add-route-form, #edit-profile-form');
+        forms.forEach(form => {
+            form.reset();
+            form.removeAttribute('data-edit-mode');
+            form.removeAttribute('data-member-id');
+            form.removeAttribute('data-route-id');
+            if (form.id === 'add-member-form') {
+                document.querySelector('#add-member-modal .modal-header h3').textContent = 'Add New Member';
+            } else if (form.id === 'add-route-form') {
+                document.querySelector('#add-route-modal .modal-header h3').textContent = 'Add New Route';
             }
         });
 
-        const logoPreviewContainer = document.getElementById('edit-logo-preview');
-        const logoPreviewImg = document.getElementById('edit-logo-preview-img');
-        if (logoPreviewContainer && logoPreviewImg && associationData.logo_url) {
-            logoPreviewImg.src = associationData.logo_url;
-            logoPreviewContainer.style.display = 'block';
-        } else if (logoPreviewContainer && logoPreviewImg) {
-            logoPreviewContainer.style.display = 'none';
-            logoPreviewImg.src = '';
-        }
-    }
-
-    let mapInstance = null;
-    let userLocationMarker = null;
-    let userLocationWatcher = null;
-    let userAccuracyCircle = null;
-
-    function initializeMap() {
-        const mapContainer = document.getElementById('map');
-        if (!mapContainer) {
-            console.error('Map container not found');
-            return;
-        }
-
-        mapInstance = L.map('map').setView([-26.2041, 28.0473], 10);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }).addTo(mapInstance);
-
-        async function loadVehicles() {
-            try {
-                const vehicles = await window.getVehicles(currentAssociationId, currentAssociation.is_demo);
-                vehicles.forEach(vehicle => {
-                    if (vehicle.latitude && vehicle.longitude) {
-                        L.marker([vehicle.latitude, vehicle.longitude])
-                            .addTo(mapInstance)
-                            .bindPopup(`Vehicle: ${vehicle.registration_number}`);
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading vehicle data:', error);
-                window.showNotification('Error loading vehicle data.', 'error');
-            }
-        }
-
-        loadVehicles();
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude, accuracy } = position.coords;
-                    mapInstance.setView([latitude, longitude], 13);
-
-                    if (userLocationMarker) {
-                        userLocationMarker.setLatLng([latitude, longitude]);
-                    } else {
-                        userLocationMarker = L.marker([latitude, longitude], {
-                            icon: L.divIcon({
-                                className: 'user-location-marker',
-                                html: '<div style="background-color: #007bff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
-                                iconSize: [15, 15],
-                                iconAnchor: [7.5, 7.5]
-                            })
-                        }).addTo(mapInstance)
-                          .bindPopup('Your Current Location');
-                    }
-
-                    if (userAccuracyCircle) {
-                        userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-                    } else {
-                        userAccuracyCircle = L.circle([latitude, longitude], {
-                            radius: accuracy,
-                            color: '#007bff',
-                            fillOpacity: 0.1,
-                            weight: 1
-                        }).addTo(mapInstance);
-                    }
-
-                    window.showNotification('Your location is now displayed on the map.', 'success');
-                },
-                (error) => {
-                    console.error('Geolocation error:', error);
-                    window.showNotification('Unable to access your location. Please enable location services.', 'error');
-                }
-            );
-
-            userLocationWatcher = navigator.geolocation.watchPosition(
-                (position) => {
-                    const { latitude, longitude, accuracy } = position.coords;
-                    if (userLocationMarker) {
-                        userLocationMarker.setLatLng([latitude, longitude]);
-                    }
-                    if (userAccuracyCircle) {
-                        userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-                    }
-                    mapInstance.panTo([latitude, longitude]);
-                },
-                (error) => {
-                    console.error('Geolocation watch error:', error);
-                    window.showNotification('Location update failed.', 'error');
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                }
-            );
-        } else {
-            console.error('Geolocation not supported by browser');
-            window.showNotification('Your browser does not support location services.', 'error');
-        }
-
-        setTimeout(() => {
-            mapInstance.invalidateSize();
-        }, 100);
-    }
-
-    function closeMapModal() {
-        window.closeModal('map-modal');
-        if (userLocationWatcher) {
-            navigator.geolocation.clearWatch(userLocationWatcher);
-            userLocationWatcher = null;
-            console.log('Stopped location tracking');
-        }
-    }
-
-    function openMapModal() {
-        console.log('Opening map modal');
-        window.showModal('map-modal');
-        
-        if (!mapInstance) {
-            initializeMap();
-        } else {
-            mapInstance.invalidateSize();
-        }
-    }
-
-    function centerOnUserLocation() {
-        if (userLocationMarker) {
-            mapInstance.panTo(userLocationMarker.getLatLng());
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude, accuracy } = position.coords;
-                        if (userLocationMarker) {
-                            userLocationMarker.setLatLng([latitude, longitude]);
-                        }
-                        if (userAccuracyCircle) {
-                            userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-                        } else {
-                            userAccuracyCircle = L.circle([latitude, longitude], {
-                                radius: accuracy,
-                                color: '#007bff',
-                                fillOpacity: 0.1,
-                                weight: 1
-                            }).addTo(mapInstance);
-                        }
-                    },
-                    (error) => {
-                        console.error('Geolocation error:', error);
-                        window.showNotification('Unable to center on location.', 'error');
-                    }
-                );
-            }
-        } else {
-            window.showNotification('Location not available.', 'error');
-        }
+        const errorElements = document.querySelectorAll('#member-error-message, #route-error-message, #profile-error-message');
+        errorElements.forEach(el => {
+            el.style.display = 'none';
+        });
     }
 
     async function handleLogout() {
@@ -937,26 +759,54 @@ if (window.associationDashboardLoaded) {
             window.location.href = 'index.html';
         } catch (error) {
             console.error('Error logging out:', error);
-            window.showNotification('Error logging out. Please try again.', 'error');
+            window.showNotification('Error logging out.', 'error');
         }
     }
 
-    function showNotification(message, type = 'info') {
-        window.showNotification(message, type);
+    async function initializeMap() {
+        try {
+            const vehicles = await window.getVehicles(currentAssociationId, currentAssociation.is_demo);
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error('Map element not found');
+                return;
+            }
+
+            // Initialize Leaflet map
+            const map = L.map(mapElement).setView([-26.2041, 28.0473], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            vehicles.forEach(vehicle => {
+                if (vehicle.latitude && vehicle.longitude) {
+                    L.marker([vehicle.latitude, vehicle.longitude])
+                        .addTo(map)
+                        .bindPopup(`Vehicle: ${vehicle.registration_number}`);
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            window.showNotification('Failed to load map.', 'error');
+        }
     }
 
-    // Make functions globally available
+    window.openProfileModal = function() {
+        updateAssociationProfileModal(currentAssociation);
+        window.showModal('profile-modal');
+    };
+
+    window.openAlertsModal = function() {
+        window.showModal('alerts-modal');
+    };
+
+    // Expose necessary functions globally
     window.editMember = editMember;
     window.deleteMember = deleteMember;
     window.editRoute = editRoute;
     window.deleteRoute = deleteRoute;
-    window.closeMapModal = closeMapModal;
-    window.openAddRouteModal = function() { window.showModal('add-route-modal'); };
-    window.openAddMemberModal = function() { window.showModal('add-member-modal'); };
-    window.openProfileModal = function() { window.showModal('profile-modal'); };
-    window.openMapModal = openMapModal;
-    window.openManagePartsModal = function() { window.showModal('manage-parts-modal'); };
-    window.openAlertsModal = function() { window.showModal('alerts-modal'); };
-    window.openWalletModal = function() { window.showModal('wallet-modal'); };
-    window.centerOnUserLocation = centerOnUserLocation;
+    window.initializeMap = initializeMap;
+
+    console.log('association-dashboard.js fully loaded');
 }
