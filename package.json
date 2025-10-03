@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "name": "taxi-drive",
+  "version": "1.0.0",
+  "description": "A modern taxi management system built with HTML, CSS, JavaScript, and Supabase.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Realzee/Taxi-Drive.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Realzee/Taxi-Drive/issues"
+  },
+  "homepage": "https://github.com/Realzee/Taxi-Drive#readme"
+}
