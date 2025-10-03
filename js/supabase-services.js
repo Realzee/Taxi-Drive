@@ -1,7 +1,7 @@
 // Supabase Services - Centralized Supabase operations for Association Dashboard
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-const API_BASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co'; // Replace with your server endpoint base URL
+const API_BASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co'; // Update to your server endpoint (e.g., deployed URL)
 
 // Initialize Supabase client
 let supabase;
@@ -117,6 +117,61 @@ const demoData = {
     ]
 };
 
+// Modal Management
+function showModal(modalId) {
+    console.log(`Opening modal: ${modalId}`);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    } else {
+        console.error(`Modal with ID ${modalId} not found`);
+        showNotification(`Modal ${modalId} not found`, 'error');
+    }
+}
+
+function closeModal(modalId) {
+    console.log(`Closing modal: ${modalId}`);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+function closeAllModals() {
+    console.log('Closing all modals');
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+}
+
+// Notification Function
+function showNotification(message, type = 'info') {
+    const notificationContainer = document.createElement('div');
+    notificationContainer.className = `notification ${type}`;
+    notificationContainer.textContent = message;
+    document.body.appendChild(notificationContainer);
+    
+    setTimeout(() => {
+        notificationContainer.classList.add('show');
+        setTimeout(() => {
+            notificationContainer.classList.remove('show');
+            setTimeout(() => {
+                notificationContainer.remove();
+            }, 300);
+        }, 3000);
+    }, 10);
+}
+
 // Utility Functions
 function showError(elementId, message) {
     const errorElement = document.getElementById(elementId);
@@ -126,6 +181,8 @@ function showError(elementId, message) {
         setTimeout(() => {
             errorElement.style.display = 'none';
         }, 5000);
+    } else {
+        showNotification(message, 'error');
     }
 }
 
@@ -137,9 +194,9 @@ function showSuccess(message, loginDetails = '') {
         modalTitle.textContent = 'Success!';
         modalMessage.textContent = message;
         modalLoginDetails.textContent = loginDetails;
-        if (window.showModal) {
-            window.showModal('signup-modal');
-        }
+        window.showModal('signup-modal');
+    } else {
+        showNotification(message, 'success');
     }
 }
 
@@ -236,6 +293,7 @@ async function login(email, password, selectedRole) {
         throw error;
     }
 }
+
 async function getOrCreateUserProfile(user, email, role) {
     try {
         const { data: profileData, error: profileError } = await supabase
@@ -1098,18 +1156,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (signupTab) {
             signupTab.addEventListener('click', () => {
                 if (loginForm) loginForm.style.display = 'none';
-                if (window.showModal) {
-                    window.showModal('signup-role-modal');
-                }
+                window.showModal('signup-role-modal');
             });
         }
 
         if (loginTab) {
             loginTab.addEventListener('click', () => {
                 if (loginForm) loginForm.style.display = 'block';
-                if (window.closeAllModals) {
-                    window.closeAllModals();
-                }
+                window.closeAllModals();
             });
         }
 
@@ -1123,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'owner': 'signup-owner-modal',
                     'association': 'signup-association-modal'
                 };
-                if (modalMap[role] && window.showModal) {
+                if (modalMap[role]) {
                     window.showModal(modalMap[role]);
                 }
             });
@@ -1138,8 +1192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                               (button.id === 'signup-role-cancel' ? 'signup-role-modal' :
                                button.id === 'modal-close-btn' ? 'signup-modal' : null);
                 if (modalId) {
-                    const modal = document.getElementById(modalId);
-                    if (modal) modal.style.display = 'none';
+                    window.closeModal(modalId);
                     if (loginForm) loginForm.style.display = 'block';
                     document.body.style.overflow = 'auto';
                 }
@@ -1148,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal-overlay')) {
-                e.target.style.display = 'none';
+                window.closeModal(e.target.id);
                 if (loginForm) loginForm.style.display = 'block';
                 document.body.style.overflow = 'auto';
             }
@@ -1156,9 +1209,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (window.closeAllModals) {
-                    window.closeAllModals();
-                }
+                window.closeAllModals();
                 if (loginForm) loginForm.style.display = 'block';
             }
         });
@@ -1178,9 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const result = await login(email, password, role);
                     if (result) {
-                        if (role === 'association') {
-                            window.location.href = './association-dashboard.html';
-                        }
+                        window.location.href = result.redirect;
                     }
                 } catch (error) {
                     showError('login-error-message', error.message || 'Login failed');
@@ -1357,7 +1406,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateRoute,
         deleteRoute,
         getDashboardStats,
-        getVehicles
+        getVehicles,
+        showModal,
+        closeModal,
+        closeAllModals,
+        showNotification
     };
 
     Object.assign(window, functions);
