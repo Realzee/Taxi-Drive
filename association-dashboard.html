@@ -368,7 +368,7 @@
                         <input type="checkbox" id="member-verified" class="form-checkbox">
                         <label for="member-verified">Verified Member</label>
                     </div>
-                    
+                    <div id="member-error-message" style="display: none; color: red; margin-top: 10px;"></div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
                         <button type="submit" class="btn btn-primary">Add Member</button>
@@ -480,6 +480,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <!-- Main Dashboard Script -->
+     <script src="./js/supabase-services.js"></script>
     <script src="./js/association-dashboard.js"></script>
 </body>
 </html>
