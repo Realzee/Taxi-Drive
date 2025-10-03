@@ -1,4 +1,3 @@
-javascript
 // Association Dashboard - UPDATED FOR NEW SCHEMA AND MEMBER AUTH
 // Relies on supabase-services.js for Supabase client and core functions
 
@@ -953,4 +952,5 @@ window.openMapModal = openMapModal;
 window.openManagePartsModal = openManagePartsModal;
 window.openAlertsModal = openAlertsModal;
 window.openWalletModal = openWalletModal;
+
 window.centerOnUserLocation = centerOnUserLocation;
