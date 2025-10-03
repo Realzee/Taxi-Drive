@@ -2,6 +2,7 @@ javascript
 // Supabase Services - Centralized Supabase operations for Association Dashboard
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+const API_BASE_URL = '/api'; // Replace with your server endpoint base URL
 
 // Initialize Supabase client
 let supabase;
@@ -27,11 +28,6 @@ function createFallbackClient() {
             signInWithPassword: () => Promise.resolve({ error: new Error('Supabase not available') }),
             signUp: () => Promise.resolve({ error: new Error('Supabase not available') }),
             signOut: () => Promise.resolve({ error: new Error('Supabase not available') }),
-            admin: {
-                createUser: () => Promise.resolve({ error: new Error('Supabase not available') }),
-                updateUserById: () => Promise.resolve({ error: new Error('Supabase not available') }),
-                deleteUser: () => Promise.resolve({ error: new Error('Supabase not available') })
-            },
             getUser: () => Promise.resolve({ error: new Error('Supabase not available') })
         },
         from: () => ({
@@ -296,37 +292,18 @@ async function signOut() {
 
 async function manageMemberAuth(email, password, memberId = null) {
     try {
-        if (memberId) {
-            if (password) {
-                if (password.length < 8) {
-                    throw new Error('Password must be at least 8 characters long');
-                }
-                const { error } = await supabase.auth.admin.updateUserById(memberId, {
-                    password
-                });
-                if (error) {
-                    console.error('Error updating auth user:', error);
-                    throw new Error('Failed to update member password: ' + error.message);
-                }
-                console.log('Auth user password updated for:', memberId);
-            }
-            return memberId;
-        } else {
-            if (password.length < 8) {
-                throw new Error('Password must be at least 8 characters long');
-            }
-            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-                email,
-                password,
-                email_confirm: true
-            });
-            if (authError) {
-                console.error('Error creating auth user:', authError);
-                throw new Error('Failed to create auth user: ' + authError.message);
-            }
-            console.log('Auth user created:', authData.user.id);
-            return authData.user.id;
+        const response = await fetch(`${API_BASE_URL}/manage-member-auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, memberId })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('Error in manageMemberAuth:', result.error);
+            throw new Error(result.error || 'Failed to manage member authentication');
         }
+        console.log(memberId ? 'Auth user updated:' : 'Auth user created:', result.memberId);
+        return result.memberId;
     } catch (error) {
         console.error('Error in manageMemberAuth:', error);
         throw error;
@@ -500,13 +477,21 @@ async function signupAssociation(formData) {
 
                 if (updateError) {
                     showError(errorElementId, `Failed to update existing profile: ${updateError.message}`);
-                    await supabase.auth.admin.deleteUser(adminId);
+                    await fetch(`${API_BASE_URL}/delete-user`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: adminId })
+                    });
                     return null;
                 }
                 console.log('✅ Profile updated successfully');
             } else {
                 showError(errorElementId, `Failed to save admin profile: ${profileError.message}`);
-                await supabase.auth.admin.deleteUser(adminId);
+                await fetch(`${API_BASE_URL}/delete-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: adminId })
+                });
                 return null;
             }
         } else {
@@ -750,7 +735,11 @@ async function addMember(associationId, formData, isDemo = false) {
 
         if (profileError) {
             console.error('Profile creation failed:', profileError);
-            await supabase.auth.admin.deleteUser(memberId);
+            await fetch(`${API_BASE_URL}/delete-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: memberId })
+            });
             throw new Error('Failed to create member profile: ' + profileError.message);
         }
 
@@ -770,7 +759,11 @@ async function addMember(associationId, formData, isDemo = false) {
 
         if (memberError) {
             console.error('Member creation failed:', memberError);
-            await supabase.auth.admin.deleteUser(memberId);
+            await fetch(`${API_BASE_URL}/delete-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: memberId })
+            });
             await supabase.from('profiles').delete().eq('id', memberId);
             throw new Error('Failed to add member: ' + memberError.message);
         }
@@ -792,10 +785,14 @@ async function getMemberById(memberId, associationId, isDemo = false) {
             .from('members')
             .select('*')
             .eq('id', memberId)
-            .eq('association_id', associationId)
-            .single();
-        if (error) throw error;
-        return data;
+            .eq('association_id', associationId);
+        
+        if (error) {
+            console.error('Error fetching member:', error);
+            throw error;
+        }
+        
+        return data.length > 0 ? data[0] : null;
     } catch (error) {
         console.error('Error in getMemberById:', error);
         throw error;
@@ -860,6 +857,13 @@ async function deleteMember(memberId, associationId, isDemo = false) {
     }
 
     try {
+        // Check if member exists
+        const member = await getMemberById(memberId, associationId);
+        if (!member) {
+            throw new Error('Member not found');
+        }
+
+        // Delete member record
         const { error: memberError } = await supabase
             .from('members')
             .delete()
@@ -871,6 +875,7 @@ async function deleteMember(memberId, associationId, isDemo = false) {
             throw new Error('Failed to delete member: ' + memberError.message);
         }
 
+        // Delete profile
         const { error: profileError } = await supabase
             .from('profiles')
             .delete()
@@ -881,11 +886,20 @@ async function deleteMember(memberId, associationId, isDemo = false) {
             throw new Error('Failed to delete member profile: ' + profileError.message);
         }
 
-        const { error: authError } = await supabase.auth.admin.deleteUser(memberId);
-        if (authError) {
-            console.error('Error deleting auth user:', authError);
-            throw new Error('Failed to delete auth user: ' + authError.message);
+        // Delete auth user via server endpoint
+        const response = await fetch(`${API_BASE_URL}/delete-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: memberId })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('Error deleting auth user:', result.error);
+            throw new Error('Failed to delete auth user: ' + (result.error || 'Server error'));
         }
+
+        console.log('Member deleted successfully:', memberId);
     } catch (error) {
         console.error('Error in deleteMember:', error);
         throw error;
@@ -1061,8 +1075,9 @@ async function getVehicles(associationId, isDemo = false) {
     }
 }
 
-// Initialize and setup event listeners
-function initializeApp() {
+// Initialize on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing Supabase client...');
     initializeSupabase();
 
     function setupEventListeners() {
@@ -1305,12 +1320,6 @@ function initializeApp() {
     }
 
     setupEventListeners();
-}
-
-// Initialize on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Supabase client...');
-    initializeApp();
 
     // Assign functions to global scope for compatibility with association-dashboard.js
     const functions = {
