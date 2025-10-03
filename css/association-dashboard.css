@@ -43,14 +43,16 @@ body.association-dashboard .container {
     color: white;
     padding: 0.75rem 1rem;
     width: 100%;
-    max-width: 480px; /* Match dashboard-app's max-width */
+    max-width: 480px;
+    /* Match dashboard-app's max-width */
     z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     border-radius: 1rem 1rem 0 0;
     position: fixed;
     top: 0;
     left: 50%;
-    transform: translateX(-50%); /* Center the header */
+    transform: translateX(-50%);
+    /* Center the header */
 }
 
 .header-content {
@@ -66,11 +68,13 @@ body.association-dashboard .container {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.25rem; /* Reduced gap for compactness */
+    gap: 0.25rem;
+    /* Reduced gap for compactness */
 }
 
 #main-logo {
-    height: 80px; /* Reset to original size for simplicity */
+    height: 80px;
+    /* Reset to original size for simplicity */
     width: auto;
     border-radius: 10px;
     display: block !important;
@@ -79,13 +83,15 @@ body.association-dashboard .container {
 
 /* Association logo - bigger and centered */
 .association-logo {
-    height: 60px !important; /* Bigger than main logo */
+    height: 60px !important;
+    /* Bigger than main logo */
     width: 60px !important;
     border-radius: 8px;
     object-fit: cover;
     border: 2px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
 }
 
 /* When association logo is loaded, position it */
@@ -99,8 +105,9 @@ body.association-dashboard .container {
 }
 
 /* Adjust title section when association logo is present */
-.association-logo[src]:not([src=""]) ~ .title-section {
-    margin-left: 70px; /* Make space for the centered logo */
+.association-logo[src]:not([src=""])~.title-section {
+    margin-left: 70px;
+    /* Make space for the centered logo */
 }
 
 /* Header content adjustment for logo layout */
@@ -165,12 +172,12 @@ body.association-dashboard .container {
 }
 
 /* Hide the small header association logo when we have the big display */
-.association-logo-display:not(.hidden) ~ .header .association-logo {
+.association-logo-display:not(.hidden)~.header .association-logo {
     display: none !important;
 }
 
 /* Adjust welcome section when logo is displayed */
-.association-logo-display:not(.hidden) + .welcome-section {
+.association-logo-display:not(.hidden)+.welcome-section {
     margin-top: 10px;
 }
 
@@ -185,12 +192,14 @@ body.association-dashboard .container {
 }
 
 .app-title {
-    font-size: 1.2rem; /* Slightly reduced for simplicity */
+    font-size: 1.2rem;
+    /* Slightly reduced for simplicity */
     font-weight: 600;
     margin: 0;
     line-height: 1;
     color: white;
 }
+
 .association-name {
     font-size: 0.875rem;
     opacity: 0.9;
@@ -202,7 +211,8 @@ body.association-dashboard .container {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.25rem; /* Reduced gap for compactness */
+    gap: 0.25rem;
+    /* Reduced gap for compactness */
 }
 
 .icon-btn {
@@ -275,8 +285,10 @@ body.association-dashboard .container {
     padding: 1rem;
     padding-bottom: 80px;
     width: 100%;
-    padding-top: 100px; /* Increased to accommodate bigger logo */
+    padding-top: 100px;
+    /* Increased to accommodate bigger logo */
 }
+
 .welcome-section {
     text-align: center;
     margin-bottom: 2rem;
@@ -319,7 +331,7 @@ body.association-dashboard .container {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
     padding: 1.25rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -328,7 +340,7 @@ body.association-dashboard .container {
 
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .stat-icon {
@@ -342,7 +354,7 @@ body.association-dashboard .container {
     justify-content: center;
     font-size: 1.5rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .stat-info {
@@ -394,7 +406,7 @@ body.association-dashboard .container {
     background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
 }
 
@@ -414,7 +426,7 @@ body.association-dashboard .container {
 
 .quick-action-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .quick-action-btn i {
@@ -456,7 +468,7 @@ body.association-dashboard .container {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 0.75rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 
@@ -464,7 +476,7 @@ body.association-dashboard .container {
     display: flex;
     align-items: center;
     padding: 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     gap: 1rem;
     transition: background-color 0.3s ease;
 }
@@ -488,7 +500,7 @@ body.association-dashboard .container {
     justify-content: center;
     font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .item-details {
@@ -515,7 +527,8 @@ body.association-dashboard .container {
     text-overflow: ellipsis;
 }
 
-.member-role, .route-schedule {
+.member-role,
+.route-schedule {
     font-size: 0.75rem;
     font-weight: 500;
 }
@@ -621,31 +634,38 @@ body.association-dashboard .container {
 
 /* Map Modal */
 #map-modal .modal-content {
-    max-width: 480px; /* Match dashboard-app max-width */
+    max-width: 480px;
+    /* Match dashboard-app max-width */
     width: 100%;
     padding: 1rem;
 }
 
 /* Map Container */
 #map {
-    height: 400px; /* Fixed height for usability */
+    height: 400px;
+    /* Fixed height for usability */
     width: 100%;
-    max-width: 480px; /* Ensure map doesn't exceed app width */
+    max-width: 480px;
+    /* Ensure map doesn't exceed app width */
     border-radius: 8px;
-    border: 2px solid rgba(163, 201, 230, 0.3); /* Match app aesthetic */
+    border: 2px solid rgba(163, 201, 230, 0.3);
+    /* Match app aesthetic */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Modal Styles */
 .modal-overlay {
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
-    z-index: 1000; /* Ensure modal is above other content */
+    background: rgba(0, 0, 0, 0.5);
+    /* Semi-transparent backdrop */
+    z-index: 1000;
+    /* Ensure modal is above other content */
     justify-content: center;
     align-items: center;
     overflow: auto;
@@ -658,7 +678,7 @@ body.association-dashboard .container {
     max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     margin: 0 auto;
 }
 
@@ -687,7 +707,9 @@ body.association-dashboard .container {
     font-size: 1.25rem;
 }
 
-.modal-close, .modal-close-btn, .btn-cancel {
+.modal-close,
+.modal-close-btn,
+.btn-cancel {
     cursor: pointer;
     background: none;
     border: none;
@@ -864,7 +886,7 @@ body.association-dashboard .container {
     transform: translateX(50%);
     background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     padding: 1rem;
     z-index: 3000;
     max-width: 400px;
@@ -915,7 +937,8 @@ body.association-dashboard .container {
 
 /* User location marker */
 .user-location-marker {
-    background-color: #007bff; /* Blue dot */
+    background-color: #007bff;
+    /* Blue dot */
     border-radius: 50%;
     border: 2px solid white;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
@@ -926,6 +949,7 @@ body.association-dashboard .container {
         transform: translateX(50%) translateY(-20px);
         opacity: 0;
     }
+
     to {
         transform: translateX(50%) translateY(0);
         opacity: 1;
@@ -937,73 +961,73 @@ body.association-dashboard .container {
     .dashboard-app {
         border-radius: 0;
     }
-    
+
     .header {
         border-radius: 0;
     }
-    
+
 
     /* Dashboard Container - Define width explicitly */
-.dashboard-container {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 0 1rem;
-}
-    
+    .dashboard-container {
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
     .stats-grid {
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
     }
-    
+
     .stat-card {
         padding: 1rem;
     }
-    
+
     .stat-icon {
         width: 45px;
         height: 45px;
         font-size: 1.25rem;
     }
-    
+
     .stat-value {
         font-size: 1.5rem;
     }
-    
+
     .quick-actions {
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
     }
-    
+
     .quick-action-btn {
         padding: 1rem 0.5rem;
         min-height: 90px;
     }
-    
+
     .modal-content {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-    
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
     .bottom-nav {
         border-radius: 0;
     }
-    
+
     .nav-item {
         max-width: 70px;
     }
-    
+
     .nav-item i {
         font-size: 1.1rem;
     }
-    
+
     .nav-item span {
         font-size: 0.65rem;
     }
@@ -1020,10 +1044,13 @@ body.association-dashboard .container {
 /* Responsive adjustments */
 @media (max-width: 480px) {
     #map-modal .modal-content {
-        max-width: 100%; /* Full width on small screens */
+        max-width: 100%;
+        /* Full width on small screens */
         border-radius: 0;
     }
+
     #map {
-        max-width: 100%; /* Ensure map fits within modal */
+        max-width: 100%;
+        /* Ensure map fits within modal */
     }
 }
