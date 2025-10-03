@@ -170,61 +170,72 @@ async function checkAssociationAuthentication() {
     }
 }
 
-async function login(email, password, role) {
-    const errorElementId = 'login-error-message';
+async function login(email, password, selectedRole) {
     console.log('🔐 LOGIN ATTEMPT STARTED ==========');
-
     try {
         console.log('🔄 Step 1: Authenticating with Supabase Auth...');
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
             email,
             password
         });
 
-        if (authError) {
-            console.error('❌ Auth failed:', authError);
-            showError(errorElementId, authError.message || 'Authentication failed');
-            return null;
+        if (authError || !user) {
+            console.error('❌ Auth error:', authError?.message);
+            throw new Error(authError?.message || 'Authentication failed');
         }
 
-        console.log('✅ Auth successful! User ID:', authData.user.id);
+        console.log('✅ Auth successful! User ID:', user.id);
 
-        let profileData = await getOrCreateUserProfile(authData.user, email, role);
-        if (!profileData) {
-            showError(errorElementId, 'Unable to access user profile. Please contact administrator.');
-            await supabase.auth.signOut();
-            return null;
+        console.log('🔄 Step 2: Verifying profile role...');
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError || !profileData) {
+            console.error('❌ Profile error:', profileError?.message);
+            throw new Error('Profile not found');
         }
 
         console.log('✅ Profile verified:', profileData);
 
-        if (profileData.role !== role) {
-            console.error('❌ Role mismatch!');
-            showError(errorElementId, `Invalid role. Your account is registered as ${profileData.role}, but you're trying to login as ${role}`);
-            await supabase.auth.signOut();
-            return null;
+        if (!['association', 'owner', 'driver', 'passenger'].includes(profileData.role)) {
+            console.error('❌ Invalid role:', profileData.role);
+            throw new Error('Invalid user role');
+        }
+
+        if (selectedRole && profileData.role !== selectedRole) {
+            console.error('❌ Role mismatch:', { selected: selectedRole, actual: profileData.role });
+            throw new Error(`Please select the correct role: ${profileData.role}`);
         }
 
         console.log('✅ Role verified successfully!');
 
-        let associationData = null;
-        if (role === 'association') {
-            associationData = await getAssociationData(profileData.id);
+        if (profileData.role === 'association') {
+            console.log('🔄 Step 3: Fetching association data...');
+            const association = await getAssociationByAdminId(user.id);
+            if (!association) {
+                console.error('❌ No association found for user');
+                throw new Error('No association found');
+            }
+            console.log('✅ Association found:', association);
+            return { redirect: 'association-dashboard.html', user: { ...user, ...profileData, association } };
+        } else if (profileData.role === 'owner') {
+            console.log('✅ Owner user, redirecting to owner dashboard');
+            return { redirect: 'owner-dashboard.html', user: { ...user, ...profileData } };
+        } else if (profileData.role === 'driver') {
+            console.log('✅ Driver user, redirecting to driver dashboard');
+            return { redirect: 'driver-dashboard.html', user: { ...user, ...profileData } };
+        } else {
+            console.log('✅ Passenger user, redirecting to passenger dashboard');
+            return { redirect: 'passenger-dashboard.html', user: { ...user, ...profileData } };
         }
-
-        console.log('🎉 LOGIN SUCCESSFUL!');
-        return {
-            user: authData.user,
-            role: profileData.role,
-            association: associationData
-        };
-    } catch (err) {
-        console.error('💥 UNEXPECTED LOGIN ERROR:', err);
-        showError(errorElementId, 'An unexpected error occurred: ' + err.message);
-        return null;
+    } catch (error) {
+        console.error('💥 UNEXPECTED LOGIN ERROR:', error);
+        throw error;
     }
 }
-
 async function getOrCreateUserProfile(user, email, role) {
     try {
         const { data: profileData, error: profileError } = await supabase
