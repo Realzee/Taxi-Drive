@@ -1,89 +1,73 @@
-javascript
-const express = require('express');
+// server.js
 const { createClient } = require('@supabase/supabase-js');
+const express = require('express');
 const cors = require('cors');
 
 const app = express();
-app.use(express.json());
-app.use(cors({
-    origin: '*', // Replace with your client app's domain (e.g., 'https://your-client-app.com') for production
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
+// Supabase configuration
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODg4NTIzNSwiZXhwIjoyMDc0NDYxMjM1fQ.o3rsjF8vkPO5KHce8DiKxFa2h1lbZAkXf7_IQaAMlaA'; // Replace with your service role key
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY; // Loaded from Vercel environment variables
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// Manage member authentication (create or update auth user)
-app.post('/api/manage-member-auth', async (req, res) => {
+// Explicit CORS configuration
+app.use(cors({
+    origin: ['https://realzee.github.io', 'http://localhost:3000'], // Allow GitHub Pages and local dev
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false // Set to true if cookies/auth tokens are needed
+}));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors()); // Ensure CORS headers for all preflight requests
+
+app.use(express.json());
+
+// Manage member authentication
+app.post('/manage-member-auth', async (req, res) => {
+    console.log('Received /manage-member-auth request:', req.body);
     const { email, password, memberId } = req.body;
     try {
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        if (password.length < 8) {
-            return res.status(400).json({ error: 'Password must be at least 8 characters long' });
-        }
-
+        let user;
         if (memberId) {
-            // Update existing user's password
-            const { data, error } = await supabase.auth.admin.updateUserById(memberId, { password });
-            if (error) {
-                console.error('Error updating auth user:', error);
-                return res.status(500).json({ error: 'Failed to update member password: ' + error.message });
-            }
-            console.log('Auth user updated:', memberId);
-            return res.json({ memberId });
+            // Update existing user
+            user = await supabase.auth.admin.updateUserById(memberId, { email, password });
         } else {
-            // Create new auth user
-            const { data, error } = await supabase.auth.admin.createUser({
-                email,
-                password,
-                email_confirm: true
-            });
-            if (error) {
-                console.error('Error creating auth user:', error);
-                return res.status(500).json({ error: 'Failed to create auth user: ' + error.message });
-            }
-            console.log('Auth user created:', data.user.id);
-            return res.json({ memberId: data.user.id });
+            // Create new user
+            user = await supabase.auth.signUp({ email, password });
         }
+        if (user.error) {
+            console.error('Supabase error:', user.error);
+            throw user.error;
+        }
+        console.log('User processed:', user.data.user.id);
+        res.json({ memberId: user.data.user.id });
     } catch (error) {
-        console.error('Unexpected error in manage-member-auth:', error);
-        res.status(500).json({ error: 'Unexpected error: ' + error.message });
+        console.error('Server error in manage-member-auth:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to manage member authentication' });
     }
 });
 
-// Delete auth user
-app.post('/api/delete-user', async (req, res) => {
+// Delete user
+app.post('/delete-user', async (req, res) => {
+    console.log('Received /delete-user request:', req.body);
     const { userId } = req.body;
     try {
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID is required' });
-        }
-
         const { error } = await supabase.auth.admin.deleteUser(userId);
-        if (error) {
-            console.error('Error deleting auth user:', error);
-            return res.status(500).json({ error: 'Failed to delete auth user: ' + error.message });
-        }
-
-        console.log('Auth user deleted:', userId);
+        if (error) throw error;
+        console.log('User deleted:', userId);
         res.json({ success: true });
     } catch (error) {
-        console.error('Unexpected error in delete-user:', error);
-        res.status(500).json({ error: 'Unexpected error: ' + error.message });
+        console.error('Server error in delete-user:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to delete user' });
     }
 });
 
-// Basic health check endpoint
+// Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'OK', message: 'Server is running' });
+    res.json({ status: 'ok' });
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
