@@ -16,20 +16,22 @@ try {
 let currentUser = null;
 let currentAssociation = null;
 let currentAssociationId = null;
-let realtimeSubscription = null;
+let map = null; // Use consistent variable name
 
-// Demo data storage for fallback
+// Demo data for fallback
 let demoData = {
     members: [],
-    routes: []
+    routes: [],
+    vehicles: [
+        { id: 'demo1', vehicle_id: 'Taxi_001', latitude: -26.2041, longitude: 28.0473, last_updated: new Date().toISOString() },
+        { id: 'demo2', vehicle_id: 'Taxi_002', latitude: -26.2100, longitude: 28.0500, last_updated: new Date().toISOString() }
+    ]
 };
 
-// Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
 
-// Initialize dashboard
 async function initializeDashboard() {
     try {
         const user = await checkAssociationAuthentication();
@@ -52,7 +54,6 @@ async function initializeDashboard() {
 }
 
 // Initialize Leaflet map
-let map;
 function initializeMap() {
     try {
         const mapContainer = document.getElementById('map');
@@ -62,7 +63,7 @@ function initializeMap() {
         }
 
         // Initialize Leaflet map
-        map = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg, South Africa
+        map = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 18,
@@ -89,45 +90,49 @@ function initializeMap() {
     }
 }
 
-// Load vehicle locations (demo or from Supabase)
+// Load vehicle locations
 async function loadVehicleLocations(taxiIcon) {
     try {
-        // Try fetching from Supabase
+        // Updated query to match likely vehicles table schema
         const { data: vehicles, error } = await supabase
             .from('vehicles')
-            .select('id, name, latitude, longitude, last_updated');
+            .select('id, vehicle_id, latitude, longitude, last_updated')
+            .eq('association_id', currentAssociationId);
 
         if (error) {
             console.error('Error fetching vehicle locations:', error);
-            // Fallback to demo data
-            const demoVehicles = [
-                { id: 'demo1', name: 'Taxi 1', latitude: -26.2041, longitude: 28.0473, last_updated: new Date().toISOString() },
-                { id: 'demo2', name: 'Taxi 2', latitude: -26.2100, longitude: 28.0500, last_updated: new Date().toISOString() }
-            ];
-            addMarkersToMap(demoVehicles, taxiIcon);
+            showNotification('No vehicle locations available. Using demo data.', 'warning');
+            addMarkersToMap(demoData.vehicles, taxiIcon);
             return;
         }
 
         if (vehicles && vehicles.length > 0) {
             addMarkersToMap(vehicles, taxiIcon);
         } else {
-            showNotification('No vehicle locations available.', 'info');
+            showNotification('No vehicle locations available. Using demo data.', 'info');
+            addMarkersToMap(demoData.vehicles, taxiIcon);
         }
     } catch (error) {
         console.error('Error loading vehicle locations:', error);
-        showNotification('Failed to load vehicle locations.', 'error');
+        showNotification('Failed to load vehicle locations. Using demo data.', 'error');
+        addMarkersToMap(demoData.vehicles, taxiIcon);
     }
 }
 
 // Add markers to map
 function addMarkersToMap(vehicles, taxiIcon) {
+    if (!map) {
+        console.error('Map not initialized');
+        return;
+    }
+
     vehicles.forEach(vehicle => {
         if (vehicle.latitude && vehicle.longitude) {
             L.marker([vehicle.latitude, vehicle.longitude], { icon: taxiIcon })
                 .addTo(map)
                 .bindPopup(`
                     <div class="p-2">
-                        <h3 class="font-semibold text-[#052438]">${vehicle.name}</h3>
+                        <h3 class="font-semibold text-[#052438]">${vehicle.vehicle_id || 'Unknown Vehicle'}</h3>
                         <p class="text-sm">Last updated: ${new Date(vehicle.last_updated).toLocaleString()}</p>
                     </div>
                 `);
@@ -136,16 +141,22 @@ function addMarkersToMap(vehicles, taxiIcon) {
 
     // Fit map to bounds if there are vehicles
     if (vehicles.length > 0) {
-        const bounds = vehicles.map(v => [v.latitude, v.longitude]);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        const bounds = vehicles
+            .filter(v => v.latitude && v.longitude)
+            .map(v => [v.latitude, v.longitude]);
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
     }
 }
 
-// Update openMapModal to ensure map refreshes
+// Update openMapModal to refresh map
 function openMapModal() {
     showModal('map-modal');
     if (map) {
-        map.invalidateSize(); // Fix map size after modal display
+        setTimeout(() => {
+            map.invalidateSize(); // Ensure map resizes correctly
+        }, 100); // Delay to allow modal animation to complete
     }
 }    
     // Initialize map if not already done
