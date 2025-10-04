@@ -619,23 +619,6 @@ body.association-dashboard .container {
     font-weight: 500;
 }
 
-/* Map Modal */
-#map-modal .modal-content {
-    max-width: 480px; /* Match dashboard-app max-width */
-    width: 100%;
-    padding: 1rem;
-}
-
-/* Map Container */
-#map {
-    height: 400px; /* Fixed height for usability */
-    width: 100%;
-    max-width: 480px; /* Ensure map doesn't exceed app width */
-    border-radius: 8px;
-    border: 2px solid rgba(163, 201, 230, 0.3); /* Match app aesthetic */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 /* Modal Styles */
 .modal-overlay {
     display: none; /* Hidden by default */
@@ -913,13 +896,7 @@ body.association-dashboard .container {
     border-left: 4px solid #ffc107;
 }
 
-/* User location marker */
-.user-location-marker {
-    background-color: #007bff; /* Blue dot */
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-}
+
 
 @keyframes slideIn {
     from {
@@ -1014,16 +991,5 @@ body.association-dashboard .container {
     body.association-dashboard {
         border-left: 1px solid #dee2e6;
         border-right: 1px solid #dee2e6;
-    }
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    #map-modal .modal-content {
-        max-width: 100%; /* Full width on small screens */
-        border-radius: 0;
-    }
-    #map {
-        max-width: 100%; /* Ensure map fits within modal */
     }
 }
