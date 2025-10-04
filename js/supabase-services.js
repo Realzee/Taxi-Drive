@@ -1096,15 +1096,13 @@ async function updateRoute(routeId, associationId, routeData, isDemo = false) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('routes')
             .update(routeData)
             .eq('id', routeId)
-            .eq('association_id', associationId)
-            .select()
-            .single();
+            .eq('association_id', associationId);
         if (error) throw error;
-        return data;
+        return await getRouteById(routeId, associationId);
     } catch (error) {
         console.error('Error in updateRoute:', error);
         throw error;
@@ -1130,39 +1128,8 @@ async function deleteRoute(routeId, associationId, isDemo = false) {
     }
 }
 
-// Dashboard Stats
-async function getDashboardStats(associationId, isDemo = false) {
-    if (isDemo) {
-        return {
-            registeredVehicles: 12,
-            registeredMembers: demoData.members.length || 8,
-            activeRoutes: demoData.routes.length || 5,
-            passengerAlarms: 2
-        };
-    }
-
-    try {
-        const [vehicles, members, routes, alerts] = await Promise.all([
-            supabase.from('vehicles').select('id').eq('association_id', associationId),
-            supabase.from('members').select('id').eq('association_id', associationId),
-            supabase.from('routes').select('id').eq('association_id', associationId).eq('status', 'active'),
-            supabase.from('panic_alerts').select('id').eq('association_id', associationId).eq('status', 'active')
-        ]);
-
-        return {
-            registeredVehicles: vehicles.data?.length || 0,
-            registeredMembers: members.data?.length || 0,
-            activeRoutes: routes.data?.length || 0,
-            passengerAlarms: alerts.data?.length || 0
-        };
-    } catch (error) {
-        console.error('Error in getDashboardStats:', error);
-        throw error;
-    }
-}
-
 // Vehicle Services
-async function getVehicles(associationId, isDemo = false) {
+async function getActiveVehicles(associationId, isDemo = false) {
     if (isDemo) {
         return demoData.vehicles;
     }
@@ -1170,287 +1137,164 @@ async function getVehicles(associationId, isDemo = false) {
     try {
         const { data, error } = await supabase
             .from('vehicles')
-            .select('id, registration_number, latitude, longitude')
-            .eq('association_id', associationId);
+            .select('*')
+            .eq('association_id', associationId)
+            .eq('status', 'active');
         if (error) throw error;
         return data || [];
     } catch (error) {
-        console.error('Error in getVehicles:', error);
+        console.error('Error in getActiveVehicles:', error);
         throw error;
     }
 }
 
-// Initialize on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Supabase client...');
-    initializeSupabase();
-
-    function setupEventListeners() {
-        const loginTab = document.getElementById('login-tab');
-        const signupTab = document.getElementById('signup-tab');
-        const loginForm = document.getElementById('login-form');
-
-        if (signupTab) {
-            signupTab.addEventListener('click', () => {
-                if (loginForm) loginForm.style.display = 'none';
-                window.showModal('signup-role-modal');
-            });
-        }
-
-        if (loginTab) {
-            loginTab.addEventListener('click', () => {
-                if (loginForm) loginForm.style.display = 'block';
-                window.closeAllModals();
-            });
-        }
-
-        const roleButtons = document.querySelectorAll('.signup-role-btn');
-        roleButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const role = button.getAttribute('data-role');
-                const modalMap = {
-                    'passenger': 'signup-passenger-modal',
-                    'driver': 'signup-driver-modal',
-                    'owner': 'signup-owner-modal',
-                    'association': 'signup-association-modal'
-                };
-                if (modalMap[role]) {
-                    window.showModal(modalMap[role]);
-                }
-            });
-        });
-
-        const closeButtons = document.querySelectorAll('.modal-close-btn, #signup-role-cancel, #modal-close-btn');
-        closeButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                let modalId = button.getAttribute('data-modal') ||
-                              (button.id === 'signup-role-cancel' ? 'signup-role-modal' :
-                               button.id === 'modal-close-btn' ? 'signup-modal' : null);
-                if (modalId) {
-                    window.closeModal(modalId);
-                    if (loginForm) loginForm.style.display = 'block';
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        });
-
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                window.closeModal(e.target.id);
-                if (loginForm) loginForm.style.display = 'block';
-                document.body.style.overflow = 'auto';
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                window.closeAllModals();
-                if (loginForm) loginForm.style.display = 'block';
-            }
-        });
-
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('login-email')?.value;
-                const password = document.getElementById('login-password')?.value;
-                const role = document.getElementById('login-role')?.value;
-
-                if (!email || !password || !role) {
-                    showError('login-error-message', 'Please fill in all fields');
-                    return;
-                }
-
-                try {
-                    const result = await login(email, password, role);
-                    if (result) {
-                        window.location.href = result.redirect;
-                    }
-                } catch (error) {
-                    showError('login-error-message', error.message || 'Login failed');
-                }
-            });
-        }
-
-        const passengerForm = document.getElementById('signup-passenger');
-        if (passengerForm) {
-            passengerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('passenger-email')?.value;
-                const password = document.getElementById('passenger-password')?.value;
-
-                try {
-                    await signupSimple('passenger', { email, password });
-                    passengerForm.reset();
-                } catch (error) {
-                    showError('signup-passenger-error-message', error.message || 'Registration failed');
-                }
-            });
-        }
-
-        const driverForm = document.getElementById('signup-driver');
-        if (driverForm) {
-            driverForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('driver-email')?.value;
-                const password = document.getElementById('driver-password')?.value;
-                const licenseNumber = document.getElementById('driver-license-number')?.value;
-
-                try {
-                    await signupSimple('driver', { email, password, license_number: licenseNumber });
-                    driverForm.reset();
-                } catch (error) {
-                    showError('signup-driver-error-message', error.message || 'Registration failed');
-                }
-            });
-        }
-
-        const ownerForm = document.getElementById('signup-owner');
-        if (ownerForm) {
-            ownerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('owner-email')?.value;
-                const password = document.getElementById('owner-password')?.value;
-                const companyName = document.getElementById('owner-company-name')?.value;
-
-                try {
-                    await signupSimple('owner', { email, password, company_name: companyName });
-                    ownerForm.reset();
-                } catch (error) {
-                    showError('signup-owner-error-message', error.message || 'Registration failed');
-                }
-            });
-        }
-
-        const associationForm = document.getElementById('signup-association');
-        if (associationForm) {
-            associationForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = {
-                    name: document.getElementById('association-name')?.value,
-                    email: document.getElementById('association-email')?.value,
-                    phone: document.getElementById('association-phone')?.value,
-                    registrationNumber: document.getElementById('association-registration-number')?.value,
-                    address: document.getElementById('association-address')?.value,
-                    description: document.getElementById('association-description')?.value,
-                    logo: document.getElementById('association-logo')?.files[0],
-                    adminEmail: document.getElementById('admin-email')?.value,
-                    adminPassword: document.getElementById('admin-password')?.value,
-                    adminName: document.getElementById('admin-name')?.value,
-                    adminPhone: document.getElementById('admin-phone')?.value,
-                    adminIdNumber: document.getElementById('admin-id-number')?.value,
-                    termsAccepted: document.getElementById('terms-accepted')?.checked
-                };
-
-                const progressBar = document.getElementById('signup-progress-bar');
-                const progressText = document.getElementById('signup-progress-text');
-                const progressDiv = document.getElementById('signup-progress');
-
-                if (progressBar && progressText && progressDiv) {
-                    progressDiv.style.display = 'block';
-                    progressText.textContent = 'Starting registration...';
-                    progressBar.style.width = '10%';
-                }
-
-                try {
-                    if (progressBar && progressText) {
-                        progressText.textContent = 'Creating admin account...';
-                        progressBar.style.width = '25%';
-                    }
-
-                    const result = await signupAssociation(formData);
-
-                    if (result) {
-                        if (progressBar && progressText) {
-                            progressBar.style.width = '100%';
-                            progressText.textContent = 'Registration complete!';
-                            setTimeout(() => {
-                                progressDiv.style.display = 'none';
-                            }, 2000);
-                        }
-                        associationForm.reset();
-                    } else {
-                        if (progressDiv) progressDiv.style.display = 'none';
-                    }
-                } catch (error) {
-                    showError('signup-association-error-message', error.message || 'Registration failed');
-                    if (progressDiv) progressDiv.style.display = 'none';
-                }
-            });
-        }
-
-        const logoInput = document.getElementById('association-logo');
-        const logoPreviewContainer = document.getElementById('logo-preview-container');
-        const logoPreviewImg = document.getElementById('logo-preview-img');
-        const removeLogoBtn = document.getElementById('remove-logo-btn');
-        const logoInfo = document.getElementById('logo-info');
-
-        if (logoInput && logoPreviewContainer && logoPreviewImg && removeLogoBtn && logoInfo) {
-            logoInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 2 * 1024 * 1024) {
-                        showError('signup-association-error-message', 'Logo file size exceeds 2MB limit');
-                        logoInput.value = '';
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        logoPreviewImg.src = e.target.result;
-                        logoPreviewContainer.style.display = 'block';
-                        logoInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            removeLogoBtn.addEventListener('click', () => {
-                logoInput.value = '';
-                logoPreviewContainer.style.display = 'none';
-                logoPreviewImg.src = '';
-                logoInfo.textContent = '';
-            });
-        }
+async function addVehicle(associationId, vehicleData, isDemo = false) {
+    if (isDemo) {
+        const newVehicle = {
+            id: `vehicle-${Date.now()}`,
+            ...vehicleData,
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+        demoData.vehicles.push(newVehicle);
+        return newVehicle;
     }
 
-    setupEventListeners();
+    try {
+        const vehicleWithAssociation = {
+            ...vehicleData,
+            association_id: associationId,
+            status: 'active'
+        };
 
-    // Assign functions to global scope for compatibility with association-dashboard.js
-    const functions = {
-        login,
-        signupSimple,
-        signupAssociation,
-        showError,
-        showSuccess,
-        checkAssociationAuthentication,
-        signOut,
-        manageMemberAuth,
-        getAssociationByAdminId,
-        createAssociation,
-        updateAssociation,
-        getAssociationById,
-        uploadLogo,
-        getRecentMembers,
-        addMember,
-        getMemberById,
-        updateMember,
-        deleteMember,
-        getRecentRoutes,
-        addRoute,
-        getRouteById,
-        updateRoute,
-        deleteRoute,
-        getDashboardStats,
-        getVehicles,
-        showModal,
-        closeModal,
-        closeAllModals,
-        showNotification
-    };
+        const { data, error } = await supabase
+            .from('vehicles')
+            .insert([vehicleWithAssociation])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error in addVehicle:', error);
+        throw error;
+    }
+}
 
-    Object.assign(window, functions);
-    console.log('✅ All functions are now globally available');
-    console.log('Available functions:', Object.keys(functions));
-});
+async function getVehicleById(vehicleId, associationId, isDemo = false) {
+    if (isDemo) {
+        return demoData.vehicles.find(v => v.id === vehicleId) || null;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('vehicles')
+            .select('*')
+            .eq('id', vehicleId)
+            .eq('association_id', associationId)
+            .single();
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error in getVehicleById:', error);
+        throw error;
+    }
+}
+
+async function updateVehicle(vehicleId, associationId, vehicleData, isDemo = false) {
+    if (isDemo) {
+        const vehicleIndex = demoData.vehicles.findIndex(v => v.id === vehicleId);
+        if (vehicleIndex !== -1) {
+            demoData.vehicles[vehicleIndex] = { ...demoData.vehicles[vehicleIndex], ...vehicleData };
+            return demoData.vehicles[vehicleIndex];
+        }
+        throw new Error('Vehicle not found');
+    }
+
+    try {
+        const { error } = await supabase
+            .from('vehicles')
+            .update(vehicleData)
+            .eq('id', vehicleId)
+            .eq('association_id', associationId);
+        if (error) throw error;
+        return await getVehicleById(vehicleId, associationId);
+    } catch (error) {
+        console.error('Error in updateVehicle:', error);
+        throw error;
+    }
+}
+
+async function deleteVehicle(vehicleId, associationId, isDemo = false) {
+    if (isDemo) {
+        demoData.vehicles = demoData.vehicles.filter(v => v.id !== vehicleId);
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('vehicles')
+            .delete()
+            .eq('id', vehicleId)
+            .eq('association_id', associationId);
+        if (error) throw error;
+    } catch (error) {
+        console.error('Error in deleteVehicle:', error);
+        throw error;
+    }
+}
+
+// Initialize Supabase when the script loads
+initializeSupabase();
+
+// Export all functions for use in other files
+window.supabaseServices = {
+    // Core functions
+    initializeSupabase,
+    showModal,
+    closeModal,
+    closeAllModals,
+    showNotification,
+    showError,
+    showSuccess,
+    
+    // Authentication
+    checkAssociationAuthentication,
+    login,
+    signOut,
+    signupSimple,
+    signupAssociation,
+    manageMemberAuth,
+    
+    // Association
+    getAssociationByAdminId,
+    createAssociation,
+    updateAssociation,
+    getAssociationById,
+    uploadLogo,
+    
+    // Members
+    getRecentMembers,
+    addMember,
+    getMemberById,
+    updateMember,
+    deleteMember,
+    
+    // Routes
+    getRecentRoutes,
+    addRoute,
+    getRouteById,
+    updateRoute,
+    deleteRoute,
+    
+    // Vehicles
+    getActiveVehicles,
+    addVehicle,
+    getVehicleById,
+    updateVehicle,
+    deleteVehicle,
+    
+    // Demo data
+    demoData
+};
+
+console.log('🚀 Supabase Services initialized successfully');
