@@ -1,4 +1,3 @@
-
 // Association Dashboard - UPDATED FOR NEW SCHEMA
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
@@ -1178,8 +1177,6 @@ function openProfileModal() {
 
 // Global map variable to manage Leaflet instance
 let mapInstance = null;
-let userLocationMarker = null; // Marker for user's current location
-let userLocationWatcher = null; // Geolocation watcher ID
 
 function initializeMap() {
     const mapContainer = document.getElementById('map');
@@ -1189,7 +1186,7 @@ function initializeMap() {
     }
 
     // Initialize Leaflet map
-    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
+    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg, adjust as needed
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1197,105 +1194,10 @@ function initializeMap() {
         maxZoom: 19
     }).addTo(mapInstance);
 
-    // Fetch vehicle locations from Supabase (if applicable)
-    async function loadVehicles() {
-        try {
-            const { data: vehicles, error } = await supabase
-                .from('vehicles')
-                .select('id, registration_number, latitude, longitude')
-                .eq('association_id', currentAssociationId);
-
-            if (error) {
-                console.error('Error fetching vehicles:', error);
-                showNotification('Failed to load vehicle locations.', 'error');
-                return;
-            }
-
-            vehicles.forEach(vehicle => {
-                if (vehicle.latitude && vehicle.longitude) {
-                    L.marker([vehicle.latitude, vehicle.longitude])
-                        .addTo(mapInstance)
-                        .bindPopup(`Vehicle: ${vehicle.registration_number}`);
-                }
-            });
-        } catch (error) {
-            console.error('Error loading vehicle data:', error);
-            showNotification('Error loading vehicle data.', 'error');
-        }
-    }
-
-    loadVehicles();
-
-    // Get and track user's current location
-    if (navigator.geolocation) {
-        // Initial location
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                // Center map on user's location
-                mapInstance.setView([latitude, longitude], 13);
-
-                // Add or update marker for current location
-                if (userLocationMarker) {
-                    userLocationMarker.setLatLng([latitude, longitude]);
-                } else {
-                    userLocationMarker = L.marker([latitude, longitude], {
-                        icon: L.divIcon({
-                            className: 'user-location-marker',
-                            html: '<div style="background-color: #007bff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
-                            iconSize: [15, 15],
-                            iconAnchor: [7.5, 7.5]
-                        })
-                    }).addTo(mapInstance)
-                      .bindPopup('Your Current Location');
-                }
-
-                showNotification('Your location is now displayed on the map.', 'success');
-            },
-            (error) => {
-                console.error('Geolocation error:', error);
-                showNotification('Unable to access your location. Please enable location services.', 'error');
-            }
-        );
-
-        // Watch for location updates
-        userLocationWatcher = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                if (userLocationMarker) {
-                    userLocationMarker.setLatLng([latitude, longitude]);
-                    mapInstance.panTo([latitude, longitude]); // Optional: Keep map centered
-                }
-            },
-            (error) => {
-                console.error('Geolocation watch error:', error);
-                showNotification('Location update failed.', 'error');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            }
-        );
-    } else {
-        console.error('Geolocation not supported by browser');
-        showNotification('Your browser does not support location services.', 'error');
-    }
-
     // Ensure map resizes correctly
     setTimeout(() => {
         mapInstance.invalidateSize();
-    }, 100);
-}
-
-// Clean up watcher when modal is closed
-function closeMapModal() {
-    closeModal('map-modal');
-    if (userLocationWatcher) {
-        navigator.geolocation.clearWatch(userLocationWatcher);
-        userLocationWatcher = null;
-        console.log('Stopped location tracking');
-    }
+    }, 100); // Delay to ensure modal is fully rendered
 }
 
 // Update openMapModal to initialize map
@@ -1303,30 +1205,12 @@ function openMapModal() {
     console.log('Opening map modal');
     showModal('map-modal');
     
+    // Initialize map if not already done
     if (!mapInstance) {
         initializeMap();
     } else {
+        // Update map size when modal reopens
         mapInstance.invalidateSize();
-    }
-}
-
-let userAccuracyCircle = null;
-// In getCurrentPosition/watchPosition success callback:
-const accuracy = position.coords.accuracy;
-if (userAccuracyCircle) {
-    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-} else {
-    userAccuracyCircle = L.circle([latitude, longitude], {
-        radius: accuracy,
-        color: '#007bff',
-        fillOpacity: 0.1,
-        weight: 1
-    }).addTo(mapInstance);
-}
-
-function centerOnUserLocation() {
-    if (userLocationMarker) {
-        mapInstance.panTo(userLocationMarker.getLatLng());
     }
 }
 
