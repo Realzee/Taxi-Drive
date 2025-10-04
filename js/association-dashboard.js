@@ -653,18 +653,29 @@ if (window.associationDashboardLoaded) {
                 } catch (error) {
                     console.error('❌ Error handling member form:', error);
                     
-                    // User-friendly error messages
-                    let userMessage = error.message || 'Error processing member.';
+                    // IMPROVED: Better error message extraction
+                    let userMessage = 'Error processing member request.';
                     
-                    if (error.message.includes('authentication service') || 
-                        error.message.includes('Cannot connect') ||
-                        error.message.includes('CORS') ||
-                        error.message.includes('Security restrictions')) {
+                    if (error.message) {
+                        userMessage = error.message;
+                    } else if (typeof error === 'string') {
+                        userMessage = error;
+                    } else if (error.error) {
+                        userMessage = error.error.message || JSON.stringify(error.error);
+                    }
+                    
+                    // Specific error mappings
+                    if (userMessage.includes('unavailable') || 
+                        userMessage.includes('Cannot connect') ||
+                        userMessage.includes('Network security') ||
+                        userMessage.includes('CORS')) {
                         userMessage = 'Authentication service is temporarily unavailable. Please try again in a few moments.';
-                    } else if (error.message.includes('already registered')) {
-                        userMessage = 'This email is already registered. Please use a different email.';
-                    } else if (error.message.includes('User already registered')) {
-                        userMessage = 'This email is already registered with another account.';
+                    } else if (userMessage.includes('already registered') || userMessage.includes('duplicate')) {
+                        userMessage = 'This email is already registered. Please use a different email address.';
+                    } else if (userMessage.includes('404') || userMessage.includes('not found')) {
+                        userMessage = 'Authentication service endpoint not found. Please contact administrator.';
+                    } else if (userMessage.includes('[object Object]')) {
+                        userMessage = 'Authentication service returned an unexpected error. Please try again.';
                     }
                     
                     window.showError('member-error-message', userMessage);
