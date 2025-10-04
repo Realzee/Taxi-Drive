@@ -269,9 +269,12 @@
     <!-- Map Modal -->
     <div id="map-modal" class="modal-overlay">
     <div class="modal-content">
-        <button class="modal-close-btn" onclick="closeModal('map-modal')">×</button>
-        <h3>Live Vehicle Locations</h3>
-        <div id="map" style="height: 400px; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 8px;"></div>
+        <div class="modal-header">
+            <h3 class="font-semibold text-lg text-[#052438]">Live Vehicle Locations</h3>
+            <button class="modal-close-btn" onclick="closeModal('map-modal')">&times;</button>
+        </div>
+        <div id="map" class="w-full h-[500px] rounded-lg"></div>
+        <button class="btn btn-secondary mt-4" onclick="closeModal('map-modal')">Close</button>
     </div>
 </div>
 
@@ -470,4 +473,3 @@
     <script src="./js/association-dashboard.js"></script>
 </body>
 </html>
-
