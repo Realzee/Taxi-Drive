@@ -600,6 +600,7 @@ if (window.associationDashboardLoaded) {
             });
         });
 
+        // Enhanced member form submission handler
         const addMemberForm = document.getElementById('add-member-form');
         if (addMemberForm) {
             addMemberForm.addEventListener('submit', async (e) => {
@@ -616,12 +617,24 @@ if (window.associationDashboardLoaded) {
                     verified: document.getElementById('member-verified')?.checked
                 };
 
+                // Validation
                 if (!formData.email || (!formData.password && !editMode)) {
                     window.showError('member-error-message', 'Email and password are required.');
                     return;
                 }
 
+                if (!editMode && formData.password.length < 8) {
+                    window.showError('member-error-message', 'Password must be at least 8 characters long.');
+                    return;
+                }
+
                 try {
+                    // Show loading state
+                    const submitBtn = addMemberForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    submitBtn.disabled = true;
+
                     if (editMode) {
                         await updateMember(memberId, formData);
                     } else {
@@ -629,12 +642,33 @@ if (window.associationDashboardLoaded) {
                         window.showNotification('Member added successfully!', 'success');
                         window.closeModal('add-member-modal');
                     }
+                    
                     resetForms();
                     await loadRecentMembers();
                     await loadDashboardStats();
+                    
                 } catch (error) {
-                    console.error('Error handling member form:', error);
-                    window.showError('member-error-message', error.message || 'Error processing member.');
+                    console.error('❌ Error handling member form:', error);
+                    
+                    // User-friendly error messages
+                    let userMessage = error.message || 'Error processing member.';
+                    
+                    if (error.message.includes('authentication service') || 
+                        error.message.includes('Cannot connect') ||
+                        error.message.includes('CORS')) {
+                        userMessage = 'Authentication service is temporarily unavailable. Please try again in a few moments.';
+                    } else if (error.message.includes('already registered')) {
+                        userMessage = 'This email is already registered. Please use a different email.';
+                    }
+                    
+                    window.showError('member-error-message', userMessage);
+                } finally {
+                    // Reset button state
+                    const submitBtn = addMemberForm.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
                 }
             });
         }

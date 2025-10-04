@@ -1,7 +1,7 @@
 // Supabase Services - Centralized Supabase operations for Association Dashboard
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-const API_BASE_URL = 'https://taxidrive-backend.vercel.app'; // Update to your server endpoint (e.g., deployed URL)
+const API_BASE_URL = 'https://taxidrive-backend.vercel.app';
 
 // Initialize Supabase client
 let supabase;
@@ -358,22 +358,47 @@ async function signOut() {
     }
 }
 
+// Enhanced manageMemberAuth with better error handling
 async function manageMemberAuth(email, password, memberId = null) {
     try {
+        console.log(`🔄 Managing member auth for: ${email}, memberId: ${memberId || 'new'}`);
+        
         const response = await fetch(`${API_BASE_URL}/manage-member-auth`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, memberId })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ email, password, memberId }),
+            mode: 'cors'
         });
+
+        // Handle non-JSON responses
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response');
+        }
+
         const result = await response.json();
+        
         if (!response.ok) {
             console.error('Error in manageMemberAuth:', result.error);
-            throw new Error(result.error || 'Failed to manage member authentication');
+            throw new Error(result.error || `HTTP ${response.status}: Failed to manage member authentication`);
         }
-        console.log(memberId ? 'Auth user updated:' : 'Auth user created:', result.memberId);
+        
+        console.log(memberId ? '✅ Auth user updated:' : '✅ Auth user created:', result.memberId);
         return result.memberId;
+        
     } catch (error) {
-        console.error('Error in manageMemberAuth:', error);
+        console.error('❌ Error in manageMemberAuth:', error);
+        
+        // Provide more specific error messages
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            throw new Error('Cannot connect to authentication server. Please check your internet connection or try again later.');
+        }
+        
         throw error;
     }
 }
@@ -389,7 +414,11 @@ async function signupSimple(role, formData) {
         }
 
         console.log('📝 Step 1: Creating auth account...');
-        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email,
+            password
+        });
+
         if (authError) {
             showError(errorElementId, authError.message || 'Registration failed');
             return null;
@@ -773,6 +802,7 @@ async function getRecentMembers(associationId, isDemo = false) {
     }
 }
 
+// Enhanced addMember function with fallback
 async function addMember(associationId, formData, isDemo = false) {
     if (isDemo) {
         const newMember = {
@@ -785,11 +815,17 @@ async function addMember(associationId, formData, isDemo = false) {
     }
 
     try {
+        console.log('🔄 Starting member creation process...');
+        
+        // Step 1: Create authentication user
         const memberId = await manageMemberAuth(formData.email, formData.password);
         if (!memberId) {
-            throw new Error('Failed to create member authentication');
+            throw new Error('Failed to create member authentication - no user ID returned');
         }
 
+        console.log('✅ Auth created, memberId:', memberId);
+
+        // Step 2: Create profile
         const profileData = {
             id: memberId,
             email: formData.email,
@@ -802,15 +838,25 @@ async function addMember(associationId, formData, isDemo = false) {
             .insert([profileData]);
 
         if (profileError) {
-            console.error('Profile creation failed:', profileError);
-            await fetch(`${API_BASE_URL}/delete-user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: memberId })
-            });
+            console.error('❌ Profile creation failed:', profileError);
+            
+            // Cleanup: Delete auth user if profile creation fails
+            try {
+                await fetch(`${API_BASE_URL}/delete-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: memberId })
+                });
+            } catch (cleanupError) {
+                console.error('Cleanup failed:', cleanupError);
+            }
+            
             throw new Error('Failed to create member profile: ' + profileError.message);
         }
 
+        console.log('✅ Profile created successfully');
+
+        // Step 3: Create member record
         const memberData = {
             association_id: associationId,
             id: memberId,
@@ -826,19 +872,34 @@ async function addMember(associationId, formData, isDemo = false) {
             .insert([memberData]);
 
         if (memberError) {
-            console.error('Member creation failed:', memberError);
-            await fetch(`${API_BASE_URL}/delete-user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: memberId })
-            });
-            await supabase.from('profiles').delete().eq('id', memberId);
+            console.error('❌ Member creation failed:', memberError);
+            
+            // Cleanup: Delete both profile and auth user
+            try {
+                await supabase.from('profiles').delete().eq('id', memberId);
+                await fetch(`${API_BASE_URL}/delete-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: memberId })
+                });
+            } catch (cleanupError) {
+                console.error('Cleanup failed:', cleanupError);
+            }
+            
             throw new Error('Failed to add member: ' + memberError.message);
         }
 
+        console.log('✅ Member record created successfully');
         return memberData;
+        
     } catch (error) {
-        console.error('Error in addMember:', error);
+        console.error('❌ Error in addMember:', error);
+        
+        // Enhanced error message for CORS issues
+        if (error.message.includes('Cannot connect to authentication server')) {
+            throw new Error('Authentication service is currently unavailable. Please try again in a few moments.');
+        }
+        
         throw error;
     }
 }
