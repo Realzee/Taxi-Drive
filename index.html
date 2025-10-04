@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="./css/style.css">
-    <!-- Ensure style.css includes modal styles as described in the previous response -->
 </head>
 <body>
     <div class="container">
@@ -255,8 +254,68 @@
     <script src="./js/supabase-services.js" defer></script>
     <script src="./js/script.js" defer></script>
 
-    <!-- Error Handling and Debugging Script -->
+    <!-- Form Submission Handler to Prevent Refresh -->
     <script>
+        // Prevent form submissions from refreshing the page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Setting up form submission handlers...');
+
+            // Get all forms and prevent their default submission
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submission prevented for:', form.id);
+                    
+                    // Show error message to indicate JavaScript needs to handle this
+                    const errorElement = form.querySelector('.error');
+                    if (errorElement) {
+                        errorElement.textContent = 'Form submission handled by JavaScript (page refresh prevented)';
+                        errorElement.style.color = 'orange';
+                        setTimeout(() => {
+                            errorElement.textContent = '';
+                        }, 3000);
+                    }
+                });
+            });
+
+            // Add click handlers to prevent any button default behaviors
+            const buttons = document.querySelectorAll('button[type="submit"], button[type="button"]');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (this.type === 'submit') {
+                        e.preventDefault();
+                        console.log('Submit button click prevented for:', this.textContent);
+                    }
+                });
+            });
+
+            // Modal close handlers
+            const modalCloseButtons = document.querySelectorAll('.modal-close-btn');
+            modalCloseButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const modalId = this.getAttribute('data-modal');
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.style.display = 'none';
+                        console.log('Closed modal:', modalId);
+                    }
+                });
+            });
+
+            // Role selection modal handlers
+            const roleButtons = document.querySelectorAll('.signup-role-btn');
+            roleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const role = this.getAttribute('data-role');
+                    console.log('Role selected:', role);
+                    // This should be handled by your main JavaScript
+                });
+            });
+
+            console.log('Form submission prevention setup complete');
+        });
+
         // Global error handler
         window.addEventListener('error', function(e) {
             console.error('JavaScript Error:', e.message || e.error || 'Unknown error');
@@ -270,39 +329,8 @@
             e.preventDefault();
         });
 
-        // Page load debugging
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page loaded successfully at:', new Date().toLocaleString());
-
-            const container = document.querySelector('.container');
-            const logo = document.querySelector('.logo img');
-            const loginForm = document.getElementById('login-form');
-            const signupAssociationModal = document.getElementById('signup-association-modal');
-
-            console.log('Container visibility:', getComputedStyle(container).display);
-            console.log('Logo visibility:', getComputedStyle(logo).display);
-            console.log('Login form visibility:', loginForm ? getComputedStyle(loginForm).display : 'NOT FOUND');
-            console.log('Signup association modal visibility:', signupAssociationModal ? getComputedStyle(signupAssociationModal).display : 'NOT FOUND');
-
-            if (logo) {
-                logo.addEventListener('error', function() {
-                    console.warn('Logo image failed to load, using fallback');
-                    this.style.display = 'none';
-                });
-
-                logo.addEventListener('load', function() {
-                    console.log('Logo image loaded successfully');
-                });
-            }
-
-            const loginTab = document.getElementById('login-tab');
-            const signupTab = document.getElementById('signup-tab');
-
-            console.log('Form toggle buttons found:', loginTab && signupTab ? 'Yes' : 'No');
-        });
-
-        // Debug modal visibility
-        function debugModals() {
+        // Debug function to check modal states
+        window.debugModals = function() {
             const modals = [
                 'signup-role-modal',
                 'signup-passenger-modal',
@@ -315,25 +343,7 @@
                 const modal = document.getElementById(id);
                 console.log(`${id}:`, modal ? getComputedStyle(modal).display : 'NOT FOUND');
             });
-            const loginForm = document.getElementById('login-form');
-            console.log('Login form:', loginForm ? getComputedStyle(loginForm).display : 'NOT FOUND');
-        }
-
-        window.debugModals = debugModals;
-
-        // Check function availability
-        function checkFunctionAvailability() {
-            console.log('🔍 Checking function availability...');
-            console.log('signupAssociation:', typeof signupAssociation);
-            console.log('login:', typeof login);
-            console.log('signupSimple:', typeof signupSimple);
-            console.log('showModal:', typeof showModal);
-            console.log('closeAllModals:', typeof closeAllModals);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(checkFunctionAvailability, 2000);
-        });
+        };
     </script>
 </body>
 </html>
