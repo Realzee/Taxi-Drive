@@ -628,12 +628,11 @@ body.association-dashboard .container {
 
 /* Map Container */
 #map {
-    height: 400px; /* Fixed height for usability */
     width: 100%;
-    max-width: 480px; /* Ensure map doesn't exceed app width */
-    border-radius: 8px;
-    border: 2px solid rgba(163, 201, 230, 0.3); /* Match app aesthetic */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 500px;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 
@@ -653,14 +652,15 @@ body.association-dashboard .container {
 }
 
 .modal-content {
-    background: white;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 480px;
-    max-height: 90vh;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    margin: 0 auto;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .fullscreen-modal {
