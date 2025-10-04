@@ -1175,43 +1175,8 @@ function openProfileModal() {
     if (logoInput) logoInput.value = ''; // Clear any previous file selection
 }
 
-// Global map variable to manage Leaflet instance
-let mapInstance = null;
-
-function initializeMap() {
-    const mapContainer = document.getElementById('map');
-    if (!mapContainer) {
-        console.error('Map container not found');
-        return;
-    }
-
-    // Initialize Leaflet map
-    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg, adjust as needed
-
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(mapInstance);
-
-    // Ensure map resizes correctly
-    setTimeout(() => {
-        mapInstance.invalidateSize();
-    }, 100); // Delay to ensure modal is fully rendered
-}
-
-// Update openMapModal to initialize map
 function openMapModal() {
-    console.log('Opening map modal');
     showModal('map-modal');
-    
-    // Initialize map if not already done
-    if (!mapInstance) {
-        initializeMap();
-    } else {
-        // Update map size when modal reopens
-        mapInstance.invalidateSize();
-    }
 }
 
 function openAddRouteModal() {
