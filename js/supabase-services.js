@@ -1,7 +1,15 @@
 // Supabase Services - Centralized Supabase operations for Association Dashboard
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-const API_BASE_URL = 'https://taxidrive-backend.vercel.app';
+
+// CORS Proxy Configuration - Temporary solution
+const USE_CORS_PROXY = true; // Set to false when backend CORS is fixed
+const API_BASE_URL = USE_CORS_PROXY 
+    ? 'https://corsproxy.io/?https://taxidrive-backend.vercel.app'
+    : 'https://taxidrive-backend.vercel.app';
+
+console.log(`🚀 Using API Base URL: ${API_BASE_URL}`);
+console.log(`🔧 CORS Proxy: ${USE_CORS_PROXY ? 'ENABLED' : 'DISABLED'}`);
 
 // Initialize Supabase client
 let supabase;
@@ -156,6 +164,10 @@ function closeAllModals() {
 
 // Notification Function
 function showNotification(message, type = 'info') {
+    // Remove any existing notifications first
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+
     const notificationContainer = document.createElement('div');
     notificationContainer.className = `notification ${type}`;
     notificationContainer.textContent = message;
@@ -166,7 +178,9 @@ function showNotification(message, type = 'info') {
         setTimeout(() => {
             notificationContainer.classList.remove('show');
             setTimeout(() => {
-                notificationContainer.remove();
+                if (notificationContainer.parentNode) {
+                    notificationContainer.remove();
+                }
             }, 300);
         }, 3000);
     }, 10);
@@ -294,59 +308,6 @@ async function login(email, password, selectedRole) {
     }
 }
 
-async function getOrCreateUserProfile(user, email, role) {
-    try {
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (profileError) {
-            if (profileError.code === 'PGRST116') {
-                console.log('🔄 Profile not found, creating one...');
-                return await createUserProfileWithRLS(user.id, email, role);
-            } else {
-                console.error('❌ Profile query failed:', profileError);
-                return null;
-            }
-        }
-
-        return profileData;
-    } catch (error) {
-        console.error('❌ Error in getOrCreateUserProfile:', error);
-        return null;
-    }
-}
-
-async function createUserProfileWithRLS(userId, email, role) {
-    try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .insert([{
-                id: userId,
-                email: email,
-                role: role,
-                profile_complete: true
-            }])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('❌ Profile creation failed (RLS likely blocking):', error);
-            if (error.code === '42501') {
-                throw new Error('Database permissions issue. Please contact administrator to set up proper RLS policies.');
-            }
-            throw error;
-        }
-
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to create profile:', error);
-        throw error;
-    }
-}
-
 async function signOut() {
     try {
         const { error } = await supabase.auth.signOut();
@@ -358,10 +319,13 @@ async function signOut() {
     }
 }
 
-// Enhanced manageMemberAuth with better error handling
+// Enhanced manageMemberAuth with CORS proxy
 async function manageMemberAuth(email, password, memberId = null) {
     try {
         console.log(`🔄 Managing member auth for: ${email}, memberId: ${memberId || 'new'}`);
+        
+        const payload = { email, password, memberId };
+        console.log('📦 Sending payload:', { ...payload, password: '***' });
         
         const response = await fetch(`${API_BASE_URL}/manage-member-auth`, {
             method: 'POST',
@@ -369,22 +333,26 @@ async function manageMemberAuth(email, password, memberId = null) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ email, password, memberId }),
+            body: JSON.stringify(payload),
             mode: 'cors'
         });
+
+        console.log('📨 Response status:', response.status);
+        console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()));
 
         // Handle non-JSON responses
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
-            console.error('Non-JSON response:', text);
-            throw new Error('Server returned non-JSON response');
+            console.error('❌ Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response: ' + text.substring(0, 100));
         }
 
         const result = await response.json();
+        console.log('📨 Response data:', result);
         
         if (!response.ok) {
-            console.error('Error in manageMemberAuth:', result.error);
+            console.error('❌ Server error in manageMemberAuth:', result.error);
             throw new Error(result.error || `HTTP ${response.status}: Failed to manage member authentication`);
         }
         
@@ -397,6 +365,10 @@ async function manageMemberAuth(email, password, memberId = null) {
         // Provide more specific error messages
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             throw new Error('Cannot connect to authentication server. Please check your internet connection or try again later.');
+        }
+        
+        if (error.message.includes('CORS')) {
+            throw new Error('Cross-origin request blocked. Please contact administrator.');
         }
         
         throw error;
@@ -802,7 +774,7 @@ async function getRecentMembers(associationId, isDemo = false) {
     }
 }
 
-// Enhanced addMember function with fallback
+// Enhanced addMember function with CORS proxy
 async function addMember(associationId, formData, isDemo = false) {
     if (isDemo) {
         const newMember = {
@@ -898,6 +870,10 @@ async function addMember(associationId, formData, isDemo = false) {
         // Enhanced error message for CORS issues
         if (error.message.includes('Cannot connect to authentication server')) {
             throw new Error('Authentication service is currently unavailable. Please try again in a few moments.');
+        }
+        
+        if (error.message.includes('Cross-origin request blocked')) {
+            throw new Error('Security restrictions prevent member creation. Please contact administrator.');
         }
         
         throw error;
