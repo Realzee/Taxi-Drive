@@ -600,7 +600,7 @@ if (window.associationDashboardLoaded) {
             });
         });
 
-        // Enhanced member form submission handler
+        // FIXED: Enhanced member form submission handler with proper error handling
         const addMemberForm = document.getElementById('add-member-form');
         if (addMemberForm) {
             addMemberForm.addEventListener('submit', async (e) => {
@@ -628,10 +628,13 @@ if (window.associationDashboardLoaded) {
                     return;
                 }
 
+                // Store original button state
+                const submitBtn = addMemberForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                const originalDisabled = submitBtn.disabled;
+
                 try {
                     // Show loading state
-                    const submitBtn = addMemberForm.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.textContent;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
                     submitBtn.disabled = true;
 
@@ -655,20 +658,20 @@ if (window.associationDashboardLoaded) {
                     
                     if (error.message.includes('authentication service') || 
                         error.message.includes('Cannot connect') ||
-                        error.message.includes('CORS')) {
+                        error.message.includes('CORS') ||
+                        error.message.includes('Security restrictions')) {
                         userMessage = 'Authentication service is temporarily unavailable. Please try again in a few moments.';
                     } else if (error.message.includes('already registered')) {
                         userMessage = 'This email is already registered. Please use a different email.';
+                    } else if (error.message.includes('User already registered')) {
+                        userMessage = 'This email is already registered with another account.';
                     }
                     
                     window.showError('member-error-message', userMessage);
                 } finally {
-                    // Reset button state
-                    const submitBtn = addMemberForm.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                    }
+                    // Reset button state - FIXED: Use stored values
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = originalDisabled;
                 }
             });
         }
