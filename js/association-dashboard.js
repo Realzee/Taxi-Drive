@@ -29,36 +29,125 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
 
-// Global map variable to manage Leaflet instance
-let mapInstance = null;
+// Initialize dashboard
+async function initializeDashboard() {
+    try {
+        const user = await checkAssociationAuthentication();
+        if (!user) return;
 
-function initializeMap() {
-    const mapContainer = document.getElementById('map');
-    if (!mapContainer) {
-        console.error('Map container not found');
-        return;
+        currentUser = user;
+        console.log('Association user authenticated:', user.email);
+
+        await loadUserData();
+        await loadAssociationData();
+        setupEventListeners();
+        await loadDashboardData();
+        initializeMap(); // Initialize map on page load
+
+        showNotification('Dashboard loaded successfully!', 'success');
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
     }
-
-    // Initialize Leaflet map
-    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg, adjust as needed
-
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(mapInstance);
-
-    // Ensure map resizes correctly
-    setTimeout(() => {
-        mapInstance.invalidateSize();
-    }, 100); // Delay to ensure modal is fully rendered
 }
 
-// Update openMapModal to initialize map
+// Initialize Leaflet map
+let map;
+function initializeMap() {
+    try {
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            console.error('Map container not found');
+            return;
+        }
+
+        // Initialize Leaflet map
+        map = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg, South Africa
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18,
+        }).addTo(map);
+
+        // Custom marker icon
+        const taxiIcon = L.divIcon({
+            className: 'custom-icon',
+            html: `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#052438"/>
+                    <circle cx="12" cy="9" r="2" fill="#ffffff"/>
+                </svg>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        // Load vehicle locations
+        loadVehicleLocations(taxiIcon);
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        showNotification('Failed to load map. Please try again.', 'error');
+    }
+}
+
+// Load vehicle locations (demo or from Supabase)
+async function loadVehicleLocations(taxiIcon) {
+    try {
+        // Try fetching from Supabase
+        const { data: vehicles, error } = await supabase
+            .from('vehicles')
+            .select('id, name, latitude, longitude, last_updated');
+
+        if (error) {
+            console.error('Error fetching vehicle locations:', error);
+            // Fallback to demo data
+            const demoVehicles = [
+                { id: 'demo1', name: 'Taxi 1', latitude: -26.2041, longitude: 28.0473, last_updated: new Date().toISOString() },
+                { id: 'demo2', name: 'Taxi 2', latitude: -26.2100, longitude: 28.0500, last_updated: new Date().toISOString() }
+            ];
+            addMarkersToMap(demoVehicles, taxiIcon);
+            return;
+        }
+
+        if (vehicles && vehicles.length > 0) {
+            addMarkersToMap(vehicles, taxiIcon);
+        } else {
+            showNotification('No vehicle locations available.', 'info');
+        }
+    } catch (error) {
+        console.error('Error loading vehicle locations:', error);
+        showNotification('Failed to load vehicle locations.', 'error');
+    }
+}
+
+// Add markers to map
+function addMarkersToMap(vehicles, taxiIcon) {
+    vehicles.forEach(vehicle => {
+        if (vehicle.latitude && vehicle.longitude) {
+            L.marker([vehicle.latitude, vehicle.longitude], { icon: taxiIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div class="p-2">
+                        <h3 class="font-semibold text-[#052438]">${vehicle.name}</h3>
+                        <p class="text-sm">Last updated: ${new Date(vehicle.last_updated).toLocaleString()}</p>
+                    </div>
+                `);
+        }
+    });
+
+    // Fit map to bounds if there are vehicles
+    if (vehicles.length > 0) {
+        const bounds = vehicles.map(v => [v.latitude, v.longitude]);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    }
+}
+
+// Update openMapModal to ensure map refreshes
 function openMapModal() {
-    console.log('Opening map modal');
     showModal('map-modal');
-    
+    if (map) {
+        map.invalidateSize(); // Fix map size after modal display
+    }
+}    
     // Initialize map if not already done
     if (!mapInstance) {
         initializeMap();
@@ -66,7 +155,6 @@ function openMapModal() {
         // Update map size when modal reopens
         mapInstance.invalidateSize();
     }
-}
 
 // Authentication check - UPDATED FOR NEW SCHEMA
 async function checkAssociationAuthentication() {
@@ -124,6 +212,7 @@ async function initializeDashboard() {
 
         setupEventListeners();
         await loadDashboardData();
+        initializeMap();
 
         showNotification('Dashboard loaded successfully!', 'success');
 
@@ -1216,6 +1305,9 @@ function openProfileModal() {
 
 function openMapModal() {
     showModal('map-modal');
+    if (map) {
+        map.invalidateSize(); // Fix map size after modal display
+    }
 }
 
 function openAddRouteModal() {
