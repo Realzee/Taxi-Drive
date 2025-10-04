@@ -18,36 +18,22 @@ function initializeApplication() {
         return;
     }
 
-    // Ensure supabase-services.js functions are available
-    if (!window.supabase || !window.login || !window.signupSimple || !window.signupAssociation) {
-        console.error('Required functions from supabase-services.js are not available');
-        return;
-    }
-
     console.log('Initializing TaxiDrive application...');
 
     // Toggle between Login and Signup tabs
     if (signupTab) {
         signupTab.addEventListener('click', () => {
-            loginForm.style.display = 'none';
-            window.showModal('signup-role-modal');
-            loginTab.classList.remove('active');
-            signupTab.classList.add('active');
+            if (loginForm) loginForm.style.display = 'none';
+            showModal('signup-role-modal');
         });
     }
 
     if (loginTab) {
         loginTab.addEventListener('click', () => {
-            loginForm.style.display = 'block';
-            window.closeAllModals();
-            loginTab.classList.add('active');
-            signupTab.classList.remove('active');
+            if (loginForm) loginForm.style.display = 'block';
+            closeAllModals();
         });
     }
-
-    // Login form submission
-    loginForm.removeEventListener('submit', handleLoginSubmission); // Prevent duplicates
-    loginForm.addEventListener('submit', handleLoginSubmission);
 
     // Role selection buttons
     const roleButtons = document.querySelectorAll('.signup-role-btn');
@@ -61,8 +47,7 @@ function initializeApplication() {
                 'association': 'signup-association-modal'
             };
             if (modalMap[role]) {
-                window.showModal(modalMap[role]);
-                window.closeModal('signup-role-modal');
+                showModal(modalMap[role]);
             }
         });
     });
@@ -71,12 +56,49 @@ function initializeApplication() {
     const closeButtons = document.querySelectorAll('.modal-close-btn, #signup-role-cancel, #modal-close-btn');
     closeButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const modalId = button.getAttribute('data-modal') || (button.id === 'signup-role-cancel' ? 'signup-role-modal' : 'signup-modal');
-            window.closeModal(modalId);
-            loginForm.style.display = 'block';
-            loginTab.classList.add('active');
-            signupTab.classList.remove('active');
+            const modalId = button.getAttribute('data-modal') || button.id === 'signup-role-cancel' ? 'signup-role-modal' : 'signup-modal';
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'none';
+            if (loginForm) loginForm.style.display = 'block';
         });
+    });
+
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email')?.value;
+        const password = document.getElementById('login-password')?.value;
+        const role = document.getElementById('login-role')?.value;
+
+        if (!email || !password || !role) {
+            showError('login-error-message', 'Please fill in all fields');
+            return;
+        }
+
+        try {
+            const user = await login(email, password, role);
+            if (user) {
+                // Store user role in localStorage for dashboard access
+                localStorage.setItem('userRole', role);
+                localStorage.setItem('userEmail', email);
+                
+                // Redirect based on role
+                if (role === 'association') {
+                    window.location.href = 'association-dashboard.html';
+                } else if (role === 'owner') {
+                    window.location.href = 'owner-dashboard.html';
+                } else if (role === 'driver') {
+                    window.location.href = 'driver-dashboard.html';
+                } else if (role === 'passenger') {
+                    window.location.href = 'passenger-dashboard.html';
+                } else {
+                    // Default fallback
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        } catch (error) {
+            showError('login-error-message', error.message || 'Login failed');
+        }
     });
 
     // Passenger signup
@@ -88,12 +110,11 @@ function initializeApplication() {
             const password = document.getElementById('passenger-password')?.value;
 
             try {
-                await window.signupSimple(email, password, 'passenger', {});
-                window.showSuccess('signup-modal', 'Passenger account created successfully');
+                await signupSimple('passenger', { email, password });
+                showSuccess('Passenger account created successfully');
                 passengerForm.reset();
-                window.closeModal('signup-passenger-modal');
             } catch (error) {
-                window.showError('signup-passenger-error-message', error.message || 'Registration failed');
+                showError('signup-passenger-error-message', error.message || 'Registration failed');
             }
         });
     }
@@ -108,12 +129,11 @@ function initializeApplication() {
             const licenseNumber = document.getElementById('driver-license-number')?.value;
 
             try {
-                await window.signupSimple(email, password, 'driver', { licenseNumber });
-                window.showSuccess('signup-modal', 'Driver account created successfully');
+                await signupSimple('driver', { email, password, license_number: licenseNumber });
+                showSuccess('Driver account created successfully');
                 driverForm.reset();
-                window.closeModal('signup-driver-modal');
             } catch (error) {
-                window.showError('signup-driver-error-message', error.message || 'Registration failed');
+                showError('signup-driver-error-message', error.message || 'Registration failed');
             }
         });
     }
@@ -128,12 +148,11 @@ function initializeApplication() {
             const companyName = document.getElementById('owner-company-name')?.value;
 
             try {
-                await window.signupSimple(email, password, 'owner', { companyName });
-                window.showSuccess('signup-modal', 'Owner account created successfully');
+                await signupSimple('owner', { email, password, company_name: companyName });
+                showSuccess('Owner account created successfully');
                 ownerForm.reset();
-                window.closeModal('signup-owner-modal');
             } catch (error) {
-                window.showError('signup-owner-error-message', error.message || 'Registration failed');
+                showError('signup-owner-error-message', error.message || 'Registration failed');
             }
         });
     }
@@ -144,7 +163,7 @@ function initializeApplication() {
         associationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = {
-                association_name: document.getElementById('association-name')?.value,
+                name: document.getElementById('association-name')?.value,
                 email: document.getElementById('association-email')?.value,
                 phone: document.getElementById('association-phone')?.value,
                 registrationNumber: document.getElementById('association-registration-number')?.value,
@@ -160,7 +179,7 @@ function initializeApplication() {
             };
 
             if (!formData.termsAccepted) {
-                window.showError('signup-association-error-message', 'You must accept the terms and conditions');
+                showError('signup-association-error-message', 'You must accept the terms and conditions');
                 return;
             }
 
@@ -175,16 +194,15 @@ function initializeApplication() {
             }
 
             try {
-                await window.signupAssociation(formData);
+                await signupAssociation(formData);
                 if (progressBar && progressText) {
                     progressBar.style.width = '100%';
                     progressText.textContent = 'Registration complete!';
                 }
-                window.showSuccess('signup-modal', 'Association account created successfully', `Login with: ${formData.adminEmail}`);
+                showSuccess('Association created successfully', `Login with: ${formData.adminEmail}`);
                 associationForm.reset();
-                window.closeModal('signup-association-modal');
             } catch (error) {
-                window.showError('signup-association-error-message', error.message || 'Registration failed');
+                showError('signup-association-error-message', error.message || 'Registration failed');
                 if (progressDiv) progressDiv.style.display = 'none';
             }
         });
@@ -200,11 +218,6 @@ function initializeApplication() {
         logoInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                if (file.size > 2 * 1024 * 1024) {
-                    window.showError('signup-association-error-message', 'Logo file size exceeds 2MB limit');
-                    logoInput.value = '';
-                    return;
-                }
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     logoPreviewImg.src = e.target.result;
@@ -222,29 +235,6 @@ function initializeApplication() {
     }
 
     console.log('TaxiDrive application initialized successfully');
-}
-
-async function handleLoginSubmission(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email')?.value;
-    const password = document.getElementById('login-password')?.value;
-    const role = document.getElementById('login-role')?.value;
-
-    if (!email || !password || !role) {
-        window.showError('login-error-message', 'Please fill in all fields');
-        return;
-    }
-
-    try {
-        const { redirect } = await window.login(email, password, role);
-        window.showSuccess('login-success-message', 'Login successful! Redirecting...');
-        setTimeout(() => {
-            window.location.href = redirect;
-        }, 1000);
-    } catch (error) {
-        console.error('Login error:', error);
-        window.showError('login-error-message', error.message || 'Login failed');
-    }
 }
 
 // Utility to close all modals
@@ -288,13 +278,11 @@ function showError(elementId, message) {
     if (errorElement) {
         errorElement.textContent = message;
         errorElement.style.display = 'block';
-    } else {
-        console.error(`Error element ${elementId} not found`);
     }
 }
 
 // Utility to show success message
-function showSuccess(elementId, message, loginDetails = '') {
+function showSuccess(message, loginDetails = '') {
     const modalTitle = document.getElementById('modal-title');
     const modalMessage = document.getElementById('modal-message');
     const modalLoginDetails = document.getElementById('modal-login-details');
@@ -302,15 +290,7 @@ function showSuccess(elementId, message, loginDetails = '') {
         modalTitle.textContent = 'Success!';
         modalMessage.textContent = message;
         modalLoginDetails.textContent = loginDetails;
-        window.showModal('signup-modal');
-    } else {
-        const successElement = document.getElementById(elementId);
-        if (successElement) {
-            successElement.textContent = message;
-            successElement.style.display = 'block';
-        } else {
-            console.error(`Success element ${elementId} not found`);
-        }
+        showModal('signup-modal');
     }
 }
 
