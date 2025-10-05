@@ -58,23 +58,54 @@ let mapInstance = null;
 let userLocationMarker = null; // Marker for user's current location
 let userLocationWatcher = null; // Geolocation watcher ID
 
+// Update openMapModal to initialize map
+function openMapModal() {
+    showModal('map-modal');
+    if (!mapInstance) {
+        // Defer map initialization until modal is opened
+        initializeMap();
+    } else {
+        // Force map to resize and re-render
+        setTimeout(() => {
+            mapInstance.invalidateSize();
+            console.log('Map size invalidated');
+        }, 100); // Small delay to ensure modal is fully visible
+    }
+}
+
 function initializeMap() {
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
         console.error('Map container not found');
+        showNotification('Map container not found.', 'error');
+        return;
+    }
+
+    // Verify Leaflet is loaded
+    if (!window.L) {
+        console.error('Leaflet library not loaded');
+        showNotification('Map library failed to load. Please check your internet connection.', 'error');
         return;
     }
 
     // Initialize Leaflet map
     mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
 
-    // Add OpenStreetMap tiles
+    // Use a reliable, CORS-friendly tile provider
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
+        maxZoom: 19,
+        tileSize: 256,
+        zoomOffset: 0
     }).addTo(mapInstance);
 
-    // Fetch vehicle locations from Supabase (if applicable)
+    // Force initial size validation
+    setTimeout(() => {
+        mapInstance.invalidateSize();
+        console.log('Initial map size validated');
+    }, 100);
+
+    // Fetch vehicle locations from Supabase
     async function loadVehicles() {
         try {
             const { data: vehicles, error } = await supabase
@@ -105,14 +136,11 @@ function initializeMap() {
 
     // Get and track user's current location
     if (navigator.geolocation) {
-        // Initial location
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                // Center map on user's location
                 mapInstance.setView([latitude, longitude], 13);
 
-                // Add or update marker for current location
                 if (userLocationMarker) {
                     userLocationMarker.setLatLng([latitude, longitude]);
                 } else {
@@ -135,35 +163,25 @@ function initializeMap() {
             }
         );
 
-        // Watch for location updates
         userLocationWatcher = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
                 if (userLocationMarker) {
                     userLocationMarker.setLatLng([latitude, longitude]);
-                    mapInstance.panTo([latitude, longitude]); // Optional: Keep map centered
+                    mapInstance.panTo([latitude, longitude]);
                 }
             },
             (error) => {
                 console.error('Geolocation watch error:', error);
-                showNotification('Location update failed.', 'error');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
             }
         );
-    } else {
-        console.error('Geolocation not supported by browser');
-        showNotification('Your browser does not support location services.', 'error');
     }
-
+}
     // Ensure map resizes correctly
     setTimeout(() => {
         mapInstance.invalidateSize();
     }, 100);
-}
+
 
 // Clean up watcher when modal is closed
 function closeMapModal() {
@@ -175,17 +193,6 @@ function closeMapModal() {
     }
 }
 
-// Update openMapModal to initialize map
-function openMapModal() {
-    console.log('Opening map modal');
-    showModal('map-modal');
-    
-    if (!mapInstance) {
-        initializeMap();
-    } else {
-        mapInstance.invalidateSize();
-    }
-}
 // Authentication check - UPDATED FOR NEW SCHEMA
 async function checkAssociationAuthentication() {
     try {
