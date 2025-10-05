@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/Taxi-Drive/assets/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
-<body class="text-white font-sans">
+<body>
     <div class="dashboard-app">
         <header class="header">
             <div class="header-content">
@@ -20,17 +20,21 @@
                 </div>
                 <div class="title-section">
                     <h1 class="app-title">TaxiDrive</h1>
-                    <p>Connecting People. Powering Mobility.</p>
+                    <p>Login</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Optional: Add a minimal action button if needed -->
                 </div>
             </div>
         </header>
-        <main class="dashboard-container mt-20 pb-20">
-            <section class="glass-card max-w-2xl w-full mx-auto p-8 rounded-2xl text-center transition-all duration-300">
-                <img src="/Taxi-Drive/assets/Logo1.png" alt="TaxiDrive Logo" class="logo mx-auto w-24 h-24 rounded-lg transition-all duration-300 mb-4 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
+        <main class="login-container">
+            <div class="glass-card max-w-md w-full p-8 text-center transition-all duration-300">
+                <img src="/Taxi-Drive/assets/Logo1.png" alt="TaxiDrive Logo" class="mx-auto w-24 h-24 rounded-lg transition-all duration-300 mb-4 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
+                <h2 class="text-xl font-light mb-8">Connecting People. Powering Mobility.</h2>
                 
                 <!-- Login Form -->
-                <div id="login-section" class="space-y-6">
-                    <h3 class="text-xl font-medium">Login</h3>
+                <div id="login-section" class="space-y-4">
+                    <h3 class="text-lg font-medium">Login</h3>
                     <form id="login-form" class="space-y-4">
                         <div>
                             <input id="login-email" type="email" placeholder="Email" class="form-input">
@@ -55,8 +59,8 @@
                 </div>
 
                 <!-- Sign-Up Form -->
-                <div id="signup-section" class="space-y-6 hidden">
-                    <h3 class="text-xl font-medium">Sign Up</h3>
+                <div id="signup-section" class="space-y-4 hidden">
+                    <h3 class="text-lg font-medium">Sign Up</h3>
                     <form id="signup-form" class="space-y-4">
                         <div>
                             <input id="signup-email" type="email" placeholder="Email" class="form-input">
@@ -92,7 +96,7 @@
                     <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" class="w-6 h-6 mr-2">
                     Continue with Google
                 </button>
-            </section>
+            </div>
         </main>
     </div>
 
