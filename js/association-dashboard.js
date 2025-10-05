@@ -160,6 +160,266 @@ async function loadAssociationData() {
     }
 }
 
+// CREDENTIAL MANAGEMENT FOR MEMBERS/OWNERS
+async function generateMemberCredentials(memberId, memberData) {
+    try {
+        console.log('Generating credentials for member:', memberId);
+        
+        // Generate a random password
+        const tempPassword = generateTempPassword();
+        
+        if (currentAssociation.is_demo) {
+            // Store in demo data
+            const member = demoData.members.find(m => m.id === memberId);
+            if (member) {
+                member.temp_password = tempPassword;
+                member.credentials_generated = true;
+            }
+            return { email: member.member_email, password: tempPassword };
+        } else {
+            // Create auth user in Supabase
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                email: memberData.member_email,
+                password: tempPassword,
+                email_confirm: true,
+                user_metadata: {
+                    name: memberData.member_name,
+                    role: memberData.role
+                }
+            });
+
+            if (authError) {
+                console.error('Auth user creation failed:', authError);
+                throw new Error('Failed to create user credentials');
+            }
+
+            console.log('Auth user created:', authData.user.id);
+
+            // Update member record with auth_id
+            const { error: updateError } = await supabase
+                .from('members')
+                .update({ 
+                    auth_id: authData.user.id,
+                    credentials_generated: true
+                })
+                .eq('id', memberId);
+
+            if (updateError) throw updateError;
+
+            return { email: memberData.member_email, password: tempPassword };
+        }
+    } catch (error) {
+        console.error('Error generating credentials:', error);
+        throw error;
+    }
+}
+
+function generateTempPassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password + '!'; // Add special character for password requirements
+}
+
+async function resetMemberCredentials(memberId) {
+    try {
+        const tempPassword = generateTempPassword();
+        
+        if (currentAssociation.is_demo) {
+            const member = demoData.members.find(m => m.id === memberId);
+            if (member) {
+                member.temp_password = tempPassword;
+            }
+            return { password: tempPassword };
+        } else {
+            // Get member data to find auth_id
+            const { data: member, error } = await supabase
+                .from('members')
+                .select('auth_id, member_email')
+                .eq('id', memberId)
+                .single();
+
+            if (error) throw error;
+
+            if (!member.auth_id) {
+                throw new Error('No auth user found for this member');
+            }
+
+            // Update user password
+            const { error: updateError } = await supabase.auth.admin.updateUserById(
+                member.auth_id,
+                { password: tempPassword }
+            );
+
+            if (updateError) throw updateError;
+
+            return { email: member.member_email, password: tempPassword };
+        }
+    } catch (error) {
+        console.error('Error resetting credentials:', error);
+        throw error;
+    }
+}
+
+// Update the member list rendering to include credential actions
+function renderRecentMembers(members) {
+    const recentMembersContent = document.getElementById('recent-members-content');
+    if (!recentMembersContent) return;
+    
+    if (!members || members.length === 0) {
+        recentMembersContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No Members Yet</h3>
+                <p>Start by adding members to your association.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let membersHtml = '';
+    members.forEach(member => {
+        const statusClass = member.is_verified ? 'status-active' : 'status-pending';
+        const statusText = member.is_verified ? 'Verified' : 'Pending';
+        const hasCredentials = member.credentials_generated || member.temp_password;
+        
+        membersHtml += `
+            <div class="list-item">
+                <div class="item-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="item-details">
+                    <h4>${member.member_name || 'Unnamed Member'}</h4>
+                    <p>${member.member_email || 'N/A'}</p>
+                    <p class="member-role">${member.role} • <span class="status-indicator ${statusClass}">${statusText}</span></p>
+                    <p class="credential-status ${hasCredentials ? 'text-success' : 'text-warning'}">
+                        <i class="fas ${hasCredentials ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                        ${hasCredentials ? 'Credentials Set' : 'No Login Access'}
+                    </p>
+                </div>
+                <div class="item-actions">
+                    ${!hasCredentials ? `
+                        <button class="btn btn-success btn-sm" onclick="setupMemberCredentials('${member.id}')" title="Setup Login">
+                            <i class="fas fa-key"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-warning btn-sm" onclick="resetMemberCredentialsPrompt('${member.id}')" title="Reset Password">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    `}
+                    <button class="btn btn-secondary btn-sm" onclick="editMember('${member.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteMember('${member.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    recentMembersContent.innerHTML = membersHtml;
+}
+
+// Add credential setup function
+async function setupMemberCredentials(memberId) {
+    try {
+        let member;
+        
+        if (currentAssociation.is_demo) {
+            member = demoData.members.find(m => m.id === memberId);
+        } else {
+            const { data, error } = await supabase
+                .from('members')
+                .select('*')
+                .eq('id', memberId)
+                .single();
+            if (error) throw error;
+            member = data;
+        }
+
+        if (!member) {
+            showNotification('Member not found.', 'error');
+            return;
+        }
+
+        const credentials = await generateMemberCredentials(memberId, member);
+        
+        showCredentialModal('Credentials Generated', `
+            <p><strong>Login Details:</strong></p>
+            <p>Email: ${credentials.email}</p>
+            <p>Password: ${credentials.password}</p>
+            <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Please save this password securely!</p>
+        `);
+        
+        await loadRecentMembers();
+        
+    } catch (error) {
+        console.error('Error setting up credentials:', error);
+        showNotification('Failed to setup credentials: ' + error.message, 'error');
+    }
+}
+
+async function resetMemberCredentialsPrompt(memberId) {
+    if (!confirm('Are you sure you want to reset this member\'s password? They will need to use the new password to login.')) return;
+
+    try {
+        const credentials = await resetMemberCredentials(memberId);
+        
+        showCredentialModal('Password Reset', `
+            <p><strong>New Login Details:</strong></p>
+            <p>Password: ${credentials.password}</p>
+            <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Provide the new password to the member!</p>
+        `);
+        
+    } catch (error) {
+        console.error('Error resetting credentials:', error);
+        showNotification('Failed to reset password: ' + error.message, 'error');
+    }
+}
+
+function showCredentialModal(title, content) {
+    // Create or update credential modal
+    let modal = document.getElementById('credential-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'credential-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="modal-close" onclick="closeModal('credential-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="credential-content">${content}</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeModal('credential-modal')">Close</button>
+                    <button class="btn btn-success" onclick="copyCredentials()">
+                        <i class="fas fa-copy"></i> Copy Details
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.querySelector('.modal-header h3').textContent = title;
+        document.getElementById('credential-content').innerHTML = content;
+    }
+    
+    showModal('credential-modal');
+}
+
+function copyCredentials() {
+    const content = document.getElementById('credential-content').textContent;
+    navigator.clipboard.writeText(content).then(() => {
+        showNotification('Credentials copied to clipboard!', 'success');
+    });
+}
+
 async function createNewAssociation() {
     try {
         const newAssociation = {
@@ -1438,3 +1698,4 @@ window.openMapModal = openMapModal;
 window.openManagePartsModal = openManagePartsModal;
 window.openAlertsModal = openAlertsModal;
 window.openWalletModal = openWalletModal;
+
