@@ -7,79 +7,93 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="theme-color" content="#052438">
     <title>TaxiDrive - Login</title>
-    <link rel="icon" href="./assets/favicon.ico">
-    <link rel="stylesheet" href="./assets/styles.css">
+    <link rel="icon" href="/Taxi-Drive/assets/Logo1.png">
+    <link rel="stylesheet" href="/Taxi-Drive/assets/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body class="text-white font-sans">
-    <div class="glass-card max-w-md w-full p-8 rounded-2xl text-center transition-all duration-300">
-        <img src="/Taxi-Drive/assets/Logo1.png" alt="TaxiDrive Logo" class="logo mx-auto w-24 h-24 rounded-lg transition-all duration-300 mb-4 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
-        <h2 class="text-xl font-light mb-8">Connecting People. Powering Mobility.</h2>
-        
-        <!-- Login Form -->
-        <div id="login-section" class="space-y-4">
-            <h3 class="text-lg font-medium">Login</h3>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <input id="login-email" type="email" placeholder="Email" class="form-input">
+    <div class="dashboard-app">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="/Taxi-Drive/assets/Logo1.png" alt="TaxiDrive Logo">
                 </div>
-                <div>
-                    <input id="login-password" type="password" placeholder="Password" class="form-input">
+                <div class="title-section">
+                    <h1 class="app-title">TaxiDrive</h1>
+                    <p>Connecting People. Powering Mobility.</p>
                 </div>
-                <div>
-                    <select id="login-role" class="form-input">
-                        <option value="" disabled selected>Select Role</option>
-                        <option value="passenger">Passenger</option>
-                        <option value="driver">Driver</option>
-                        <option value="owner">Owner</option>
-                        <option value="association">Association</option>
-                    </select>
+            </div>
+        </header>
+        <main class="dashboard-container mt-20 pb-20">
+            <section class="glass-card max-w-2xl w-full mx-auto p-8 rounded-2xl text-center transition-all duration-300">
+                <img src="/Taxi-Drive/assets/Logo1.png" alt="TaxiDrive Logo" class="logo mx-auto w-24 h-24 rounded-lg transition-all duration-300 mb-4 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
+                
+                <!-- Login Form -->
+                <div id="login-section" class="space-y-6">
+                    <h3 class="text-xl font-medium">Login</h3>
+                    <form id="login-form" class="space-y-4">
+                        <div>
+                            <input id="login-email" type="email" placeholder="Email" class="form-input">
+                        </div>
+                        <div>
+                            <input id="login-password" type="password" placeholder="Password" class="form-input">
+                        </div>
+                        <div>
+                            <select id="login-role" class="form-input">
+                                <option value="" disabled selected>Select Role</option>
+                                <option value="passenger">Passenger</option>
+                                <option value="driver">Driver</option>
+                                <option value="owner">Owner</option>
+                                <option value="association">Association</option>
+                            </select>
+                        </div>
+                        <div id="login-error-message" class="error-message"></div>
+                        <div id="login-loading" class="loading-spinner"></div>
+                        <button type="submit" id="login-btn" class="btn btn-primary w-full py-3 font-medium">Login</button>
+                    </form>
+                    <p class="text-sm text-gray-400">Don't have an account? <a href="#" id="show-signup" class="text-[#052438] hover:underline">Sign Up</a></p>
                 </div>
-                <div id="login-error-message" class="error-message"></div>
-                <div id="login-loading" class="loading-spinner"></div>
-                <button type="submit" id="login-btn" class="btn btn-primary w-full py-3 font-medium">Login</button>
-            </form>
-            <p class="text-sm text-gray-400">Don't have an account? <a href="#" id="show-signup" class="text-[#052438] hover:underline">Sign Up</a></p>
-        </div>
 
-        <!-- Sign-Up Form -->
-        <div id="signup-section" class="space-y-4 hidden">
-            <h3 class="text-lg font-medium">Sign Up</h3>
-            <form id="signup-form" class="space-y-4">
-                <div>
-                    <input id="signup-email" type="email" placeholder="Email" class="form-input">
+                <!-- Sign-Up Form -->
+                <div id="signup-section" class="space-y-6 hidden">
+                    <h3 class="text-xl font-medium">Sign Up</h3>
+                    <form id="signup-form" class="space-y-4">
+                        <div>
+                            <input id="signup-email" type="email" placeholder="Email" class="form-input">
+                        </div>
+                        <div>
+                            <input id="signup-password" type="password" placeholder="Password" class="form-input">
+                        </div>
+                        <div>
+                            <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input">
+                        </div>
+                        <div>
+                            <select id="signup-role" class="form-input">
+                                <option value="" disabled selected>Select Role</option>
+                                <option value="passenger">Passenger</option>
+                                <option value="driver">Driver</option>
+                                <option value="owner">Owner</option>
+                                <option value="association">Association</option>
+                            </select>
+                        </div>
+                        <div id="signup-error-message" class="error-message"></div>
+                        <div id="signup-loading" class="loading-spinner"></div>
+                        <button type="submit" id="signup-btn" class="btn btn-primary w-full py-3 font-medium">Sign Up</button>
+                    </form>
+                    <p class="text-sm text-gray-400">Already have an account? <a href="#" id="show-login" class="text-[#052438] hover:underline">Login</a></p>
                 </div>
-                <div>
-                    <input id="signup-password" type="password" placeholder="Password" class="form-input">
-                </div>
-                <div>
-                    <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input">
-                </div>
-                <div>
-                    <select id="signup-role" class="form-input">
-                        <option value="" disabled selected>Select Role</option>
-                        <option value="passenger">Passenger</option>
-                        <option value="driver">Driver</option>
-                        <option value="owner">Owner</option>
-                        <option value="association">Association</option>
-                    </select>
-                </div>
-                <div id="signup-error-message" class="error-message"></div>
-                <div id="signup-loading" class="loading-spinner"></div>
-                <button type="submit" id="signup-btn" class="btn btn-primary w-full py-3 font-medium">Sign Up</button>
-            </form>
-            <p class="text-sm text-gray-400">Already have an account? <a href="#" id="show-login" class="text-[#052438] hover:underline">Login</a></p>
-        </div>
 
-        <div class="my-6 flex items-center">
-            <div class="flex-grow h-px bg-gray-300/20"></div>
-            <span class="mx-4 text-gray-400 text-sm">OR</span>
-            <div class="flex-grow h-px bg-gray-300/20"></div>
-        </div>
-        <button id="google-login-btn" class="btn flex items-center justify-center w-full bg-white text-gray-800 py-3 px-4 rounded-lg font-medium shadow-md hover:bg-gray-100 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:-translate-y-0.5">
-            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" class="w-6 h-6 mr-2">
-            Continue with Google
-        </button>
+                <div class="my-6 flex items-center">
+                    <div class="flex-grow h-px bg-gray-300/20"></div>
+                    <span class="mx-4 text-gray-400 text-sm">OR</span>
+                    <div class="flex-grow h-px bg-gray-300/20"></div>
+                </div>
+                <button id="google-login-btn" class="btn flex items-center justify-center w-full bg-white text-gray-800 py-3 px-4 rounded-lg font-medium shadow-md hover:bg-gray-100 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:-translate-y-0.5">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" class="w-6 h-6 mr-2">
+                    Continue with Google
+                </button>
+            </section>
+        </main>
     </div>
 
     <script>
