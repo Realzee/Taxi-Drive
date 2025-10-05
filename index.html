@@ -211,28 +211,20 @@
                 }
 
                 // For owners, verify they exist in the owners table
-                // In the login function, add this after role verification:
-if (role === 'owner' || role === 'driver') {
-    // For owners/drivers, verify they belong to an association
-    const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('association_id, is_verified')
-        .eq('auth_id', authData.user.id)
-        .single();
+                if (role === 'owner') {
+                    const { data: ownerData, error: ownerError } = await supabase
+                        .from('owners')
+                        .select('id')
+                        .eq('admin_id', authData.user.id)
+                        .single();
 
-    if (memberError || !memberData) {
-        console.error('Member verification failed:', memberError);
-        showError('login-error-message', 'Account not found in any association. Please contact your association.');
-        await supabase.auth.signOut();
-        return;
-    }
-
-    if (!memberData.is_verified) {
-        showError('login-error-message', 'Your account is pending verification by the association.');
-        await supabase.auth.signOut();
-        return;
-    }
-}
+                    if (ownerError || !ownerData) {
+                        console.error('Owner verification error:', ownerError || 'Owner not found');
+                        showError('login-error-message', 'Owner account not found. Please contact your association.');
+                        await supabase.auth.signOut();
+                        return;
+                    }
+                }
 
                 console.log('Redirecting to dashboard for role:', profile.role);
                 redirectToDashboard(profile.role);
