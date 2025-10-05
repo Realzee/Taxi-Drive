@@ -1699,4 +1699,8 @@ window.openMapModal = openMapModal;
 window.openManagePartsModal = openManagePartsModal;
 window.openAlertsModal = openAlertsModal;
 window.openWalletModal = openWalletModal;
-
+window.viewOwnerCredentials = viewOwnerCredentials;
+window.editOwnerCredentials = editOwnerCredentials;
+window.resetOwnerPassword = resetOwnerPassword;
+window.deactivateOwnerCredentials = deactivateOwnerCredentials;
+window.saveOwnerEdits = saveOwnerEdits;
