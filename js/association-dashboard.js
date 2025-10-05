@@ -16,182 +16,18 @@ try {
 let currentUser = null;
 let currentAssociation = null;
 let currentAssociationId = null;
-let map = null; // Use consistent variable name
+let realtimeSubscription = null;
 
-// Demo data for fallback
+// Demo data storage for fallback
 let demoData = {
     members: [],
-    routes: [],
-    vehicles: [
-        { id: 'demo1', vehicle_id: 'Taxi_001', latitude: -26.2041, longitude: 28.0473, last_updated: new Date().toISOString() },
-        { id: 'demo2', vehicle_id: 'Taxi_002', latitude: -26.2100, longitude: 28.0500, last_updated: new Date().toISOString() }
-    ]
+    routes: []
 };
 
+// Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
-
-async function initializeDashboard() {
-    try {
-        const user = await checkAssociationAuthentication();
-        if (!user) return;
-
-        currentUser = user;
-        console.log('Association user authenticated:', user.email);
-
-        await loadUserData();
-        await loadAssociationData();
-        setupEventListeners();
-        await loadDashboardData();
-        initializeMap(); // Initialize map on page load
-
-        showNotification('Dashboard loaded successfully!', 'success');
-    } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
-    }
-}
-
-// Global map variable to manage Leaflet instance
-let mapInstance = null;
-let userLocationMarker = null; // Marker for user's current location
-let userLocationWatcher = null; // Geolocation watcher ID
-
-// Update openMapModal to initialize map
-function openMapModal() {
-    showModal('map-modal');
-    if (!mapInstance) {
-        // Defer map initialization until modal is opened
-        initializeMap();
-    } else {
-        // Force map to resize and re-render
-        setTimeout(() => {
-            mapInstance.invalidateSize();
-            console.log('Map size invalidated');
-        }, 100); // Small delay to ensure modal is fully visible
-    }
-}
-
-function initializeMap() {
-    const mapContainer = document.getElementById('map');
-    if (!mapContainer) {
-        console.error('Map container not found');
-        showNotification('Map container not found.', 'error');
-        return;
-    }
-
-    // Verify Leaflet is loaded
-    if (!window.L) {
-        console.error('Leaflet library not loaded');
-        showNotification('Map library failed to load. Please check your internet connection.', 'error');
-        return;
-    }
-
-    // Initialize Leaflet map
-    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
-
-    // Use a reliable, CORS-friendly tile provider
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        tileSize: 256,
-        zoomOffset: 0
-    }).addTo(mapInstance);
-
-    // Force initial size validation
-    setTimeout(() => {
-        mapInstance.invalidateSize();
-        console.log('Initial map size validated');
-    }, 100);
-
-    // Fetch vehicle locations from Supabase
-    async function loadVehicles() {
-        try {
-            const { data: vehicles, error } = await supabase
-                .from('vehicles')
-                .select('id, registration_number, latitude, longitude')
-                .eq('association_id', currentAssociationId);
-
-            if (error) {
-                console.error('Error fetching vehicles:', error);
-                showNotification('Failed to load vehicle locations.', 'error');
-                return;
-            }
-
-            vehicles.forEach(vehicle => {
-                if (vehicle.latitude && vehicle.longitude) {
-                    L.marker([vehicle.latitude, vehicle.longitude])
-                        .addTo(mapInstance)
-                        .bindPopup(`Vehicle: ${vehicle.registration_number}`);
-                }
-            });
-        } catch (error) {
-            console.error('Error loading vehicle data:', error);
-            showNotification('Error loading vehicle data.', 'error');
-        }
-    }
-
-    loadVehicles();
-
-    // Get and track user's current location
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                mapInstance.setView([latitude, longitude], 13);
-
-                if (userLocationMarker) {
-                    userLocationMarker.setLatLng([latitude, longitude]);
-                } else {
-                    userLocationMarker = L.marker([latitude, longitude], {
-                        icon: L.divIcon({
-                            className: 'user-location-marker',
-                            html: '<div style="background-color: #007bff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
-                            iconSize: [15, 15],
-                            iconAnchor: [7.5, 7.5]
-                        })
-                    }).addTo(mapInstance)
-                      .bindPopup('Your Current Location');
-                }
-
-                showNotification('Your location is now displayed on the map.', 'success');
-            },
-            (error) => {
-                console.error('Geolocation error:', error);
-                showNotification('Unable to access your location. Please enable location services.', 'error');
-            }
-        );
-
-        userLocationWatcher = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                if (userLocationMarker) {
-                    userLocationMarker.setLatLng([latitude, longitude]);
-                    mapInstance.panTo([latitude, longitude]);
-                }
-            },
-            (error) => {
-                console.error('Geolocation watch error:', error);
-            }
-        );
-    }
-}
-    // Ensure map resizes correctly
-    setTimeout(() => {
-        mapInstance.invalidateSize();
-    }, 100);
-
-
-// Clean up watcher when modal is closed
-function closeMapModal() {
-    closeModal('map-modal');
-    if (userLocationWatcher) {
-        navigator.geolocation.clearWatch(userLocationWatcher);
-        userLocationWatcher = null;
-        console.log('Stopped location tracking');
-    }
-}
 
 // Authentication check - UPDATED FOR NEW SCHEMA
 async function checkAssociationAuthentication() {
@@ -249,7 +85,6 @@ async function initializeDashboard() {
 
         setupEventListeners();
         await loadDashboardData();
-        initializeMap();
 
         showNotification('Dashboard loaded successfully!', 'success');
 
@@ -1340,10 +1175,157 @@ function openProfileModal() {
     if (logoInput) logoInput.value = ''; // Clear any previous file selection
 }
 
+// Global map variable to manage Leaflet instance
+let mapInstance = null;
+let userLocationMarker = null; // Marker for user's current location
+let userLocationWatcher = null; // Geolocation watcher ID
+
+function initializeMap() {
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) {
+        console.error('Map container not found');
+        return;
+    }
+
+    // Initialize Leaflet map
+    mapInstance = L.map('map').setView([-26.2041, 28.0473], 10); // Default to Johannesburg
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(mapInstance);
+
+    // Fetch vehicle locations from Supabase (if applicable)
+    async function loadVehicles() {
+        try {
+            const { data: vehicles, error } = await supabase
+                .from('vehicles')
+                .select('id, registration_number, latitude, longitude')
+                .eq('association_id', currentAssociationId);
+
+            if (error) {
+                console.error('Error fetching vehicles:', error);
+                showNotification('Failed to load vehicle locations.', 'error');
+                return;
+            }
+
+            vehicles.forEach(vehicle => {
+                if (vehicle.latitude && vehicle.longitude) {
+                    L.marker([vehicle.latitude, vehicle.longitude])
+                        .addTo(mapInstance)
+                        .bindPopup(`Vehicle: ${vehicle.registration_number}`);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading vehicle data:', error);
+            showNotification('Error loading vehicle data.', 'error');
+        }
+    }
+
+    loadVehicles();
+
+    // Get and track user's current location
+    if (navigator.geolocation) {
+        // Initial location
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                // Center map on user's location
+                mapInstance.setView([latitude, longitude], 13);
+
+                // Add or update marker for current location
+                if (userLocationMarker) {
+                    userLocationMarker.setLatLng([latitude, longitude]);
+                } else {
+                    userLocationMarker = L.marker([latitude, longitude], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '<div style="background-color: #007bff; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
+                            iconSize: [15, 15],
+                            iconAnchor: [7.5, 7.5]
+                        })
+                    }).addTo(mapInstance)
+                      .bindPopup('Your Current Location');
+                }
+
+                showNotification('Your location is now displayed on the map.', 'success');
+            },
+            (error) => {
+                console.error('Geolocation error:', error);
+                showNotification('Unable to access your location. Please enable location services.', 'error');
+            }
+        );
+
+        // Watch for location updates
+        userLocationWatcher = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                if (userLocationMarker) {
+                    userLocationMarker.setLatLng([latitude, longitude]);
+                    mapInstance.panTo([latitude, longitude]); // Optional: Keep map centered
+                }
+            },
+            (error) => {
+                console.error('Geolocation watch error:', error);
+                showNotification('Location update failed.', 'error');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        console.error('Geolocation not supported by browser');
+        showNotification('Your browser does not support location services.', 'error');
+    }
+
+    // Ensure map resizes correctly
+    setTimeout(() => {
+        mapInstance.invalidateSize();
+    }, 100);
+}
+
+// Clean up watcher when modal is closed
+function closeMapModal() {
+    closeModal('map-modal');
+    if (userLocationWatcher) {
+        navigator.geolocation.clearWatch(userLocationWatcher);
+        userLocationWatcher = null;
+        console.log('Stopped location tracking');
+    }
+}
+
+// Update openMapModal to initialize map
 function openMapModal() {
+    console.log('Opening map modal');
     showModal('map-modal');
-    if (map) {
-        map.invalidateSize(); // Fix map size after modal display
+    
+    if (!mapInstance) {
+        initializeMap();
+    } else {
+        mapInstance.invalidateSize();
+    }
+}
+
+let userAccuracyCircle = null;
+// In getCurrentPosition/watchPosition success callback:
+const accuracy = position.coords.accuracy;
+if (userAccuracyCircle) {
+    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+} else {
+    userAccuracyCircle = L.circle([latitude, longitude], {
+        radius: accuracy,
+        color: '#007bff',
+        fillOpacity: 0.1,
+        weight: 1
+    }).addTo(mapInstance);
+}
+
+function centerOnUserLocation() {
+    if (userLocationMarker) {
+        mapInstance.panTo(userLocationMarker.getLatLng());
     }
 }
 
