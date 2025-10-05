@@ -29,7 +29,7 @@
         </header>
         <main class="login-container">
             <div class="logo-container">
-                <img src="./assets/Logo.png" alt="TaxiDrive Logo" class="login-logo w-48 h-48 rounded-lg transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
+                <img src="./assets/Logo.png" alt="TaxiDrive Logo" class="login-logo w-56 h-56 rounded-lg transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
             </div>
             <div class="glass-card max-w-md w-full p-8 text-center transition-all duration-300 text-gray-800">
                 <h2 class="text-xl font-light mb-8">Connecting People. Powering Mobility.</h2>
@@ -226,9 +226,10 @@
                     }
                 }
 
-                console.log('Redirecting to dashboard:', profile.role);
+                console.log('Redirecting to dashboard for role:', profile.role);
                 redirectToDashboard(profile.role);
             } catch (error) {
+                console.error('Login error:', error);
                 showError('login-error-message', error.message || 'An unexpected error occurred. Please try again.');
             } finally {
                 toggleLoading('login', false);
@@ -273,9 +274,20 @@
                     showError('signup-error-message', 'Owner account created. Please contact your association to complete registration.');
                 } else {
                     showError('signup-error-message', 'Sign-up successful! Please check your email to confirm, then log in.');
+                    // Auto-login and redirect for non-owner roles
+                    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    if (loginError) {
+                        console.error('Auto-login after sign-up failed:', loginError);
+                        throw new Error('Auto-login failed. Please log in manually.');
+                    }
+                    console.log('Auto-login successful, redirecting to:', role);
+                    redirectToDashboard(role);
                 }
-                toggleForms(true);
             } catch (error) {
+                console.error('Sign-up error:', error);
                 showError('signup-error-message', error.message || 'An unexpected error occurred');
             } finally {
                 toggleLoading('signup', false);
@@ -290,6 +302,10 @@
                 association: '/Taxi-Drive/association-dashboard.html'
             };
             const redirectUrl = redirectMap[role] || '/Taxi-Drive/dashboard.html';
+            if (!redirectMap[role]) {
+                console.warn('Invalid role, redirecting to default:', role);
+                showError('login-error-message', `Invalid role: ${role}. Redirecting to default page.`);
+            }
             console.log('Redirecting to:', redirectUrl);
             window.location.href = redirectUrl;
         }
@@ -309,6 +325,11 @@
                         throw new Error('Profile not found. Please sign up or contact support.');
                     }
 
+                    if (!profile.role) {
+                        console.error('No role defined for user:', session.user.id);
+                        throw new Error('User role not defined.');
+                    }
+
                     if (profile.role === 'owner') {
                         const { data: ownerData, error: ownerError } = await supabase
                             .from('owners')
@@ -324,7 +345,7 @@
                         }
                     }
 
-                    console.log('Profile fetched:', profile);
+                    console.log('Profile fetched, redirecting to dashboard for role:', profile.role);
                     redirectToDashboard(profile.role);
                 } catch (error) {
                     console.error('Error in auth state change:', error);
