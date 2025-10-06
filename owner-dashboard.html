@@ -1,234 +1,375 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="theme-color" content="#1A2A44">
-    <title>TaxiDrive - Owner Dashboard</title>
-    <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/owner-dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script type="module" src="./js/supabase-services.js"></script>
-    <script type="module" src="./js/owner-dashboard.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaxiDrive | Owner Dashboard</title>
+  <link rel="icon" href="./assets/favicon.ico" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #052438, #062437, #072436);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .logo img {
+      width: 40px;
+    }
+
+    .logo span {
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
+
+    .user-info {
+      font-size: 0.95rem;
+      color: #aee;
+    }
+
+    main {
+      flex: 1;
+      padding: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-top: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.3s ease, background 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-3px);
+    }
+
+    .card h3 {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .table-section {
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.1);
+      font-weight: 600;
+    }
+
+    button {
+      background: #fff;
+      color: #052438;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #e5e5e5;
+    }
+
+    .add-btn {
+      margin-bottom: 1rem;
+    }
+
+    .overview-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .overview-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .overview-card h4 {
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.8rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      bottom: 0;
+    }
+
+    .footer-item {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #ccc;
+      cursor: pointer;
+    }
+
+    .footer-item:hover {
+      color: #fff;
+    }
+
+    input, select {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: #fff;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: #052438;
+      padding: 1.5rem;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .modal-content h3 {
+      margin-bottom: 1rem;
+    }
+  </style>
 </head>
-<body class="owner-dashboard">
-    <div class="dashboard-app">
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <img id="main-logo" src="assets/Logo1.png" alt="TaxiDrive Logo">
-                </div>
-                <div class="title-section">
-                    <h1 class="app-title">TaxiDrive</h1>
-                    <p id="owner-name" class="association-name">Owner Dashboard</p>
-                </div>
-                <div class="header-actions">
-                    <button class="icon-btn notification-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-count">0</span>
-                    </button>
-                    <button class="icon-btn profile-btn" onclick="openProfileModal()">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <button class="logout-btn btn btn-sm btn-danger" onclick="handleLogout()">Logout</button>
-                </div>
-            </div>
-        </header>
-        <main class="dashboard-container mt-20 pb-20">
-            <section class="welcome-section">
-                <h2>Welcome, <span id="user-name">Owner</span></h2>
-                <p>Manage your fleet efficiently</p>
-            </section>
 
-            <section class="dashboard-overview">
-                <h3 class="section-title">Dashboard Overview</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-car"></i></div>
-                        <div class="stat-value" id="vehicles-count">0</div>
-                        <div class="stat-label">Vehicles</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-value" id="drivers-count">0</div>
-                        <div class="stat-label">Drivers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
-                        <div class="stat-value" id="earnings-balance">R 0.00</div>
-                        <div class="stat-label">Earnings</div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="quick-actions">
-                <h3 class="section-title">Quick Actions</h3>
-                <div class="actions-grid">
-                    <button class="quick-action-btn" onclick="openAddVehicleModal()">
-                        <i class="fas fa-car-side"></i>
-                        Add Vehicle
-                    </button>
-                    <button class="quick-action-btn" onclick="openAddDriverModal()">
-                        <i class="fas fa-user-plus"></i>
-                        Add Driver
-                    </button>
-                    <button class="quick-action-btn" onclick="openWithdrawalModal()">
-                        <i class="fas fa-money-bill-wave"></i>
-                        Withdraw Funds
-                    </button>
-                </div>
-            </section>
-
-            <section class="fleet-management">
-                <h3 class="section-title">Fleet Management</h3>
-                <div id="fleet-list" class="list-container">
-                    <!-- Vehicles will be rendered here -->
-                </div>
-            </section>
-
-            <section class="driver-management">
-                <h3 class="section-title">Driver Management</h3>
-                <div id="driver-list" class="list-container">
-                    <!-- Drivers will be rendered here -->
-                </div>
-            </section>
-
-            <section class="financial-overview">
-                <h3 class="section-title">Financial Overview</h3>
-                <div class="financial-card">
-                    <p>Current Balance: <span id="current-balance">R 0.00</span></p>
-                    <button class="btn btn-primary" onclick="openWithdrawalModal()">Withdraw</button>
-                </div>
-                <h4 class="subsection-title">Transaction History</h4>
-                <div id="transaction-history" class="list-container">
-                    <!-- Transactions will be rendered here -->
-                </div>
-            </section>
-        </main>
-
-        <!-- Modals -->
-        <div id="add-vehicle-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Add Vehicle</h3>
-                <form id="add-vehicle-form">
-                    <div class="form-group">
-                        <label for="vehicle-model">Model</label>
-                        <input id="vehicle-model" type="text" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="vehicle-registration">Registration</label>
-                        <input id="vehicle-registration" type="text" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('add-vehicle-modal')">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="edit-vehicle-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Edit Vehicle</h3>
-                <form id="edit-vehicle-form">
-                    <input type="hidden" id="edit-vehicle-id">
-                    <div class="form-group">
-                        <label for="edit-vehicle-model">Model</label>
-                        <input id="edit-vehicle-model" type="text" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-vehicle-registration">Registration</label>
-                        <input id="edit-vehicle-registration" type="text" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('edit-vehicle-modal')">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="remove-vehicle-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Confirm Removal</h3>
-                <p>Are you sure you want to remove this vehicle?</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('remove-vehicle-modal')">Cancel</button>
-                    <button id="confirm-remove-vehicle" class="btn btn-danger">Remove</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Similar modals for drivers -->
-        <div id="add-driver-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Add Driver</h3>
-                <form id="add-driver-form">
-                    <div class="form-group">
-                        <label for="driver-name">Name</label>
-                        <input id="driver-name" type="text" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="driver-license">License Number</label>
-                        <input id="driver-license" type="text" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('add-driver-modal')">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="edit-driver-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Edit Driver</h3>
-                <form id="edit-driver-form">
-                    <input type="hidden" id="edit-driver-id">
-                    <div class="form-group">
-                        <label for="edit-driver-name">Name</label>
-                        <input id="edit-driver-name" type="text" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-driver-license">License Number</label>
-                        <input id="edit-driver-license" type="text" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('edit-driver-modal')">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="remove-driver-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Confirm Removal</h3>
-                <p>Are you sure you want to remove this driver?</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('remove-driver-modal')">Cancel</button>
-                    <button id="confirm-remove-driver" class="btn btn-danger">Remove</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="withdrawal-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Withdraw Funds</h3>
-                <form id="withdrawal-form">
-                    <div class="form-group">
-                        <label for="withdrawal-amount">Amount</label>
-                        <input id="withdrawal-amount" type="number" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('withdrawal-modal')">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Withdraw</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<body>
+  <header>
+    <div class="logo">
+      <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
+      <span>TaxiDrive Owner</span>
     </div>
+    <div class="user-info" id="user-info">Loading...</div>
+  </header>
+
+  <main>
+    <section class="quick-actions">
+      <div class="card"><h3>Fleet</h3></div>
+      <div class="card"><h3>Drivers</h3></div>
+      <div class="card"><h3>Earnings</h3></div>
+      <div class="card"><h3>Withdrawals</h3></div>
+    </section>
+
+    <section class="table-section">
+      <h2>Driver Management</h2>
+      <button class="add-btn" onclick="openModal('driver')">+ Add Driver</button>
+      <table id="driver-table">
+        <thead>
+          <tr><th>Name</th><th>ID Number</th><th>License Type</th><th>Expiry</th><th>PrDP</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="table-section">
+      <h2>Vehicle Registration</h2>
+      <button class="add-btn" onclick="openModal('vehicle')">+ Add Vehicle</button>
+      <table id="vehicle-table">
+        <thead>
+          <tr><th>Model</th><th>Reg No</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <h2>Fleet Overview</h2>
+    <div class="overview-cards" id="fleet-overview">
+      <div class="overview-card"><h4>Active</h4><p>5</p></div>
+      <div class="overview-card"><h4>Inactive</h4><p>2</p></div>
+      <div class="overview-card"><h4>Maintenance</h4><p>1</p></div>
+    </div>
+
+    <h2>Driver Overview</h2>
+    <div class="overview-cards">
+      <div class="overview-card"><h4>On Duty</h4><p>4</p></div>
+      <div class="overview-card"><h4>Off Duty</h4><p>3</p></div>
+    </div>
+
+    <h2>Financial Overview</h2>
+    <div class="overview-cards">
+      <div class="overview-card"><h4>Card Payments</h4><p>R4,250</p></div>
+      <div class="overview-card"><h4>Cash Payments</h4><p>R2,900</p></div>
+      <div class="overview-card"><h4>Wallet Payments</h4><p>R3,100</p></div>
+      <div class="overview-card"><h4>Available for Withdrawal</h4><p>R(4,250+2,900+3,100 - 0.50×transactions)</p></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-item">🏠 Home</div>
+    <div class="footer-item">🗺️ Map</div>
+    <div class="footer-item">💳 Wallet</div>
+    <div class="footer-item">👤 Profile</div>
+  </footer>
+
+  <!-- Modal for adding drivers/vehicles -->
+  <div id="modal" class="modal">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Fetch and show logged-in user
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return location.href = 'index.html';
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      document.getElementById('user-info').textContent = `Welcome, ${user.email}`;
+    }
+    loadUser();
+
+    // Modal handling
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modal-content');
+
+    function openModal(type) {
+      modal.style.display = 'flex';
+      modalContent.innerHTML = type === 'driver' ? getDriverForm() : getVehicleForm();
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      modalContent.innerHTML = '';
+    }
+
+    function getDriverForm() {
+      return `
+        <h3>Add Driver</h3>
+        <input id="d-name" placeholder="Name">
+        <input id="d-surname" placeholder="Surname">
+        <input id="d-id" placeholder="ID Number">
+        <input id="d-license" placeholder="License Type">
+        <input type="date" id="d-license-exp">
+        <select id="d-prdp">
+          <option value="Yes">PrDP: Yes</option>
+          <option value="No">PrDP: No</option>
+        </select>
+        <input type="date" id="d-prdp-exp">
+        <button onclick="saveDriver()">Save</button>
+        <button onclick="closeModal()">Cancel</button>
+      `;
+    }
+
+    function getVehicleForm() {
+      return `
+        <h3>Add Vehicle</h3>
+        <input id="v-model" placeholder="Vehicle Model">
+        <input id="v-reg" placeholder="Registration No">
+        <select id="v-status">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Maintenance">Maintenance</option>
+        </select>
+        <button onclick="saveVehicle()">Save</button>
+        <button onclick="closeModal()">Cancel</button>
+      `;
+    }
+
+    function saveDriver() {
+      const table = document.querySelector("#driver-table tbody");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${document.getElementById('d-name').value} ${document.getElementById('d-surname').value}</td>
+        <td>${document.getElementById('d-id').value}</td>
+        <td>${document.getElementById('d-license').value}</td>
+        <td>${document.getElementById('d-license-exp').value}</td>
+        <td>${document.getElementById('d-prdp').value}</td>
+        <td><button onclick="this.closest('tr').remove()">🗑️</button></td>`;
+      table.appendChild(row);
+      closeModal();
+    }
+
+    function saveVehicle() {
+      const table = document.querySelector("#vehicle-table tbody");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${document.getElementById('v-model').value}</td>
+        <td>${document.getElementById('v-reg').value}</td>
+        <td>${document.getElementById('v-status').value}</td>
+        <td><button onclick="this.closest('tr').remove()">🗑️</button></td>`;
+      table.appendChild(row);
+      closeModal();
+    }
+
+    window.onclick = function(e) {
+      if (e.target === modal) closeModal();
+    }
+  </script>
 </body>
 </html>
