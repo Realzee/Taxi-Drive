@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaxiDrive | Owner Dashboard</title>
   <link rel="icon" href="./assets/favicon.ico" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="./owner-dashboard.js"></script>
 
   <style>
     body {
@@ -14,34 +17,85 @@
       background: linear-gradient(145deg, #052438, #062437, #072436);
       color: #fff;
       display: flex;
-      flex-direction: column;
       min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .sidebar-header img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .sidebar-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .nav-links {
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .nav-links div {
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #ccc;
+      transition: all 0.3s ease;
+    }
+
+    .nav-links div:hover,
+    .nav-links .active {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .logout {
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.8;
+      cursor: pointer;
+      margin-top: 1.5rem;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
     }
 
     header {
       background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(8px);
+      padding: 1rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .logo img {
-      width: 40px;
-    }
-
-    .logo span {
-      font-weight: 600;
-      font-size: 1.2rem;
-      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .user-info {
@@ -50,22 +104,20 @@
     }
 
     main {
-      flex: 1;
       padding: 1.5rem;
     }
 
     h2 {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 600;
-      margin-top: 1.2rem;
-      margin-bottom: 0.8rem;
+      margin: 1.2rem 0 0.8rem;
     }
 
-    .quick-actions {
+    /* Cards and tables */
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1rem;
-      margin-bottom: 1.5rem;
     }
 
     .card {
@@ -73,8 +125,7 @@
       border-radius: 16px;
       padding: 1rem;
       text-align: center;
-      transition: transform 0.3s ease, background 0.3s ease;
-      cursor: pointer;
+      transition: all 0.3s ease;
     }
 
     .card:hover {
@@ -83,13 +134,8 @@
     }
 
     .card h3 {
-      margin-top: 0.5rem;
-      font-size: 1rem;
-      color: #fff;
-    }
-
-    .table-section {
-      margin-bottom: 2rem;
+      margin: 0.4rem 0 0;
+      font-weight: 500;
     }
 
     table {
@@ -101,10 +147,10 @@
     }
 
     th, td {
-      padding: 0.75rem;
+      padding: 0.7rem;
       text-align: left;
-      font-size: 0.9rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.9rem;
     }
 
     th {
@@ -131,63 +177,13 @@
       margin-bottom: 1rem;
     }
 
-    .overview-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-    }
-
-    .overview-card {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .overview-card h4 {
-      margin-bottom: 0.4rem;
-      font-weight: 500;
-    }
-
-    footer {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 0.8rem 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(8px);
-      position: sticky;
-      bottom: 0;
-    }
-
-    .footer-item {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #ccc;
-      cursor: pointer;
-    }
-
-    .footer-item:hover {
-      color: #fff;
-    }
-
-    input, select {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      border-radius: 8px;
-      padding: 0.5rem;
-      color: #fff;
-      width: 100%;
-      margin-bottom: 0.5rem;
-    }
-
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       justify-content: center;
       align-items: center;
       z-index: 100;
@@ -199,177 +195,187 @@
       border-radius: 16px;
       width: 90%;
       max-width: 400px;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
     }
 
     .modal-content h3 {
       margin-bottom: 1rem;
     }
+
+    input, select {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem;
+      color: #fff;
+      width: 100%;
+      margin-bottom: 0.7rem;
+      font-size: 0.9rem;
+    }
+
+    footer {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.8rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    footer span {
+      margin: 0 0.8rem;
+      cursor: pointer;
+    }
+
+    footer span:hover {
+      color: #fff;
+    }
+
+    /* Map Section */
+    #fleet-map {
+      width: 100%;
+      height: 400px;
+      border-radius: 16px;
+      margin-top: 1rem;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .leaflet-container {
+      background: #052438;
+    }
   </style>
 </head>
 
 <body>
-  <header>
-    <div class="logo">
-      <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
-      <span>TaxiDrive Owner</span>
+  <!-- Sidebar Navigation -->
+  <div class="sidebar">
+    <div>
+      <div class="sidebar-header">
+        <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
+        <h2>TaxiDrive</h2>
+      </div>
+      <div class="nav-links">
+        <div class="active">🏠 Dashboard</div>
+        <div onclick="openModal('driver')">👷‍♂️ Add Driver</div>
+        <div onclick="openModal('vehicle')">🚐 Add Vehicle</div>
+        <div>💳 Wallet</div>
+        <div>📈 Earnings</div>
+        <div>⚙️ Settings</div>
+      </div>
     </div>
-    <div class="user-info" id="user-info">Loading...</div>
-  </header>
-
-  <main>
-    <section class="quick-actions">
-      <div class="card"><h3>Fleet</h3></div>
-      <div class="card"><h3>Drivers</h3></div>
-      <div class="card"><h3>Earnings</h3></div>
-      <div class="card"><h3>Withdrawals</h3></div>
-    </section>
-
-    <section class="table-section">
-      <h2>Driver Management</h2>
-      <button class="add-btn" onclick="openModal('driver')">+ Add Driver</button>
-      <table id="driver-table">
-        <thead>
-          <tr><th>Name</th><th>ID Number</th><th>License Type</th><th>Expiry</th><th>PrDP</th><th>Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <section class="table-section">
-      <h2>Vehicle Registration</h2>
-      <button class="add-btn" onclick="openModal('vehicle')">+ Add Vehicle</button>
-      <table id="vehicle-table">
-        <thead>
-          <tr><th>Model</th><th>Reg No</th><th>Status</th><th>Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <h2>Fleet Overview</h2>
-    <div class="overview-cards" id="fleet-overview">
-      <div class="overview-card"><h4>Active</h4><p>5</p></div>
-      <div class="overview-card"><h4>Inactive</h4><p>2</p></div>
-      <div class="overview-card"><h4>Maintenance</h4><p>1</p></div>
+    <div class="logout" onclick="supabase.auth.signOut().then(()=>location.href='index.html')">
+      🚪 Logout
     </div>
+  </div>
 
-    <h2>Driver Overview</h2>
-    <div class="overview-cards">
-      <div class="overview-card"><h4>On Duty</h4><p>4</p></div>
-      <div class="overview-card"><h4>Off Duty</h4><p>3</p></div>
-    </div>
+  <!-- Main Dashboard -->
+  <div class="main">
+    <header>
+      <h1>Owner Dashboard</h1>
+      <div class="user-info" id="user-info">Loading...</div>
+    </header>
 
-    <h2>Financial Overview</h2>
-    <div class="overview-cards">
-      <div class="overview-card"><h4>Card Payments</h4><p>R4,250</p></div>
-      <div class="overview-card"><h4>Cash Payments</h4><p>R2,900</p></div>
-      <div class="overview-card"><h4>Wallet Payments</h4><p>R3,100</p></div>
-      <div class="overview-card"><h4>Available for Withdrawal</h4><p>R(4,250+2,900+3,100 - 0.50×transactions)</p></div>
-    </div>
-  </main>
+    <main>
+      <!-- Quick Stats -->
+      <section class="grid">
+        <div class="card"><h3>Fleet</h3><p id="vehicles-count">0</p></div>
+        <div class="card"><h3>Drivers</h3><p id="drivers-count">0</p></div>
+        <div class="card"><h3>Earnings</h3><p id="earnings-balance">R0.00</p></div>
+        <div class="card"><h3>Wallet</h3><p id="current-balance">R0.00</p></div>
+      </section>
 
-  <footer>
-    <div class="footer-item">🏠 Home</div>
-    <div class="footer-item">🗺️ Map</div>
-    <div class="footer-item">💳 Wallet</div>
-    <div class="footer-item">👤 Profile</div>
-  </footer>
+      <!-- Driver Management -->
+      <section>
+        <h2>Driver Management</h2>
+        <button class="add-btn" onclick="openModal('driver')">+ Add Driver</button>
+        <table id="driver-table">
+          <thead>
+            <tr><th>Name</th><th>ID Number</th><th>License Type</th><th>Expiry</th><th>PrDP</th><th>Actions</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
 
-  <!-- Modal for adding drivers/vehicles -->
+      <!-- Vehicle Management -->
+      <section>
+        <h2>Vehicle Registration</h2>
+        <button class="add-btn" onclick="openModal('vehicle')">+ Add Vehicle</button>
+        <table id="vehicle-table">
+          <thead>
+            <tr><th>Model</th><th>Reg No</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- Fleet and Financial Overviews -->
+      <section>
+        <h2>Fleet Overview</h2>
+        <div class="grid" id="fleet-overview">
+          <div class="card"><h3>Active</h3><p>0</p></div>
+          <div class="card"><h3>Inactive</h3><p>0</p></div>
+          <div class="card"><h3>Maintenance</h3><p>0</p></div>
+        </div>
+
+        <div id="fleet-map"></div>
+
+        <h2>Financial Overview</h2>
+        <div class="grid">
+          <div class="card"><h3>Card Payments</h3><p>R0.00</p></div>
+          <div class="card"><h3>Cash Payments</h3><p>R0.00</p></div>
+          <div class="card"><h3>Wallet Payments</h3><p>R0.00</p></div>
+          <div class="card"><h3>Available for Withdrawal</h3><p>R0.00</p></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>🏠 Home</span>
+      <span>🗺️ Map</span>
+      <span>💳 Wallet</span>
+      <span>👤 Profile</span>
+    </footer>
+  </div>
+
+  <!-- Modal -->
   <div id="modal" class="modal">
     <div class="modal-content" id="modal-content"></div>
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Initialize map
+    document.addEventListener('DOMContentLoaded', () => {
+      const map = L.map('fleet-map').setView([-28.214, 32.043], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
 
-    // Fetch and show logged-in user
-    async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return location.href = 'index.html';
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      document.getElementById('user-info').textContent = `Welcome, ${user.email}`;
-    }
-    loadUser();
+      window.fleetMarkers = {};
 
-    // Modal handling
-    const modal = document.getElementById('modal');
-    const modalContent = document.getElementById('modal-content');
+      // Supabase live vehicle tracking
+      const supabase = window.supabase.createClient(
+        'https://kgyiwowwdwxrxsuydwii.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc'
+      );
 
-    function openModal(type) {
-      modal.style.display = 'flex';
-      modalContent.innerHTML = type === 'driver' ? getDriverForm() : getVehicleForm();
-    }
+      supabase.channel('vehicle-tracking')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
+          const v = payload.new;
+          if (!v.live_lat || !v.live_lng) return;
 
-    function closeModal() {
-      modal.style.display = 'none';
-      modalContent.innerHTML = '';
-    }
-
-    function getDriverForm() {
-      return `
-        <h3>Add Driver</h3>
-        <input id="d-name" placeholder="Name">
-        <input id="d-surname" placeholder="Surname">
-        <input id="d-id" placeholder="ID Number">
-        <input id="d-license" placeholder="License Type">
-        <input type="date" id="d-license-exp">
-        <select id="d-prdp">
-          <option value="Yes">PrDP: Yes</option>
-          <option value="No">PrDP: No</option>
-        </select>
-        <input type="date" id="d-prdp-exp">
-        <button onclick="saveDriver()">Save</button>
-        <button onclick="closeModal()">Cancel</button>
-      `;
-    }
-
-    function getVehicleForm() {
-      return `
-        <h3>Add Vehicle</h3>
-        <input id="v-model" placeholder="Vehicle Model">
-        <input id="v-reg" placeholder="Registration No">
-        <select id="v-status">
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Maintenance">Maintenance</option>
-        </select>
-        <button onclick="saveVehicle()">Save</button>
-        <button onclick="closeModal()">Cancel</button>
-      `;
-    }
-
-    function saveDriver() {
-      const table = document.querySelector("#driver-table tbody");
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${document.getElementById('d-name').value} ${document.getElementById('d-surname').value}</td>
-        <td>${document.getElementById('d-id').value}</td>
-        <td>${document.getElementById('d-license').value}</td>
-        <td>${document.getElementById('d-license-exp').value}</td>
-        <td>${document.getElementById('d-prdp').value}</td>
-        <td><button onclick="this.closest('tr').remove()">🗑️</button></td>`;
-      table.appendChild(row);
-      closeModal();
-    }
-
-    function saveVehicle() {
-      const table = document.querySelector("#vehicle-table tbody");
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${document.getElementById('v-model').value}</td>
-        <td>${document.getElementById('v-reg').value}</td>
-        <td>${document.getElementById('v-status').value}</td>
-        <td><button onclick="this.closest('tr').remove()">🗑️</button></td>`;
-      table.appendChild(row);
-      closeModal();
-    }
-
-    window.onclick = function(e) {
-      if (e.target === modal) closeModal();
-    }
+          if (window.fleetMarkers[v.id]) {
+            window.fleetMarkers[v.id].setLatLng([v.live_lat, v.live_lng]);
+          } else {
+            const marker = L.marker([v.live_lat, v.live_lng])
+              .addTo(map)
+              .bindPopup(`<b>${v.model}</b><br>${v.reg_no}<br>${v.status}`);
+            window.fleetMarkers[v.id] = marker;
+          }
+        })
+        .subscribe();
+    });
   </script>
 </body>
 </html>
