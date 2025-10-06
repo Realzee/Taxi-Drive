@@ -1,432 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaxiDrive | Owner Dashboard</title>
-  <link rel="icon" href="./assets/favicon.ico" />
+  <title>TaxiDrive Owner</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script defer src="./owner-dashboard.js"></script>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(145deg, #052438, #062437, #072436);
-      color: #fff;
-      display: flex;
-      min-height: 100vh;
-      overflow: hidden;
-    }
+  <!-- Fonts & Theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/association-dashboard.css">
 
-    /* Sidebar */
-    .sidebar {
-      width: 240px;
-      background: rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(10px);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 1rem;
-      border-right: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-    }
-
-    .sidebar-header img {
-      width: 40px;
-      height: 40px;
-    }
-
-    .sidebar-header h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    .nav-links {
-      margin-top: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .nav-links div {
-      cursor: pointer;
-      font-size: 0.95rem;
-      color: #ccc;
-      transition: all 0.3s ease;
-    }
-
-    .nav-links div:hover,
-    .nav-links .active {
-      color: #fff;
-      font-weight: 600;
-    }
-
-    .logout {
-      text-align: center;
-      font-size: 0.9rem;
-      opacity: 0.8;
-      cursor: pointer;
-      margin-top: 1.5rem;
-    }
-
-    /* Main content */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-
-    header {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(8px);
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .user-info {
-      font-size: 0.95rem;
-      color: #aee;
-    }
-
-    main {
-      padding: 1.5rem;
-    }
-
-    h2 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin: 1.2rem 0 0.8rem;
-    }
-
-    /* Cards and tables */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1rem;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-
-    .card:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-3px);
-    }
-
-    .card h3 {
-      margin: 0.4rem 0 0;
-      font-weight: 500;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    th,
-    td {
-      padding: 0.7rem;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 0.9rem;
-    }
-
-    th {
-      background: rgba(255, 255, 255, 0.1);
-      font-weight: 600;
-    }
-
-    button {
-      background: #fff;
-      color: #052438;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #e5e5e5;
-    }
-
-    .add-btn {
-      margin-bottom: 1rem;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .modal-content {
-      background: #052438;
-      padding: 1.5rem;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
-    }
-
-    .modal-content h3 {
-      margin-bottom: 1rem;
-    }
-
-    input,
-    select {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      border-radius: 8px;
-      padding: 0.6rem;
-      color: #fff;
-      width: 100%;
-      margin-bottom: 0.7rem;
-      font-size: 0.9rem;
-    }
-
-    footer {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 0.8rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      text-align: center;
-      font-size: 0.85rem;
-      color: #ccc;
-    }
-
-    footer span {
-      margin: 0 0.8rem;
-      cursor: pointer;
-    }
-
-    footer span:hover {
-      color: #fff;
-    }
-
-    /* Map Section */
-    #fleet-map {
-      width: 100%;
-      height: 400px;
-      border-radius: 16px;
-      margin-top: 1rem;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
-      overflow: hidden;
-    }
-
-    .leaflet-container {
-      background: #052438;
-    }
-  </style>
+  <link rel="icon" href="./assets/Logo1.png" />
 </head>
 
-<body>
-  <!-- Sidebar Navigation -->
-  <div class="sidebar">
-    <div>
-      <div class="sidebar-header">
-        <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
-        <h2>TaxiDrive</h2>
+<body class="association-dashboard">
+<div class="dashboard-app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo" id="main-logo">
+        <h1 class="app-title">TaxiDrive Owner</h1>
       </div>
-      <div class="nav-links">
-        <div class="active">🏠 Dashboard</div>
-        <div onclick="openModal('driver')">👷‍♂️ Add Driver</div>
-        <div onclick="openModal('vehicle')">🚐 Add Vehicle</div>
-        <div>💳 Wallet</div>
-        <div>📈 Earnings</div>
-        <div>⚙️ Settings</div>
+      <div class="header-actions">
+        <button class="icon-btn" id="profile-btn"><i class="fas fa-user"></i></button>
+        <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
       </div>
     </div>
-    <div class="logout" onclick="supabase.auth.signOut().then(()=>location.href='index.html')">
-      🚪 Logout
+  </header>
+
+  <!-- Welcome Section -->
+  <section class="welcome-section">
+    <br>
+    <p>Manage your fleet and drivers efficiently.</p>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="dashboard-container">
+      <!-- Stats Section -->
+      <section class="stats-section">
+        <h3 class="section-title">Dashboard Overview</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-car"></i></div>
+            <div class="stat-info">
+              <h4 class="stat-value" id="stat-vehicles">0</h4>
+              <p class="stat-label">Fleet Vehicles</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-user-tie"></i></div>
+            <div class="stat-info">
+              <h4 class="stat-value" id="stat-drivers">0</h4>
+              <p class="stat-label">Registered Drivers</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+            <div class="stat-info">
+              <h4 class="stat-value" id="stat-balance">R0.00</h4>
+              <p class="stat-label">Available Balance</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-credit-card"></i></div>
+            <div class="stat-info">
+              <h4 class="stat-value" id="stat-earnings">R0.00</h4>
+              <p class="stat-label">Total Earnings</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Map -->
+      <section class="map-section">
+        <h3 class="section-title">Live Fleet Map</h3>
+        <div id="fleet-map" style="height: 400px; border-radius: 10px;"></div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="quick-actions-section">
+        <h3 class="section-title">Quick Actions</h3>
+        <div class="quick-actions">
+          <button class="quick-action-btn btn btn-primary" id="add-driver-btn">
+            <i class="fas fa-user-plus"></i><span>Add Driver</span>
+          </button>
+          <button class="quick-action-btn btn btn-primary" id="add-vehicle-btn">
+            <i class="fas fa-car"></i><span>Add Vehicle</span>
+          </button>
+          <button class="quick-action-btn btn btn-secondary" id="withdraw-btn">
+            <i class="fas fa-money-bill-wave"></i><span>Withdraw</span>
+          </button>
+          <button class="quick-action-btn btn btn-danger" id="earnings-btn">
+            <i class="fas fa-chart-line"></i><span>View Earnings</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Driver List -->
+      <section class="recent-section">
+        <div class="section-header">
+          <h3 class="section-title">Your Drivers</h3>
+          <a href="#" class="view-all">View All</a>
+        </div>
+        <div class="list-container" id="driver-list">
+          <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>No Drivers Yet</h3>
+            <p>Add drivers to manage your operations.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vehicle List -->
+      <section class="recent-section">
+        <div class="section-header">
+          <h3 class="section-title">Your Fleet</h3>
+          <a href="#" class="view-all">View All</a>
+        </div>
+        <div class="list-container" id="vehicle-list">
+          <div class="empty-state">
+            <i class="fas fa-car-side"></i>
+            <h3>No Vehicles Yet</h3>
+            <p>Add vehicles to track and assign drivers.</p>
+          </div>
+        </div>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <!-- Main Dashboard -->
-  <div class="main">
-    <header>
-      <h1>Owner Dashboard</h1>
-      <div class="user-info" id="user-info">Loading...</div>
-    </header>
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-target="dashboard">
+      <i class="fas fa-home"></i><span>Home</span>
+    </div>
+    <div class="nav-item" data-target="map">
+      <i class="fas fa-map"></i><span>Map</span>
+    </div>
+    <div class="nav-item" data-target="wallet">
+      <i class="fas fa-wallet"></i><span>Wallet</span>
+    </div>
+    <div class="nav-item" data-target="profile">
+      <i class="fas fa-user"></i><span>Profile</span>
+    </div>
+  </nav>
+</div>
 
-    <main>
-      <!-- Quick Stats -->
-      <section class="grid">
-        <div class="card">
-          <h3>Fleet</h3>
-          <p id="vehicles-count">0</p>
-        </div>
-        <div class="card">
-          <h3>Drivers</h3>
-          <p id="drivers-count">0</p>
-        </div>
-        <div class="card">
-          <h3>Earnings</h3>
-          <p id="earnings-balance">R0.00</p>
-        </div>
-        <div class="card">
-          <h3>Wallet</h3>
-          <p id="current-balance">R0.00</p>
-        </div>
-      </section>
-
-      <!-- Driver Management -->
-      <section>
-        <h2>Driver Management</h2>
-        <button class="add-btn" onclick="openModal('driver')">+ Add Driver</button>
-        <table id="driver-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>ID Number</th>
-              <th>License Type</th>
-              <th>Expiry</th>
-              <th>PrDP</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
-
-      <!-- Vehicle Management -->
-      <section>
-        <h2>Vehicle Registration</h2>
-        <button class="add-btn" onclick="openModal('vehicle')">+ Add Vehicle</button>
-        <table id="vehicle-table">
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Reg No</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
-
-      <!-- Fleet and Financial Overviews -->
-      <section>
-        <h2>Fleet Overview</h2>
-        <div class="grid" id="fleet-overview">
-          <div class="card">
-            <h3>Active</h3>
-            <p>0</p>
-          </div>
-          <div class="card">
-            <h3>Inactive</h3>
-            <p>0</p>
-          </div>
-          <div class="card">
-            <h3>Maintenance</h3>
-            <p>0</p>
-          </div>
-        </div>
-
-        <div id="fleet-map"></div>
-
-        <h2>Financial Overview</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>Card Payments</h3>
-            <p>R0.00</p>
-          </div>
-          <div class="card">
-            <h3>Cash Payments</h3>
-            <p>R0.00</p>
-          </div>
-          <div class="card">
-            <h3>Wallet Payments</h3>
-            <p>R0.00</p>
-          </div>
-          <div class="card">
-            <h3>Available for Withdrawal</h3>
-            <p>R0.00</p>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <span>🏠 Home</span>
-      <span>🗺️ Map</span>
-      <span>💳 Wallet</span>
-      <span>👤 Profile</span>
-    </footer>
-  </div>
-
-  <!-- Modal -->
-  <div id="modal" class="modal">
-    <div class="modal-content" id="modal-content"></div>
-  </div>
-
-  <script>
-    // Initialize map
-    document.addEventListener('DOMContentLoaded', () => {
-      const map = L.map('fleet-map').setView([-28.214, 32.043], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-
-      window.fleetMarkers = {};
-
-      // Supabase live vehicle tracking
-      const supabase = window.supabase.createClient(
-        'https://kgyiwowwdwxrxsuydwii.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc'
-      );
-
-      supabase.channel('vehicle-tracking')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
-          const v = payload.new;
-          if (!v.live_lat || !v.live_lng) return;
-
-          if (window.fleetMarkers[v.id]) {
-            window.fleetMarkers[v.id].setLatLng([v.live_lat, v.live_lng]);
-          } else {
-            const marker = L.marker([v.live_lat, v.live_lng])
-              .addTo(map)
-              .bindPopup(`<b>${v.model}</b><br>${v.reg_no}<br>${v.status}`);
-            window.fleetMarkers[v.id] = marker;
-          }
-        })
-        .subscribe();
-    });
-  </script>
+<!-- Supabase + JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/owner-dashboard.js"></script>
 </body>
-
 </html>
