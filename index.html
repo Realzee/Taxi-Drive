@@ -188,34 +188,40 @@
     }
 
     async function handleSignUp(email, password, confirm, role) {
-      if (!email || !password || !confirm || !role)
-        return showError('signup-error-message', 'Please fill in all fields.');
-      if (password !== confirm)
-        return showError('signup-error-message', 'Passwords do not match.');
+  if (!email || !password || !confirm || !role)
+    return showError('signup-error-message', 'Please fill in all fields.');
+  if (password !== confirm)
+    return showError('signup-error-message', 'Passwords do not match.');
 
-      const { data, error } = await supabase.auth.signUp({
-        email, password, options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
-      });
-      if (error) return showError('signup-error-message', error.message);
+  const { data, error } = await supabase.auth.signUp({
+    email, password, options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
+  });
+  if (error) return showError('signup-error-message', error.message);
 
-      // Wait for session update
-      const userId = data.user?.id || (await supabase.auth.getUser()).data.user?.id;
-      if (!userId) return showError('signup-error-message', 'Signup succeeded but user session not found.');
+  // Wait until user session is fully available
+  let userId = data.user?.id;
+  if (!userId) {
+    const { data: userData } = await supabase.auth.getUser();
+    userId = userData?.user?.id;
+  }
 
-      // Create profile immediately
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: userId, role }], { upsert: true });
+  if (!userId)
+    return showError('signup-error-message', 'Could not verify user ID. Try again.');
 
-      if (profileError)
-        return showError('signup-error-message', 'Failed to save profile. Try logging in.');
+  // Create or update profile with correct role
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert([{ id: userId, email, role }], { onConflict: 'id' });
 
-      // Ensure credentials work immediately
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) return showError('signup-error-message', 'Login failed after signup. Try manually.');
+  if (profileError)
+    return showError('signup-error-message', 'Failed to save profile role.');
 
-      redirectToDashboard(role);
-    }
+  // Sign in immediately to activate credentials
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  if (loginError) return showError('signup-error-message', 'Login failed after signup.');
+
+  redirectToDashboard(role);
+}
 
     function redirectToDashboard(role) {
       const map = {
@@ -248,3 +254,4 @@
   </script>
 </body>
 </html>
+
