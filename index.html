@@ -9,9 +9,7 @@
   <title>TaxiDrive - Login</title>
 
   <link rel="icon" href="./assets/favicon.ico">
-  <link rel="stylesheet" href="./assets/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
   <style>
     body {
       margin: 0;
@@ -23,9 +21,8 @@
       justify-content: center;
       min-height: 100vh;
       background-attachment: fixed;
-      overflow: hidden;
     }
-
+    .hidden { display: none; }
     .login-wrapper {
       display: flex;
       flex-direction: column;
@@ -39,30 +36,9 @@
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
       animation: fadeIn 0.8s ease-in-out;
     }
-
-    .logo {
-      width: 120px;
-      margin-bottom: 1.5rem;
-      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
-      transition: transform 0.3s ease;
-    }
-
-    .logo:hover {
-      transform: scale(1.05);
-    }
-
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin: 0.5rem 0;
-    }
-
-    p.subtitle {
-      font-size: 0.95rem;
-      color: #ddd;
-      margin-bottom: 2rem;
-    }
-
+    .logo { width: 120px; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.8rem; font-weight: 600; margin: 0.5rem 0; }
+    p.subtitle { font-size: 0.95rem; color: #ddd; margin-bottom: 2rem; }
     .form-input {
       width: 100%;
       padding: 0.9rem;
@@ -74,11 +50,7 @@
       color: #fff;
       font-size: 0.95rem;
     }
-
-    .form-input::placeholder {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
+    .form-input::placeholder { color: rgba(255, 255, 255, 0.6); }
     .btn {
       width: 100%;
       padding: 0.9rem;
@@ -91,50 +63,17 @@
       font-size: 1rem;
       transition: all 0.3s ease;
     }
-
-    .btn:hover {
-      background: #e9e9e9;
-      transform: translateY(-1px);
-    }
-
+    .btn:hover { background: #e9e9e9; transform: translateY(-1px); }
     .divider {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 1.5rem 0;
+      display: flex; align-items: center; justify-content: center; margin: 1.5rem 0;
     }
-
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.2);
-      margin: 0 0.5rem;
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2); margin: 0 0.5rem;
     }
-
-    .text-sm {
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .text-link {
-      color: #fff;
-      text-decoration: underline;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .text-link:hover {
-      color: #aee;
-    }
-
-    .error-message {
-      color: #ff8c8c;
-      font-size: 0.85rem;
-      margin-bottom: 0.8rem;
-    }
-
+    .text-sm { font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); }
+    .text-link { color: #fff; text-decoration: underline; cursor: pointer; }
+    .text-link:hover { color: #aee; }
+    .error-message { color: #ff8c8c; font-size: 0.85rem; margin-bottom: 0.8rem; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -171,7 +110,7 @@
         Continue with Google
       </button>
 
-      <p class="text-sm mt-4">Don't have an account? 
+      <p class="text-sm mt-4">Don't have an account?
         <span id="show-signup" class="text-link">Sign Up</span>
       </p>
     </div>
@@ -193,7 +132,7 @@
         <button type="submit" id="signup-btn" class="btn">Sign Up</button>
       </form>
 
-      <p class="text-sm mt-4">Already have an account? 
+      <p class="text-sm mt-4">Already have an account?
         <span id="show-login" class="text-link">Login</span>
       </p>
     </div>
@@ -207,14 +146,13 @@
     const showError = (id, msg) => {
       const e = document.getElementById(id);
       e.textContent = msg;
-      setTimeout(() => e.textContent = '', 4000);
+      setTimeout(() => e.textContent = '', 5000);
     };
 
     const toggleForms = (showLogin) => {
       document.getElementById('login-section').classList.toggle('hidden', !showLogin);
       document.getElementById('signup-section').classList.toggle('hidden', showLogin);
     };
-
     document.getElementById('show-signup').addEventListener('click', () => toggleForms(false));
     document.getElementById('show-login').addEventListener('click', () => toggleForms(true));
 
@@ -225,16 +163,57 @@
       });
       if (error) showError('login-error-message', 'Google login failed.');
     }
-
     document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
 
     async function handleEmailLogin(email, password, role) {
-      if (!email || !password || !role) return showError('login-error-message', 'Fill in all fields.');
+      if (!email || !password || !role)
+        return showError('login-error-message', 'Please fill in all fields.');
+
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return showError('login-error-message', error.message);
 
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      if (!profile || profile.role !== role) return showError('login-error-message', 'Invalid role.');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile)
+        return showError('login-error-message', 'Profile not found. Try signing up again.');
+
+      if (profile.role !== role)
+        return showError('login-error-message', `Invalid role. You are registered as ${profile.role}.`);
+
+      redirectToDashboard(profile.role);
+    }
+
+    async function handleSignUp(email, password, confirm, role) {
+      if (!email || !password || !confirm || !role)
+        return showError('signup-error-message', 'Please fill in all fields.');
+      if (password !== confirm)
+        return showError('signup-error-message', 'Passwords do not match.');
+
+      const { data, error } = await supabase.auth.signUp({
+        email, password, options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
+      });
+      if (error) return showError('signup-error-message', error.message);
+
+      // Wait for session update
+      const userId = data.user?.id || (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) return showError('signup-error-message', 'Signup succeeded but user session not found.');
+
+      // Create profile immediately
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ id: userId, role }], { upsert: true });
+
+      if (profileError)
+        return showError('signup-error-message', 'Failed to save profile. Try logging in.');
+
+      // Ensure credentials work immediately
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) return showError('signup-error-message', 'Login failed after signup. Try manually.');
+
       redirectToDashboard(role);
     }
 
@@ -257,23 +236,14 @@
       );
     });
 
-    document.getElementById('signup-form').addEventListener('submit', async e => {
+    document.getElementById('signup-form').addEventListener('submit', e => {
       e.preventDefault();
-      const email = document.getElementById('signup-email').value;
-      const password = document.getElementById('signup-password').value;
-      const confirm = document.getElementById('signup-confirm-password').value;
-      const role = document.getElementById('signup-role').value;
-
-      if (!email || !password || !confirm || !role)
-        return showError('signup-error-message', 'All fields required.');
-      if (password !== confirm)
-        return showError('signup-error-message', 'Passwords do not match.');
-
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) return showError('signup-error-message', error.message);
-
-      await supabase.from('profiles').insert([{ id: data.user.id, role }]);
-      redirectToDashboard(role);
+      handleSignUp(
+        document.getElementById('signup-email').value,
+        document.getElementById('signup-password').value,
+        document.getElementById('signup-confirm-password').value,
+        document.getElementById('signup-role').value
+      );
     });
   </script>
 </body>
