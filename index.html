@@ -1,384 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="theme-color" content="#052438">
-    <title>TaxiDrive - Login</title>
-    <link rel="icon" href="./assets/favicon.ico">
-    <link rel="stylesheet" href="./assets/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#052438">
+  <title>TaxiDrive - Login</title>
+
+  <link rel="icon" href="./assets/favicon.ico">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #052438, #062437, #072436);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-attachment: fixed;
+      overflow: hidden;
+    }
+
+    .login-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 420px;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 24px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    .logo {
+      width: 120px;
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+    }
+
+    p.subtitle {
+      font-size: 0.95rem;
+      color: #ddd;
+      margin-bottom: 2rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      margin-bottom: 1rem;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .form-input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      background: #fff;
+      color: #052438;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #e9e9e9;
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 0.5rem;
+    }
+
+    .text-sm {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .text-link {
+      color: #fff;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .text-link:hover {
+      color: #aee;
+    }
+
+    .error-message {
+      color: #ff8c8c;
+      font-size: 0.85rem;
+      margin-bottom: 0.8rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="dashboard-app">
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <img src="./assets/Logo1.png" alt="TaxiDrive Logo">
-                </div>
-                <div class="title-section">
-                    <h1 class="app-title">TaxiDrive</h1>
-                    <p>Login</p>
-                </div>
-                <div class="header-actions">
-                    <!-- Optional: Add a minimal action button if needed -->
-                </div>
-            </div>
-        </header>
-        <main class="login-container">
-            <div class="logo-container">
-                <img src="./assets/Logo.png" alt="TaxiDrive Logo" class="login-logo w-56 h-56 rounded-lg transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
-            </div>
-            <div class="glass-card max-w-md w-full p-8 text-center transition-all duration-300 text-gray-800">
-                <h2 class="text-xl font-light mb-8">Connecting People. Powering Mobility.</h2>
-                
-                <!-- Login Form -->
-                <div id="login-section" class="space-y-4">
-                    <h3 class="text-lg font-medium">Login</h3>
-                    <form id="login-form" class="space-y-4">
-                        <div>
-                            <input id="login-email" type="email" placeholder="Email" class="form-input">
-                        </div>
-                        <div>
-                            <input id="login-password" type="password" placeholder="Password" class="form-input">
-                        </div>
-                        <div>
-                            <select id="login-role" class="form-input">
-                                <option value="" disabled selected>Select Role</option>
-                                <option value="passenger">Passenger</option>
-                                <option value="driver">Driver</option>
-                                <option value="owner">Owner</option>
-                                <option value="association">Association</option>
-                            </select>
-                        </div>
-                        <div id="login-error-message" class="error-message"></div>
-                        <div id="login-loading" class="loading-spinner"></div>
-                        <button type="submit" id="login-btn" class="btn btn-primary w-full py-3 font-medium">Login</button>
-                    </form>
-                    <p class="text-sm text-gray-400">Don't have an account? <a href="#" id="show-signup" class="text-[#052438] hover:underline">Sign Up</a></p>
-                </div>
+  <div class="login-wrapper">
+    <img src="./assets/Logo1.png" alt="TaxiDrive Logo" class="logo">
+    <h1>TaxiDrive</h1>
+    <p class="subtitle">Connecting People. Powering Mobility.</p>
 
-                <!-- Sign-Up Form -->
-                <div id="signup-section" class="space-y-4 hidden">
-                    <h3 class="text-lg font-medium">Sign Up</h3>
-                    <form id="signup-form" class="space-y-4">
-                        <div>
-                            <input id="signup-email" type="email" placeholder="Email" class="form-input">
-                        </div>
-                        <div>
-                            <input id="signup-password" type="password" placeholder="Password" class="form-input">
-                        </div>
-                        <div>
-                            <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input">
-                        </div>
-                        <div>
-                            <select id="signup-role" class="form-input">
-                                <option value="" disabled selected>Select Role</option>
-                                <option value="passenger">Passenger</option>
-                                <option value="driver">Driver</option>
-                                <option value="owner">Owner</option>
-                                <option value="association">Association</option>
-                            </select>
-                        </div>
-                        <div id="signup-error-message" class="error-message"></div>
-                        <div id="signup-loading" class="loading-spinner"></div>
-                        <button type="submit" id="signup-btn" class="btn btn-primary w-full py-3 font-medium">Sign Up</button>
-                    </form>
-                    <p class="text-sm text-gray-400">Already have an account? <a href="#" id="show-login" class="text-[#052438] hover:underline">Login</a></p>
-                </div>
+    <!-- LOGIN FORM -->
+    <div id="login-section">
+      <form id="login-form">
+        <input id="login-email" type="email" placeholder="Email" class="form-input">
+        <input id="login-password" type="password" placeholder="Password" class="form-input">
+        <select id="login-role" class="form-input">
+          <option value="" disabled selected>Select Role</option>
+          <option value="passenger">Passenger</option>
+          <option value="driver">Driver</option>
+          <option value="owner">Owner</option>
+          <option value="association">Association</option>
+        </select>
+        <div id="login-error-message" class="error-message"></div>
+        <button type="submit" id="login-btn" class="btn">Login</button>
+      </form>
 
-                <div class="my-6 flex items-center">
-                    <div class="flex-grow h-px bg-gray-300/20"></div>
-                    <span class="mx-4 text-gray-400 text-sm">OR</span>
-                    <div class="flex-grow h-px bg-gray-300/20"></div>
-                </div>
-                <button id="google-login-btn" class="btn flex items-center justify-center w-full bg-white text-gray-800 py-3 px-4 rounded-lg font-medium shadow-md hover:bg-gray-100 hover:shadow-[0_0_15px_rgba(66,133,244,0.5)] hover:-translate-y-0.5">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" class="w-6 h-6 mr-2">
-                    Continue with Google
-                </button>
-            </div>
-        </main>
+      <div class="divider">OR</div>
+
+      <button id="google-login-btn" class="btn" style="background:#fff; color:#444; display:flex; align-items:center; justify-content:center;">
+        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" width="24" height="24" style="margin-right:8px;">
+        Continue with Google
+      </button>
+
+      <p class="text-sm mt-4">Don't have an account? 
+        <span id="show-signup" class="text-link">Sign Up</span>
+      </p>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-        
-        let supabase;
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('Supabase client initialized successfully');
-        } catch (error) {
-            console.error('Supabase initialization failed:', error);
-            showError('login-error-message', 'Failed to connect to server. Please try again.');
-        }
+    <!-- SIGN-UP FORM -->
+    <div id="signup-section" class="hidden">
+      <form id="signup-form">
+        <input id="signup-email" type="email" placeholder="Email" class="form-input">
+        <input id="signup-password" type="password" placeholder="Password" class="form-input">
+        <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input">
+        <select id="signup-role" class="form-input">
+          <option value="" disabled selected>Select Role</option>
+          <option value="passenger">Passenger</option>
+          <option value="driver">Driver</option>
+          <option value="owner">Owner</option>
+          <option value="association">Association</option>
+        </select>
+        <div id="signup-error-message" class="error-message"></div>
+        <button type="submit" id="signup-btn" class="btn">Sign Up</button>
+      </form>
 
-        function showError(elementId, message) {
-            const errorElement = document.getElementById(elementId);
-            if (errorElement) {
-                errorElement.textContent = message;
-                errorElement.style.display = 'block';
-                setTimeout(() => errorElement.style.display = 'none', 5000);
-            }
-            console.error('Error:', message);
-        }
+      <p class="text-sm mt-4">Already have an account? 
+        <span id="show-login" class="text-link">Login</span>
+      </p>
+    </div>
+  </div>
 
-        function toggleLoading(formId, show) {
-            const loadingElement = document.getElementById(`${formId}-loading`);
-            const buttonElement = document.getElementById(`${formId}-btn`);
-            if (loadingElement && buttonElement) {
-                loadingElement.style.display = show ? 'block' : 'none';
-                buttonElement.disabled = show;
-            }
-        }
+  <script>
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        function toggleForms(showLogin) {
-            const loginSection = document.getElementById('login-section');
-            const signupSection = document.getElementById('signup-section');
-            loginSection.classList.toggle('hidden', !showLogin);
-            signupSection.classList.toggle('hidden', showLogin);
-        }
+    const showError = (id, msg) => {
+      const e = document.getElementById(id);
+      e.textContent = msg;
+      setTimeout(() => e.textContent = '', 4000);
+    };
 
-        async function handleGoogleLogin() {
-            toggleLoading('login', true);
-            try {
-                console.log('Starting Google OAuth login...');
-                const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirect_to: window.location.origin + '/Taxi-Drive/'
-                    }
-                });
-                if (error) {
-                    console.error('Google OAuth error:', error);
-                    throw new Error(error.message || 'Google login failed');
-                }
-                console.log('Google OAuth initiated:', data);
-            } catch (error) {
-                showError('login-error-message', error.message || 'Failed to login with Google. Please try again.');
-            } finally {
-                toggleLoading('login', false);
-            }
-        }
+    const toggleForms = (showLogin) => {
+      document.getElementById('login-section').classList.toggle('hidden', !showLogin);
+      document.getElementById('signup-section').classList.toggle('hidden', showLogin);
+    };
 
-        async function handleEmailLogin(email, password, role) {
-            if (!email || !password || !role) {
-                showError('login-error-message', 'Please fill in all fields');
-                return;
-            }
+    document.getElementById('show-signup').addEventListener('click', () => toggleForms(false));
+    document.getElementById('show-login').addEventListener('click', () => toggleForms(true));
 
-            toggleLoading('login', true);
-            try {
-                console.log('Attempting email login:', { email, role });
-                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
+    async function handleGoogleLogin() {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/Taxi-Drive/' }
+      });
+      if (error) showError('login-error-message', 'Google login failed.');
+    }
 
-                if (authError) {
-                    console.error('Authentication error:', authError);
-                    throw new Error(authError.message || 'Authentication failed. Please check your credentials or confirm your email.');
-                }
+    document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
 
-                console.log('User authenticated:', authData.user.id);
-                let profile = null;
-                try {
-                    const { data: profileData, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', authData.user.id)
-                        .single();
+    async function handleEmailLogin(email, password, role) {
+      if (!email || !password || !role) return showError('login-error-message', 'Fill in all fields.');
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return showError('login-error-message', error.message);
 
-                    if (profileError) {
-                        console.error('Profile fetch error:', profileError);
-                        throw new Error('Profile not found. Please sign up or contact support.');
-                    }
-                    profile = profileData;
-                } catch (error) {
-                    console.error('Profile table access failed:', error);
-                    showError('login-error-message', error.message || 'Error accessing profile data.');
-                    await supabase.auth.signOut();
-                    return;
-                }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      if (!profile || profile.role !== role) return showError('login-error-message', 'Invalid role.');
+      redirectToDashboard(role);
+    }
 
-                if (profile.role !== role) {
-                    console.error('Role mismatch:', { selected: role, profile: profile.role });
-                    showError('login-error-message', `Invalid role. Your account is registered as ${profile.role}.`);
-                    await supabase.auth.signOut();
-                    return;
-                }
+    function redirectToDashboard(role) {
+      const map = {
+        passenger: '/Taxi-Drive/passenger-dashboard.html',
+        driver: '/Taxi-Drive/driver-dashboard.html',
+        owner: '/Taxi-Drive/owner-dashboard.html',
+        association: '/Taxi-Drive/association-dashboard.html'
+      };
+      window.location.href = map[role] || '/Taxi-Drive/dashboard.html';
+    }
 
-                // For owners, verify they exist in the owners table
-                if (role === 'owner') {
-                    const { data: ownerData, error: ownerError } = await supabase
-                        .from('owners')
-                        .select('id')
-                        .eq('admin_id', authData.user.id)
-                        .single();
+    document.getElementById('login-form').addEventListener('submit', e => {
+      e.preventDefault();
+      handleEmailLogin(
+        document.getElementById('login-email').value,
+        document.getElementById('login-password').value,
+        document.getElementById('login-role').value
+      );
+    });
 
-                    if (ownerError || !ownerData) {
-                        console.error('Owner verification error:', ownerError || 'Owner not found');
-                        showError('login-error-message', 'Owner account not found. Please contact your association.');
-                        await supabase.auth.signOut();
-                        return;
-                    }
-                }
+    document.getElementById('signup-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+      const confirm = document.getElementById('signup-confirm-password').value;
+      const role = document.getElementById('signup-role').value;
 
-                console.log('Redirecting to dashboard for role:', profile.role);
-                redirectToDashboard(profile.role);
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('login-error-message', error.message || 'An unexpected error occurred. Please try again.');
-            } finally {
-                toggleLoading('login', false);
-            }
-        }
+      if (!email || !password || !confirm || !role)
+        return showError('signup-error-message', 'All fields required.');
+      if (password !== confirm)
+        return showError('signup-error-message', 'Passwords do not match.');
 
-        async function handleSignUp(email, password, confirmPassword, role) {
-            if (!email || !password || !confirmPassword || !role) {
-                showError('signup-error-message', 'Please fill in all fields');
-                return;
-            }
-            if (password !== confirmPassword) {
-                showError('signup-error-message', 'Passwords do not match');
-                return;
-            }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) return showError('signup-error-message', error.message);
 
-            toggleLoading('signup', true);
-            try {
-                console.log('Attempting sign-up:', { email, role });
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email,
-                    password
-                });
-
-                if (authError) {
-                    console.error('Sign-up error:', authError);
-                    throw new Error(authError.message || 'Sign-up failed. Email may already be in use.');
-                }
-
-                console.log('User signed up:', authData.user.id);
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([{ id: authData.user.id, role }]);
-
-                if (profileError) {
-                    console.error('Profile insertion error:', profileError);
-                    throw new Error('Failed to set user role. Please try again.');
-                }
-
-                // For owners, prompt association to complete registration
-                if (role === 'owner') {
-                    showError('signup-error-message', 'Owner account created. Please contact your association to complete registration.');
-                } else {
-                    showError('signup-error-message', 'Sign-up successful! Please check your email to confirm, then log in.');
-                    // Auto-login and redirect for non-owner roles
-                    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-                    if (loginError) {
-                        console.error('Auto-login after sign-up failed:', loginError);
-                        throw new Error('Auto-login failed. Please log in manually.');
-                    }
-                    console.log('Auto-login successful, redirecting to:', role);
-                    redirectToDashboard(role);
-                }
-            } catch (error) {
-                console.error('Sign-up error:', error);
-                showError('signup-error-message', error.message || 'An unexpected error occurred');
-            } finally {
-                toggleLoading('signup', false);
-            }
-        }
-
-        function redirectToDashboard(role) {
-            const redirectMap = {
-                passenger: '/Taxi-Drive/passenger-dashboard.html',
-                driver: '/Taxi-Drive/driver-dashboard.html',
-                owner: '/Taxi-Drive/owner-dashboard.html',
-                association: '/Taxi-Drive/association-dashboard.html'
-            };
-            const redirectUrl = redirectMap[role] || '/Taxi-Drive/dashboard.html';
-            if (!redirectMap[role]) {
-                console.warn('Invalid role, redirecting to default:', role);
-                showError('login-error-message', `Invalid role: ${role}. Redirecting to default page.`);
-            }
-            console.log('Redirecting to:', redirectUrl);
-            window.location.href = redirectUrl;
-        }
-
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth state changed:', { event, session });
-            if (event === 'SIGNED_IN' && session) {
-                try {
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (profileError) {
-                        console.error('Profile fetch error:', profileError);
-                        throw new Error('Profile not found. Please sign up or contact support.');
-                    }
-
-                    if (!profile.role) {
-                        console.error('No role defined for user:', session.user.id);
-                        throw new Error('User role not defined.');
-                    }
-
-                    if (profile.role === 'owner') {
-                        const { data: ownerData, error: ownerError } = await supabase
-                            .from('owners')
-                            .select('id')
-                            .eq('admin_id', session.user.id)
-                            .single();
-
-                        if (ownerError || !ownerData) {
-                            console.error('Owner verification error:', ownerError || 'Owner not found');
-                            showError('login-error-message', 'Owner account not found. Please contact your association.');
-                            await supabase.auth.signOut();
-                            return;
-                        }
-                    }
-
-                    console.log('Profile fetched, redirecting to dashboard for role:', profile.role);
-                    redirectToDashboard(profile.role);
-                } catch (error) {
-                    console.error('Error in auth state change:', error);
-                    showError('login-error-message', error.message || 'Error determining user role. Logging out.');
-                    await supabase.auth.signOut();
-                }
-            }
-        });
-
-        document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const role = document.getElementById('login-role').value;
-            await handleEmailLogin(email, password, role);
-        });
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('signup-confirm-password').value;
-            const role = document.getElementById('signup-role').value;
-            await handleSignUp(email, password, confirmPassword, role);
-        });
-        document.getElementById('show-signup').addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleForms(false);
-        });
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleForms(true);
-        });
-    </script>
+      await supabase.from('profiles').insert([{ id: data.user.id, role }]);
+      redirectToDashboard(role);
+    });
+  </script>
 </body>
 </html>
