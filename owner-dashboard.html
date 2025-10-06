@@ -22,16 +22,19 @@
   <!-- Header -->
   <header class="header">
     <div class="header-content">
-      <div class="logo-section">
-        <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo">
-        <h1 class="app-title">TaxiDrive Owner</h1>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn" id="profile-btn"><i class="fas fa-user"></i></button>
-        <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
-      </div>
+        <div class="logo-section">
+            <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo">
+            <h1 class="app-title">TaxiDrive Owner</h1>
+        </div>
+        <div class="header-actions">
+            <div class="user-info" id="user-info">
+                <small id="user-name">Loading...</small>
+            </div>
+            <button class="icon-btn" id="profile-btn"><i class="fas fa-user"></i></button>
+            <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
+        </div>
     </div>
-  </header>
+</header>
 
   <section class="welcome-section">
     <p>Manage your fleet, drivers, and earnings with ease.</p>
@@ -89,11 +92,23 @@
 
   <!-- Bottom Nav -->
   <nav class="bottom-nav">
-    <div class="nav-item active"><i class="fas fa-home"></i><span>Home</span></div>
-    <div class="nav-item"><i class="fas fa-map"></i><span>Map</span></div>
-    <div class="nav-item"><i class="fas fa-wallet"></i><span>Wallet</span></div>
-    <div class="nav-item"><i class="fas fa-user"></i><span>Profile</span></div>
-  </nav>
+    <div class="nav-item active" data-target="home">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </div>
+    <div class="nav-item" data-target="map">
+        <i class="fas fa-map"></i>
+        <span>Map</span>
+    </div>
+    <div class="nav-item" data-target="wallet">
+        <i class="fas fa-wallet"></i>
+        <span>Wallet</span>
+    </div>
+    <div class="nav-item" data-target="profile">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </div>
+</nav>
 </div>
 
 <!-- Modals -->

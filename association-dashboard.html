@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="./css/style.css">
     <link rel="stylesheet" href="./css/association-dashboard.css">
 
-    <link rel="icon" href="./assets/favicon.ico">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚕</text></svg>">
 
 </head>
 <body class="association-dashboard">
@@ -196,6 +196,78 @@
 </div>
     <!-- Modals -->
 
+    <!-- Credential Modal -->
+<div id="credential-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="credential-modal-title">Credentials</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="credential-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="closeModal('credential-modal')">Close</button>
+            <button class="btn btn-success" onclick="copyCredentials()">
+                <i class="fas fa-copy"></i> Copy Details
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Owner Credential Modal -->
+<div id="owner-credential-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Owner Credentials</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="owner-credential-content"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="closeModal('owner-credential-modal')">Close</button>
+            <!-- Dynamic buttons will be added by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Edit Owner Modal -->
+<div id="edit-owner-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Owner Details</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-owner-form">
+                <input type="hidden" id="edit-owner-id">
+                <div class="form-group">
+                    <label for="edit-owner-name">Owner Name</label>
+                    <input type="text" id="edit-owner-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-owner-email">Email Address</label>
+                    <input type="email" id="edit-owner-email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-owner-phone">Phone Number</label>
+                    <input type="tel" id="edit-owner-phone" class="form-input">
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="edit-owner-verified" class="form-checkbox">
+                    <label for="edit-owner-verified">Verified Owner</label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('edit-owner-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveOwnerEdits()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+
     <!-- Profile Modal -->
     <div id="profile-modal" class="modal-overlay">
         <div class="modal-content">
@@ -333,10 +405,13 @@
                 <h3>Add New Member</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="form-group checkbox-group">
-    <input type="checkbox" id="generate-credentials" class="form-checkbox">
-    <label for="generate-credentials">Generate login credentials for this member</label>
-</div>
+
+                <div class="form-group checkbox-group">
+                <input type="checkbox" id="generate-credentials" class="form-checkbox">
+                <label for="generate-credentials">Generate login credentials for this member</label>
+                </div>
+
+
             <div class="modal-body">
                 <form id="add-member-form">
                     <div class="form-group">
@@ -482,5 +557,3 @@
     <script src="./js/association-dashboard.js"></script>
 </body>
 </html>
-
-
