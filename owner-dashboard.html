@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -146,7 +147,8 @@
       overflow: hidden;
     }
 
-    th, td {
+    th,
+    td {
       padding: 0.7rem;
       text-align: left;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -181,8 +183,10 @@
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: rgba(0, 0, 0, 0.6);
       justify-content: center;
       align-items: center;
@@ -202,7 +206,8 @@
       margin-bottom: 1rem;
     }
 
-    input, select {
+    input,
+    select {
       background: rgba(255, 255, 255, 0.1);
       border: none;
       border-radius: 8px;
@@ -279,10 +284,22 @@
     <main>
       <!-- Quick Stats -->
       <section class="grid">
-        <div class="card"><h3>Fleet</h3><p id="vehicles-count">0</p></div>
-        <div class="card"><h3>Drivers</h3><p id="drivers-count">0</p></div>
-        <div class="card"><h3>Earnings</h3><p id="earnings-balance">R0.00</p></div>
-        <div class="card"><h3>Wallet</h3><p id="current-balance">R0.00</p></div>
+        <div class="card">
+          <h3>Fleet</h3>
+          <p id="vehicles-count">0</p>
+        </div>
+        <div class="card">
+          <h3>Drivers</h3>
+          <p id="drivers-count">0</p>
+        </div>
+        <div class="card">
+          <h3>Earnings</h3>
+          <p id="earnings-balance">R0.00</p>
+        </div>
+        <div class="card">
+          <h3>Wallet</h3>
+          <p id="current-balance">R0.00</p>
+        </div>
       </section>
 
       <!-- Driver Management -->
@@ -291,7 +308,14 @@
         <button class="add-btn" onclick="openModal('driver')">+ Add Driver</button>
         <table id="driver-table">
           <thead>
-            <tr><th>Name</th><th>ID Number</th><th>License Type</th><th>Expiry</th><th>PrDP</th><th>Actions</th></tr>
+            <tr>
+              <th>Name</th>
+              <th>ID Number</th>
+              <th>License Type</th>
+              <th>Expiry</th>
+              <th>PrDP</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -303,7 +327,12 @@
         <button class="add-btn" onclick="openModal('vehicle')">+ Add Vehicle</button>
         <table id="vehicle-table">
           <thead>
-            <tr><th>Model</th><th>Reg No</th><th>Status</th><th>Actions</th></tr>
+            <tr>
+              <th>Model</th>
+              <th>Reg No</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -313,19 +342,40 @@
       <section>
         <h2>Fleet Overview</h2>
         <div class="grid" id="fleet-overview">
-          <div class="card"><h3>Active</h3><p>0</p></div>
-          <div class="card"><h3>Inactive</h3><p>0</p></div>
-          <div class="card"><h3>Maintenance</h3><p>0</p></div>
+          <div class="card">
+            <h3>Active</h3>
+            <p>0</p>
+          </div>
+          <div class="card">
+            <h3>Inactive</h3>
+            <p>0</p>
+          </div>
+          <div class="card">
+            <h3>Maintenance</h3>
+            <p>0</p>
+          </div>
         </div>
 
         <div id="fleet-map"></div>
 
         <h2>Financial Overview</h2>
         <div class="grid">
-          <div class="card"><h3>Card Payments</h3><p>R0.00</p></div>
-          <div class="card"><h3>Cash Payments</h3><p>R0.00</p></div>
-          <div class="card"><h3>Wallet Payments</h3><p>R0.00</p></div>
-          <div class="card"><h3>Available for Withdrawal</h3><p>R0.00</p></div>
+          <div class="card">
+            <h3>Card Payments</h3>
+            <p>R0.00</p>
+          </div>
+          <div class="card">
+            <h3>Cash Payments</h3>
+            <p>R0.00</p>
+          </div>
+          <div class="card">
+            <h3>Wallet Payments</h3>
+            <p>R0.00</p>
+          </div>
+          <div class="card">
+            <h3>Available for Withdrawal</h3>
+            <p>R0.00</p>
+          </div>
         </div>
       </section>
     </main>
@@ -378,4 +428,5 @@
     });
   </script>
 </body>
+
 </html>
