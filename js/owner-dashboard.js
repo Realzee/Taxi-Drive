@@ -18,7 +18,7 @@ async function initDashboard() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (!profile || profile.role !== 'owner') return (location.href = 'index.html');
 
-  document.getElementById('user-info').textContent = `Welcome, ${user.email}`;
+  document.getElementById('user-name').textContent = `Welcome, ${user.email}`;
   currentUser = user;
 
   const { data: owner } = await supabase.from('owners').select('*').eq('admin_id', user.id).maybeSingle();
@@ -198,3 +198,4 @@ function listenRealtime() {
       payload => { if (payload.new?.owner_id === currentOwnerId) loadDrivers(); })
     .subscribe();
 }
+
