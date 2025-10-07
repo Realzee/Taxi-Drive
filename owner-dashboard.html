@@ -5,23 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaxiDrive Owner Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="association-dashboard.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://js.supabase.com/v1"></script> <!-- Assuming correct Supabase CDN -->
+    <script src="https://js.supabase.com/v1"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
-<body>
+<body class="association-dashboard">
     <div class="dashboard-app">
         <header class="header">
             <div class="header-content">
                 <div class="logo-section">
-                    <img id="main-logo" src="path/to/logo.png" alt="TaxiDrive Logo"> <!-- Update path if needed -->
+                    <img id="main-logo" src="path/to/logo.png" alt="TaxiDrive Logo">
+                    <img id="association-logo-display" class="association-logo" src="" alt="Association Logo">
                 </div>
                 <div class="title-section">
                     <h1>Owner Dashboard</h1>
                     <span id="user-name">Loading...</span>
                 </div>
                 <div class="header-actions">
-                    <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button> <!-- Added logout button for completeness -->
+                    <button class="logout-btn btn btn-sm" onclick="handleLogout()">🚪 Logout</button>
                 </div>
             </div>
         </header>
@@ -29,22 +32,22 @@
         <main class="main-content">
             <section class="stats-grid">
                 <div class="stat-card">
-                    <span class="stat-icon">🚖</span>
+                    <span class="stat-icon"><i class="fas fa-car"></i></span>
                     <h3>Fleet</h3>
                     <p id="vehicles-count">0</p>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">👥</span>
+                    <span class="stat-icon"><i class="fas fa-users"></i></span>
                     <h3>Drivers</h3>
                     <p id="drivers-count">0</p>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">💰</span>
+                    <span class="stat-icon"><i class="fas fa-money-bill-wave"></i></span>
                     <h3>Earnings</h3>
                     <p id="earnings-balance">R0.00</p>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-icon">🏦</span>
+                    <span class="stat-icon"><i class="fas fa-wallet"></i></span>
                     <h3>Wallet</h3>
                     <p id="current-balance">R0.00</p>
                 </div>
@@ -52,7 +55,7 @@
 
             <section class="management-section">
                 <h2>Driver Management</h2>
-                <button onclick="openModal('driver')">+ Add Driver</button>
+                <button class="btn btn-primary" onclick="openModal('driver')">+ Add Driver</button>
                 <table id="driver-table">
                     <thead>
                         <tr>
@@ -71,7 +74,7 @@
 
             <section class="management-section">
                 <h2>Vehicle Registration</h2>
-                <button onclick="openModal('vehicle')">+ Add Vehicle</button>
+                <button class="btn btn-primary" onclick="openModal('vehicle')">+ Add Vehicle</button>
                 <table id="vehicle-table">
                     <thead>
                         <tr>
@@ -85,28 +88,77 @@
                 </table>
             </section>
 
-            <section class="fleet-overview">
-                <h2>Fleet Overview</h2>
-                <div id="fleet-map" style="height: 300px;"></div> <!-- Map container -->
-            </section>
-
             <section class="financial-overview">
                 <h2>Financial Overview</h2>
-                <!-- Add more financial details if needed -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-icon"><i class="fas fa-credit-card"></i></span>
+                        <h3>Card Payments</h3>
+                        <p>R0.00</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"><i class="fas fa-money-bill"></i></span>
+                        <h3>Cash Payments</h3>
+                        <p>R0.00</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"><i class="fas fa-wallet"></i></span>
+                        <h3>Wallet Payments</h3>
+                        <p>R0.00</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"><i class="fas fa-money-check-alt"></i></span>
+                        <h3>Available for Withdrawal</h3>
+                        <p>R0.00</p>
+                    </div>
+                </div>
             </section>
         </main>
 
-        <!-- Modal for Add/Edit -->
+        <!-- Modals -->
         <div id="modal" class="modal-overlay">
             <div id="modal-content" class="app-modal"></div>
         </div>
 
+        <div id="map-modal" class="modal-overlay">
+            <div class="app-modal">
+                <div class="modal-header">
+                    <h3>Fleet Map</h3>
+                    <button class="modal-close" onclick="closeMapModal()">&times;</button>
+                </div>
+                <div id="map" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <div id="profile-modal" class="modal-overlay">
+            <div class="app-modal">
+                <div class="modal-header">
+                    <h3>Profile</h3>
+                    <button class="modal-close" onclick="closeModal('profile-modal')">&times;</button>
+                </div>
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="owner-name">Name</label>
+                        <input id="owner-name" class="form-input" placeholder="Owner Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="owner-email">Email</label>
+                        <input id="owner-email" class="form-input" type="email" placeholder="Email" readonly>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-cancel" onclick="closeModal('profile-modal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
-            <div class="nav-item active"><i>🏠</i><span>Home</span></div>
-            <div class="nav-item"><i>🗺️</i><span>Map</span></div>
-            <div class="nav-item"><i>💳</i><span>Wallet</span></div>
-            <div class="nav-item"><i>👤</i><span>Profile</span></div>
+            <div class="nav-item active" onclick="window.location.reload()"><i class="fas fa-home"></i><span>Home</span></div>
+            <div class="nav-item" onclick="openMapModal()"><i class="fas fa-map"></i><span>Map</span></div>
+            <div class="nav-item" onclick="openWalletModal()"><i class="fas fa-wallet"></i><span>Wallet</span></div>
+            <div class="nav-item" onclick="openProfileModal()"><i class="fas fa-user"></i><span>Profile</span></div>
         </nav>
     </div>
 
