@@ -1,3 +1,4 @@
+```javascript
 // TaxiDrive Owner Dashboard - Full Integration with Supabase + Live Map
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
@@ -25,6 +26,8 @@ async function initializeDashboard() {
       window.location.href = 'index.html';
       return;
     }
+
+    console.log('Authenticated user ID:', user.id); // Log user ID for debugging
 
     const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profileError || !profile || profile.role !== 'owner') {
@@ -117,7 +120,7 @@ async function loadVehicles() {
   if (!currentOwnerId) {
     console.warn('Cannot load vehicles: currentOwnerId is null');
     showNotification('Unable to load vehicles due to missing owner profile.', 'error');
-    renderMapMarkers([]); // Still render map with no vehicles
+    renderMapMarkers([]); // Render map with no vehicles
     return;
   }
 
