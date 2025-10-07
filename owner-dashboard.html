@@ -1,139 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaxiDrive Owner Dashboard</title>
-
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <!-- Fonts & Theme -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/style.css">
-  <link rel="stylesheet" href="./css/association-dashboard.css">
-  <link rel="icon" href="./assets/Logo1.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxiDrive Owner Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://js.supabase.com/v1"></script> <!-- Assuming correct Supabase CDN -->
 </head>
+<body>
+    <div class="dashboard-app">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img id="main-logo" src="path/to/logo.png" alt="TaxiDrive Logo"> <!-- Update path if needed -->
+                </div>
+                <div class="title-section">
+                    <h1>Owner Dashboard</h1>
+                    <span id="user-name">Loading...</span>
+                </div>
+                <div class="header-actions">
+                    <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button> <!-- Added logout button for completeness -->
+                </div>
+            </div>
+        </header>
 
-<body class="association-dashboard">
-<div class="dashboard-app">
+        <main class="main-content">
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-icon">🚖</span>
+                    <h3>Fleet</h3>
+                    <p id="vehicles-count">0</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">👥</span>
+                    <h3>Drivers</h3>
+                    <p id="drivers-count">0</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">💰</span>
+                    <h3>Earnings</h3>
+                    <p id="earnings-balance">R0.00</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🏦</span>
+                    <h3>Wallet</h3>
+                    <p id="current-balance">R0.00</p>
+                </div>
+            </section>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-content">
-      <div class="logo-section">
-        <img src="./assets/Logo1.png" alt="TaxiDrive" class="logo">
-        <h1 class="app-title">TaxiDrive Owner</h1>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn" id="profile-btn"><i class="fas fa-user"></i></button>
-        <button class="btn btn-primary logout-btn" id="logout-btn">Logout</button>
-      </div>
-    </div>
-  </header>
+            <section class="management-section">
+                <h2>Driver Management</h2>
+                <button onclick="openModal('driver')">+ Add Driver</button>
+                <table id="driver-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID Number</th>
+                            <th>License Type</th>
+                            <th>Expiry</th>
+                            <th>PrDP</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
 
-  <section class="welcome-section">
-    <p>Manage your fleet, drivers, and earnings with ease.</p>
-  </section>
+            <section class="management-section">
+                <h2>Vehicle Registration</h2>
+                <button onclick="openModal('vehicle')">+ Add Vehicle</button>
+                <table id="vehicle-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Reg No</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
 
-  <main class="main-content">
-    <div class="dashboard-container">
+            <section class="fleet-overview">
+                <h2>Fleet Overview</h2>
+                <div id="fleet-map" style="height: 300px;"></div> <!-- Map container -->
+            </section>
 
-      <!-- Stats -->
-      <section class="stats-section">
-        <h3 class="section-title">Overview</h3>
-        <div class="stats-grid">
-          <div class="stat-card"><i class="fas fa-car stat-icon"></i><h4 id="stat-vehicles">0</h4><p>Vehicles</p></div>
-          <div class="stat-card"><i class="fas fa-user-tie stat-icon"></i><h4 id="stat-drivers">0</h4><p>Drivers</p></div>
-          <div class="stat-card"><i class="fas fa-wallet stat-icon"></i><h4 id="stat-balance">R0.00</h4><p>Balance</p></div>
-          <div class="stat-card"><i class="fas fa-chart-line stat-icon"></i><h4 id="stat-earnings">R0.00</h4><p>Earnings</p></div>
+            <section class="financial-overview">
+                <h2>Financial Overview</h2>
+                <!-- Add more financial details if needed -->
+            </section>
+        </main>
+
+        <!-- Modal for Add/Edit -->
+        <div id="modal" class="modal-overlay">
+            <div id="modal-content" class="app-modal"></div>
         </div>
-      </section>
 
-      <!-- Map -->
-      <section>
-        <h3 class="section-title">Live Fleet Map</h3>
-        <div id="fleet-map" style="height:400px; border-radius:10px;"></div>
-      </section>
-
-      <!-- Quick Actions -->
-      <section class="quick-actions-section">
-        <h3 class="section-title">Quick Actions</h3>
-        <div class="quick-actions">
-          <button class="quick-action-btn btn btn-primary" id="add-driver-btn"><i class="fas fa-user-plus"></i><span>Add Driver</span></button>
-          <button class="quick-action-btn btn btn-primary" id="add-vehicle-btn"><i class="fas fa-car"></i><span>Add Vehicle</span></button>
-          <button class="quick-action-btn btn btn-secondary" id="withdraw-btn"><i class="fas fa-money-bill-wave"></i><span>Withdraw</span></button>
-          <button class="quick-action-btn btn btn-danger" id="earnings-btn"><i class="fas fa-file-invoice-dollar"></i><span>Earnings</span></button>
-        </div>
-      </section>
-
-      <!-- Drivers -->
-      <section class="recent-section">
-        <div class="section-header"><h3>Your Drivers</h3></div>
-        <div class="list-container" id="driver-list">
-          <div class="empty-state"><i class="fas fa-users"></i><h3>No Drivers Yet</h3></div>
-        </div>
-      </section>
-
-      <!-- Vehicles -->
-      <section class="recent-section">
-        <div class="section-header"><h3>Your Fleet</h3></div>
-        <div class="list-container" id="vehicle-list">
-          <div class="empty-state"><i class="fas fa-car-side"></i><h3>No Vehicles Yet</h3></div>
-        </div>
-      </section>
-
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-item active"><i>🏠</i><span>Home</span></div>
+            <div class="nav-item"><i>🗺️</i><span>Map</span></div>
+            <div class="nav-item"><i>💳</i><span>Wallet</span></div>
+            <div class="nav-item"><i>👤</i><span>Profile</span></div>
+        </nav>
     </div>
-  </main>
 
-  <!-- Bottom Nav -->
-  <nav class="bottom-nav">
-    <div class="nav-item active"><i class="fas fa-home"></i><span>Home</span></div>
-    <div class="nav-item"><i class="fas fa-map"></i><span>Map</span></div>
-    <div class="nav-item"><i class="fas fa-wallet"></i><span>Wallet</span></div>
-    <div class="nav-item"><i class="fas fa-user"></i><span>Profile</span></div>
-  </nav>
-</div>
-
-<!-- Modals -->
-<div id="driver-modal" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header"><h3 id="driver-modal-title">Add Driver</h3><button class="modal-close">&times;</button></div>
-    <div class="modal-body">
-      <form id="driver-form">
-        <input type="hidden" id="driver-id">
-        <div class="form-group"><label>Name</label><input id="driver-name" class="form-input" required></div>
-        <div class="form-group"><label>Surname</label><input id="driver-surname" class="form-input"></div>
-        <div class="form-group"><label>ID Number</label><input id="driver-idnum" class="form-input"></div>
-        <div class="form-group"><label>License Type</label><input id="driver-license" class="form-input"></div>
-        <div class="form-group"><label>License Expiry</label><input type="date" id="driver-license-exp" class="form-input"></div>
-        <div class="form-group"><label>PrDP</label><select id="driver-prdp" class="form-input"><option value="true">Yes</option><option value="false">No</option></select></div>
-        <div class="form-group"><label>PrDP Expiry</label><input type="date" id="driver-prdp-exp" class="form-input"></div>
-        <div class="form-actions"><button type="button" class="btn btn-secondary modal-close">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div id="vehicle-modal" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header"><h3 id="vehicle-modal-title">Add Vehicle</h3><button class="modal-close">&times;</button></div>
-    <div class="modal-body">
-      <form id="vehicle-form">
-        <input type="hidden" id="vehicle-id">
-        <div class="form-group"><label>Model</label><input id="vehicle-model" class="form-input" required></div>
-        <div class="form-group"><label>Registration No</label><input id="vehicle-reg" class="form-input" required></div>
-        <div class="form-group"><label>Status</label><select id="vehicle-status" class="form-input"><option>Active</option><option>Inactive</option><option>Maintenance</option></select></div>
-        <div class="form-actions"><button type="button" class="btn btn-secondary modal-close">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./js/owner-dashboard.js"></script>
+    <script src="owner-dashboard.js"></script>
 </body>
 </html>
