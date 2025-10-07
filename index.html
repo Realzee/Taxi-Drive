@@ -9,7 +9,7 @@
   <title>TaxiDrive - Login</title>
 
   <link rel="icon" href="./assets/favicon.ico">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       margin: 0;
@@ -65,15 +65,23 @@
     }
     .btn:hover { background: #e9e9e9; transform: translateY(-1px); }
     .divider {
-      display: flex; align-items: center; justify-content: center; margin: 1.5rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1.5rem 0;
     }
     .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2); margin: 0 0.5rem;
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 0.5rem;
     }
     .text-sm { font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); }
     .text-link { color: #fff; text-decoration: underline; cursor: pointer; }
     .text-link:hover { color: #aee; }
     .error-message { color: #ff8c8c; font-size: 0.85rem; margin-bottom: 0.8rem; }
+    .association-field { display: none; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -90,9 +98,9 @@
     <!-- LOGIN FORM -->
     <div id="login-section">
       <form id="login-form">
-        <input id="login-email" type="email" placeholder="Email" class="form-input">
-        <input id="login-password" type="password" placeholder="Password" class="form-input">
-        <select id="login-role" class="form-input">
+        <input id="login-email" type="email" placeholder="Email" class="form-input" required>
+        <input id="login-password" type="password" placeholder="Password" class="form-input" required>
+        <select id="login-role" class="form-input" required>
           <option value="" disabled selected>Select Role</option>
           <option value="passenger">Passenger</option>
           <option value="driver">Driver</option>
@@ -118,15 +126,19 @@
     <!-- SIGN-UP FORM -->
     <div id="signup-section" class="hidden">
       <form id="signup-form">
-        <input id="signup-email" type="email" placeholder="Email" class="form-input">
-        <input id="signup-password" type="password" placeholder="Password" class="form-input">
-        <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input">
-        <select id="signup-role" class="form-input">
+        <input id="signup-name" type="text" placeholder="Full Name" class="form-input" required>
+        <input id="signup-email" type="email" placeholder="Email" class="form-input" required>
+        <input id="signup-password" type="password" placeholder="Password" class="form-input" required>
+        <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input" required>
+        <select id="signup-role" class="form-input" required>
           <option value="" disabled selected>Select Role</option>
           <option value="passenger">Passenger</option>
           <option value="driver">Driver</option>
           <option value="owner">Owner</option>
           <option value="association">Association</option>
+        </select>
+        <select id="signup-association" class="form-input association-field">
+          <option value="" disabled selected>Select Association</option>
         </select>
         <div id="signup-error-message" class="error-message"></div>
         <button type="submit" id="signup-btn" class="btn">Sign Up</button>
@@ -153,8 +165,43 @@
       document.getElementById('login-section').classList.toggle('hidden', !showLogin);
       document.getElementById('signup-section').classList.toggle('hidden', showLogin);
     };
+
     document.getElementById('show-signup').addEventListener('click', () => toggleForms(false));
     document.getElementById('show-login').addEventListener('click', () => toggleForms(true));
+
+    // Dynamically show/hide association field based on role
+    const roleSelect = document.getElementById('signup-role');
+    const associationField = document.getElementById('signup-association');
+    roleSelect.addEventListener('change', async () => {
+      if (roleSelect.value === 'owner') {
+        associationField.classList.remove('hidden');
+        await populateAssociations();
+      } else {
+        associationField.classList.add('hidden');
+      }
+    });
+
+    // Populate associations dropdown
+    async function populateAssociations() {
+      try {
+        const { data: associations, error } = await supabase.from('associations').select('id, name');
+        if (error) throw error;
+        associationField.innerHTML = '<option value="" disabled selected>Select Association</option>';
+        if (associations?.length) {
+          associations.forEach(assoc => {
+            const option = document.createElement('option');
+            option.value = assoc.id;
+            option.textContent = assoc.name || `Association ${assoc.id}`;
+            associationField.appendChild(option);
+          });
+        } else {
+          associationField.innerHTML = '<option value="" disabled>No associations available</option>';
+        }
+      } catch (error) {
+        console.error('Error fetching associations:', error);
+        showError('signup-error-message', 'Failed to load associations.');
+      }
+    }
 
     async function handleGoogleLogin() {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -187,41 +234,59 @@
       redirectToDashboard(profile.role);
     }
 
-    async function handleSignUp(email, password, confirm, role) {
-  if (!email || !password || !confirm || !role)
-    return showError('signup-error-message', 'Please fill in all fields.');
-  if (password !== confirm)
-    return showError('signup-error-message', 'Passwords do not match.');
+    async function handleSignUp(name, email, password, confirm, role, associationId) {
+      if (!name || !email || !password || !confirm || !role)
+        return showError('signup-error-message', 'Please fill in all fields.');
+      if (password !== confirm)
+        return showError('signup-error-message', 'Passwords do not match.');
+      if (role === 'owner' && !associationId)
+        return showError('signup-error-message', 'Please select an association.');
 
-  const { data, error } = await supabase.auth.signUp({
-    email, password, options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
-  });
-  if (error) return showError('signup-error-message', error.message);
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin + '/Taxi-Drive/',
+            data: { name }
+          }
+        });
+        if (error) throw error;
 
-  // Wait until user session is fully available
-  let userId = data.user?.id;
-  if (!userId) {
-    const { data: userData } = await supabase.auth.getUser();
-    userId = userData?.user?.id;
-  }
+        let userId = data.user?.id;
+        if (!userId) {
+          const { data: userData } = await supabase.auth.getUser();
+          userId = userData?.user?.id;
+        }
 
-  if (!userId)
-    return showError('signup-error-message', 'Could not verify user ID. Try again.');
+        if (!userId)
+          throw new Error('Could not verify user ID.');
 
-  // Create or update profile with correct role
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .upsert([{ id: userId, email, role }], { onConflict: 'id' });
+        // Create or update profile with correct role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert([{ id: userId, email, role }], { onConflict: 'id' });
+        if (profileError) throw profileError;
 
-  if (profileError)
-    return showError('signup-error-message', 'Failed to save profile role.');
+        // Create owner record if role is owner
+        if (role === 'owner') {
+          const ownerId = crypto.randomUUID(); // Generate UUID for owner id
+          const { error: ownerError } = await supabase
+            .from('owners')
+            .insert([{ id: ownerId, admin_id: userId, association_id: associationId }]);
+          if (ownerError) throw ownerError;
+        }
 
-  // Sign in immediately to activate credentials
-  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-  if (loginError) return showError('signup-error-message', 'Login failed after signup.');
+        // Sign in immediately to activate credentials
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) throw loginError;
 
-  redirectToDashboard(role);
-}
+        redirectToDashboard(role);
+      } catch (error) {
+        console.error('Signup error:', error);
+        showError('signup-error-message', error.message || 'Failed to sign up.');
+      }
+    }
 
     function redirectToDashboard(role) {
       const map = {
@@ -245,13 +310,14 @@
     document.getElementById('signup-form').addEventListener('submit', e => {
       e.preventDefault();
       handleSignUp(
+        document.getElementById('signup-name').value,
         document.getElementById('signup-email').value,
         document.getElementById('signup-password').value,
         document.getElementById('signup-confirm-password').value,
-        document.getElementById('signup-role').value
+        document.getElementById('signup-role').value,
+        document.getElementById('signup-association').value
       );
     });
   </script>
 </body>
 </html>
-
