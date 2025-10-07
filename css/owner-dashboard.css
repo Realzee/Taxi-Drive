@@ -1,4 +1,6 @@
-/* TaxiDrive Owner Dashboard - Modern, Clean, Professional Styles */
+/* TaxiDrive Owner Dashboard - Modern, Clean, Professional Styles with Roboto Font */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
 
 :root {
     --dark-blue: #1A2A44;
@@ -25,7 +27,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif; /* Switched to Inter for a cleaner, modern look */
+    font-family: 'Roboto', sans-serif; /* Updated to Roboto for a professional look */
 }
 
 body.owner-dashboard {
@@ -82,7 +84,7 @@ body.owner-dashboard {
 }
 
 #main-logo {
-    height: 60px; /* Reduced size for better proportion */
+    height: 60px;
     width: auto;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
@@ -145,7 +147,7 @@ body.owner-dashboard {
 }
 
 .main-content {
-    margin-top: 110px; /* Adjusted for smaller header */
+    margin-top: 110px;
     padding: 1.5rem;
 }
 
@@ -209,7 +211,7 @@ table {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: var(--glass-shadow);
-    table-layout: fixed; /* Ensures consistent column widths */
+    table-layout: fixed;
 }
 
 th, td {
@@ -218,7 +220,7 @@ th, td {
     font-size: var(--text-sm);
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap; /* Prevents text wrapping */
+    white-space: nowrap;
 }
 
 th {
@@ -255,7 +257,7 @@ tr:hover {
     padding: 0.75rem 1rem;
     border: none;
     border-radius: 6px;
- администраторcursor: pointer;
+    cursor: pointer;
     font-size: var(--text-sm);
     font-weight: 600;
     transition: all 0.3s ease;
