@@ -21,13 +21,15 @@ async function initializeDashboard() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.log('No authenticated user, redirecting to login. Error:', authError?.message || 'No user found');
+      showNotification('No authenticated user. Redirecting to login.', 'error');
       window.location.href = 'index.html';
       return;
     }
 
     const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profileError || !profile || profile.role !== 'owner') {
-      console.log(`Role mismatch or error. Expected: owner, Got: ${profile?.role}`);
+      console.log(`Role mismatch or error. Expected: owner, Got: ${profile?.role || 'none'}, Error: ${profileError?.message}`);
+      showNotification('Access denied. You are not an owner.', 'error');
       window.location.href = 'index.html';
       return;
     }
@@ -43,14 +45,18 @@ async function initializeDashboard() {
     const { data: owner, error: ownerError } = await supabase.from('owners').select('*').eq('admin_id', user.id).maybeSingle();
     if (ownerError) {
       console.error('Error fetching owner:', ownerError);
-      showNotification('Failed to load owner data.', 'error');
+      showNotification('Failed to load owner data. Please contact support.', 'error');
       return;
     }
-    if (owner) {
-      currentOwner = owner;
-      currentOwnerId = owner.id;
-      currentAssociationId = owner.association_id;
+    if (!owner) {
+      console.error('No owner record found for user:', user.id);
+      showNotification('No owner profile found. Please set up your owner account.', 'error');
+      return;
     }
+
+    currentOwner = owner;
+    currentOwnerId = owner.id;
+    currentAssociationId = owner.association_id;
 
     await loadDrivers();
     await loadVehicles();
@@ -61,12 +67,18 @@ async function initializeDashboard() {
     showNotification('Dashboard loaded successfully!', 'success');
   } catch (error) {
     console.error('Error initializing dashboard:', error);
-    showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
+    showNotification('Failed to initialize dashboard. Please try refreshing or contact support.', 'error');
   }
 }
 
 // === LOADERS ===
 async function loadDrivers() {
+  if (!currentOwnerId) {
+    console.warn('Cannot load drivers: currentOwnerId is null');
+    showNotification('Unable to load drivers due to missing owner profile.', 'error');
+    return;
+  }
+
   try {
     const { data: drivers, error } = await supabase.from('drivers').select('*').eq('owner_id', currentOwnerId);
     if (error) throw error;
@@ -97,11 +109,18 @@ async function loadDrivers() {
     });
   } catch (error) {
     console.error('Error loading drivers:', error);
-    showNotification('Failed to load drivers.', 'error');
+    showNotification('Failed to load drivers. Please try again.', 'error');
   }
 }
 
 async function loadVehicles() {
+  if (!currentOwnerId) {
+    console.warn('Cannot load vehicles: currentOwnerId is null');
+    showNotification('Unable to load vehicles due to missing owner profile.', 'error');
+    renderMapMarkers([]); // Still render map with no vehicles
+    return;
+  }
+
   try {
     const { data: vehicles, error } = await supabase.from('vehicles').select('*').eq('owner_id', currentOwnerId);
     if (error) throw error;
@@ -132,11 +151,18 @@ async function loadVehicles() {
     renderMapMarkers(vehicles);
   } catch (error) {
     console.error('Error loading vehicles:', error);
-    showNotification('Failed to load vehicles.', 'error');
+    showNotification('Failed to load vehicles. Please try again.', 'error');
+    renderMapMarkers([]); // Render map even if vehicle load fails
   }
 }
 
 async function loadFinancials() {
+  if (!currentOwnerId) {
+    console.warn('Cannot load financials: currentOwnerId is null');
+    showNotification('Unable to load financial data due to missing owner profile.', 'error');
+    return;
+  }
+
   try {
     const { data: txns, error } = await supabase.from('transactions').select('*').eq('owner_id', currentOwnerId);
     if (error) throw error;
@@ -147,12 +173,17 @@ async function loadFinancials() {
     document.getElementById('current-balance').textContent = `R${net.toFixed(2)}`;
   } catch (error) {
     console.error('Error loading financials:', error);
-    showNotification('Failed to load financial data.', 'error');
+    showNotification('Failed to load financial data. Please try again.', 'error');
   }
 }
 
 // === MODALS ===
 function openModal(type) {
+  if (!currentOwnerId) {
+    showNotification('Cannot add data: Owner profile not loaded.', 'error');
+    return;
+  }
+
   const modal = document.getElementById('modal');
   const content = document.getElementById('modal-content');
   modal.style.display = 'flex';
@@ -259,6 +290,11 @@ function closeMapModal() {
 // === SAVE ===
 async function saveDriver(e) {
   e.preventDefault();
+  if (!currentOwnerId) {
+    showNotification('Cannot save driver: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const driver = {
       owner_id: currentOwnerId,
@@ -278,12 +314,17 @@ async function saveDriver(e) {
     loadDrivers();
   } catch (error) {
     console.error('Error saving driver:', error);
-    showNotification('Failed to save driver.', 'error');
+    showNotification('Failed to save driver. Please try again.', 'error');
   }
 }
 
 async function saveVehicle(e) {
   e.preventDefault();
+  if (!currentOwnerId) {
+    showNotification('Cannot save vehicle: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const vehicle = {
       owner_id: currentOwnerId,
@@ -299,12 +340,17 @@ async function saveVehicle(e) {
     loadVehicles();
   } catch (error) {
     console.error('Error saving vehicle:', error);
-    showNotification('Failed to save vehicle.', 'error');
+    showNotification('Failed to save vehicle. Please try again.', 'error');
   }
 }
 
 // === DELETE ===
 async function deleteDriver(id) {
+  if (!currentOwnerId) {
+    showNotification('Cannot delete driver: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const { error } = await supabase.from('drivers').delete().eq('id', id);
     if (error) throw error;
@@ -312,11 +358,16 @@ async function deleteDriver(id) {
     loadDrivers();
   } catch (error) {
     console.error('Error deleting driver:', error);
-    showNotification('Failed to delete driver.', 'error');
+    showNotification('Failed to delete driver. Please try again.', 'error');
   }
 }
 
 async function deleteVehicle(id) {
+  if (!currentOwnerId) {
+    showNotification('Cannot delete vehicle: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
     if (error) throw error;
@@ -324,12 +375,17 @@ async function deleteVehicle(id) {
     loadVehicles();
   } catch (error) {
     console.error('Error deleting vehicle:', error);
-    showNotification('Failed to delete vehicle.', 'error');
+    showNotification('Failed to delete vehicle. Please try again.', 'error');
   }
 }
 
 // === EDIT ===
 async function editDriver(id) {
+  if (!currentOwnerId) {
+    showNotification('Cannot edit driver: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const { data: driver, error } = await supabase.from('drivers').select('*').eq('id', id).single();
     if (error) throw error;
@@ -363,16 +419,21 @@ async function editDriver(id) {
         loadDrivers();
       } catch (error) {
         console.error('Error updating driver:', error);
-        showNotification('Failed to update driver.', 'error');
+        showNotification('Failed to update driver. Please try again.', 'error');
       }
     };
   } catch (error) {
     console.error('Error fetching driver:', error);
-    showNotification('Failed to load driver data.', 'error');
+    showNotification('Failed to load driver data. Please try again.', 'error');
   }
 }
 
 async function editVehicle(id) {
+  if (!currentOwnerId) {
+    showNotification('Cannot edit vehicle: Owner profile not loaded.', 'error');
+    return;
+  }
+
   try {
     const { data: vehicle, error } = await supabase.from('vehicles').select('*').eq('id', id).single();
     if (error) throw error;
@@ -400,12 +461,12 @@ async function editVehicle(id) {
         loadVehicles();
       } catch (error) {
         console.error('Error updating vehicle:', error);
-        showNotification('Failed to update vehicle.', 'error');
+        showNotification('Failed to update vehicle. Please try again.', 'error');
       }
     };
   } catch (error) {
     console.error('Error fetching vehicle:', error);
-    showNotification('Failed to load vehicle data.', 'error');
+    showNotification('Failed to load vehicle data. Please try again.', 'error');
   }
 }
 
@@ -421,7 +482,7 @@ function initMap(lat = -28.214, lng = 32.043) {
   // Ensure map container is properly sized
   mapContainer.style.width = '100%';
   mapContainer.style.height = '400px';
-  mapContainer.style.display = 'block'; // Ensure visibility
+  mapContainer.style.display = 'block';
 
   try {
     // Check if Leaflet is loaded
@@ -450,11 +511,11 @@ function initMap(lat = -28.214, lng = 32.043) {
 
     // Force map to re-render
     setTimeout(() => {
-      map.invalidateSize();
+      if (map) map.invalidateSize();
     }, 100);
   } catch (error) {
     console.error('Error initializing map:', error);
-    showNotification('Failed to initialize map. Please ensure Leaflet is loaded.', 'error');
+    showNotification('Failed to initialize map. Please ensure Leaflet is loaded and try again.', 'error');
   }
 }
 
@@ -487,7 +548,10 @@ function renderMapMarkers(vehicles) {
 }
 
 function updateMapMarkers(vehicles) {
-  if (!map) return; // Exit if map is still not initialized
+  if (!map) {
+    console.error('Map not initialized in updateMapMarkers');
+    return;
+  }
 
   // Clear existing markers
   Object.values(fleetMarkers).forEach(m => map.removeLayer(m));
@@ -558,7 +622,8 @@ function openMapModal() {
       }
     }, 200);
   } else {
-    showNotification('Map not initialized. Please try again.', 'error');
+    showNotification('Map not initialized. Trying to reinitialize.', 'error');
+    initMap(); // Attempt to reinitialize map
   }
   // Trigger vehicle load to ensure map updates with latest data
   loadVehicles();
@@ -566,6 +631,11 @@ function openMapModal() {
 
 // === REALTIME UPDATES ===
 function listenRealtime() {
+  if (!currentOwnerId) {
+    console.warn('Cannot set up realtime updates: currentOwnerId is null');
+    return;
+  }
+
   try {
     supabase.channel('realtime-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' },
@@ -581,6 +651,11 @@ function listenRealtime() {
 
 // === PROFILE ===
 function openProfileModal() {
+  if (!currentUser) {
+    showNotification('Cannot open profile: User not authenticated.', 'error');
+    return;
+  }
+
   showModal('profile-modal');
   const form = document.getElementById('profile-form');
   document.getElementById('owner-name').value = currentUser?.user_metadata?.name || currentUser.email.split('@')[0];
@@ -602,13 +677,18 @@ function openProfileModal() {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      showNotification('Failed to update profile.', 'error');
+      showNotification('Failed to update profile. Please try again.', 'error');
     }
   };
 }
 
 // === WALLET ===
 function openWalletModal() {
+  if (!currentOwnerId) {
+    showNotification('Cannot open wallet: Owner profile not loaded.', 'error');
+    return;
+  }
+
   showModal('modal');
   const content = document.getElementById('modal-content');
   content.innerHTML = `
