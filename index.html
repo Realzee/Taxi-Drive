@@ -9,7 +9,7 @@
   <title>TaxiDrive - Login</title>
 
   <link rel="icon" href="./assets/favicon.ico">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
       margin: 0;
@@ -39,7 +39,7 @@
     .logo { width: 120px; margin-bottom: 1.5rem; }
     h1 { font-size: 1.8rem; font-weight: 600; margin: 0.5rem 0; }
     p.subtitle { font-size: 0.95rem; color: #ddd; margin-bottom: 2rem; }
-    .form-input {
+    .form-input, select.form-input {
       width: 100%;
       padding: 0.9rem;
       border-radius: 12px;
@@ -51,6 +51,21 @@
       font-size: 0.95rem;
     }
     .form-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+    select.form-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23fff' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1rem;
+    }
+    select.form-input option {
+      background: #052438;
+      color: #fff;
+    }
+    select.form-input:focus {
+      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid #fff;
+    }
     .btn {
       width: 100%;
       padding: 0.9rem;
@@ -64,6 +79,15 @@
       transition: all 0.3s ease;
     }
     .btn:hover { background: #e9e9e9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #fff;
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
     .divider {
       display: flex;
       align-items: center;
@@ -81,7 +105,8 @@
     .text-link { color: #fff; text-decoration: underline; cursor: pointer; }
     .text-link:hover { color: #aee; }
     .error-message { color: #ff8c8c; font-size: 0.85rem; margin-bottom: 0.8rem; }
-    .association-field { display: none; }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { font-size: 0.9rem; margin-bottom: 0.3rem; display: block; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -98,15 +123,24 @@
     <!-- LOGIN FORM -->
     <div id="login-section">
       <form id="login-form">
-        <input id="login-email" type="email" placeholder="Email" class="form-input" required>
-        <input id="login-password" type="password" placeholder="Password" class="form-input" required>
-        <select id="login-role" class="form-input" required>
-          <option value="" disabled selected>Select Role</option>
-          <option value="passenger">Passenger</option>
-          <option value="driver">Driver</option>
-          <option value="owner">Owner</option>
-          <option value="association">Association</option>
-        </select>
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="Email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="Password" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-role">Role</label>
+          <select id="login-role" class="form-input" required>
+            <option value="" disabled selected>Select Role</option>
+            <option value="passenger">Passenger</option>
+            <option value="driver">Driver</option>
+            <option value="owner">Owner</option>
+            <option value="association">Association</option>
+          </select>
+        </div>
         <div id="login-error-message" class="error-message"></div>
         <button type="submit" id="login-btn" class="btn">Login</button>
       </form>
@@ -123,13 +157,10 @@
       </p>
     </div>
 
-    <!-- SIGN-UP FORM -->
-    <div id="signup-section" class="hidden">
-      <form id="signup-form">
-        <input id="signup-name" type="text" placeholder="Full Name" class="form-input" required>
-        <input id="signup-email" type="email" placeholder="Email" class="form-input" required>
-        <input id="signup-password" type="password" placeholder="Password" class="form-input" required>
-        <input id="signup-confirm-password" type="password" placeholder="Confirm Password" class="form-input" required>
+    <!-- ROLE SELECTION FOR SIGNUP -->
+    <div id="role-section" class="hidden">
+      <div class="form-group">
+        <label class="form-label" for="signup-role">Select Your Role</label>
         <select id="signup-role" class="form-input" required>
           <option value="" disabled selected>Select Role</option>
           <option value="passenger">Passenger</option>
@@ -137,15 +168,162 @@
           <option value="owner">Owner</option>
           <option value="association">Association</option>
         </select>
-        <select id="signup-association" class="form-input association-field">
-          <option value="" disabled selected>Select Association</option>
-        </select>
-        <div id="signup-error-message" class="error-message"></div>
-        <button type="submit" id="signup-btn" class="btn">Sign Up</button>
-      </form>
-
+      </div>
+      <div id="role-error-message" class="error-message"></div>
+      <button id="role-next-btn" class="btn">Next</button>
       <p class="text-sm mt-4">Already have an account?
-        <span id="show-login" class="text-link">Login</span>
+        <span id="show-login-from-role" class="text-link">Login</span>
+      </p>
+    </div>
+
+    <!-- PASSENGER SIGNUP FORM -->
+    <div id="signup-passenger-section" class="hidden">
+      <form id="signup-passenger-form">
+        <div class="form-group">
+          <label class="form-label" for="passenger-email">Email</label>
+          <input id="passenger-email" type="email" placeholder="Email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="passenger-name">Full Name</label>
+          <input id="passenger-name" type="text" placeholder="Full Name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="passenger-password">Password</label>
+          <input id="passenger-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="passenger-confirm-password">Confirm Password</label>
+          <input id="passenger-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+        </div>
+        <div id="passenger-error-message" class="error-message"></div>
+        <div style="display: flex; gap: 1rem;">
+          <button type="button" id="passenger-back-btn" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn">Sign Up</button>
+        </div>
+      </form>
+      <p class="text-sm mt-4">Already have an account?
+        <span id="show-login-from-passenger" class="text-link">Login</span>
+      </p>
+    </div>
+
+    <!-- DRIVER SIGNUP FORM -->
+    <div id="signup-driver-section" class="hidden">
+      <form id="signup-driver-form">
+        <div class="form-group">
+          <label class="form-label" for="driver-email">Email</label>
+          <input id="driver-email" type="email" placeholder="Email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-name">First Name</label>
+          <input id="driver-name" type="text" placeholder="First Name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-surname">Surname</label>
+          <input id="driver-surname" type="text" placeholder="Surname" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-id-number">ID Number</label>
+          <input id="driver-id-number" type="text" placeholder="ID Number" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-license-type">License Type</label>
+          <input id="driver-license-type" type="text" placeholder="License Type (e.g., Code B)" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-license-expiry">License Expiry</label>
+          <input id="driver-license-expiry" type="date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-prdp">PrDP</label>
+          <select id="driver-prdp" class="form-input">
+            <option value="true">Yes</option>
+            <option value="false" selected>No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-association-id">Association ID (Optional)</label>
+          <input id="driver-association-id" type="text" placeholder="Association UUID (if known)" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-password">Password</label>
+          <input id="driver-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-confirm-password">Confirm Password</label>
+          <input id="driver-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+        </div>
+        <div id="driver-error-message" class="error-message"></div>
+        <div style="display: flex; gap: 1rem;">
+          <button type="button" id="driver-back-btn" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn">Sign Up</button>
+        </div>
+      </form>
+      <p class="text-sm mt-4">Already have an account?
+        <span id="show-login-from-driver" class="text-link">Login</span>
+      </p>
+    </div>
+
+    <!-- OWNER SIGNUP FORM -->
+    <div id="signup-owner-section" class="hidden">
+      <form id="signup-owner-form">
+        <div class="form-group">
+          <label class="form-label" for="owner-email">Email</label>
+          <input id="owner-email" type="email" placeholder="Email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="owner-name">Full Name</label>
+          <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="owner-association-id">Association ID</label>
+          <input id="owner-association-id" type="text" placeholder="Association UUID" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="owner-password">Password</label>
+          <input id="owner-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="owner-confirm-password">Confirm Password</label>
+          <input id="owner-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+        </div>
+        <div id="owner-error-message" class="error-message"></div>
+        <div style="display: flex; gap: 1rem;">
+          <button type="button" id="owner-back-btn" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn">Sign Up</button>
+        </div>
+      </form>
+      <p class="text-sm mt-4">Already have an account?
+        <span id="show-login-from-owner" class="text-link">Login</span>
+      </p>
+    </div>
+
+    <!-- ASSOCIATION SIGNUP FORM -->
+    <div id="signup-association-section" class="hidden">
+      <form id="signup-association-form">
+        <div class="form-group">
+          <label class="form-label" for="association-email">Email</label>
+          <input id="association-email" type="email" placeholder="Email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-name">Association Name</label>
+          <input id="association-name" type="text" placeholder="Association Name" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-password">Password</label>
+          <input id="association-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-confirm-password">Confirm Password</label>
+          <input id="association-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+        </div>
+        <div id="association-error-message" class="error-message"></div>
+        <div style="display: flex; gap: 1rem;">
+          <button type="button" id="association-back-btn" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn">Sign Up</button>
+        </div>
+      </form>
+      <p class="text-sm mt-4">Already have an account?
+        <span id="show-login-from-association" class="text-link">Login</span>
       </p>
     </div>
   </div>
@@ -155,69 +333,73 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Utility to generate UUID (since tables don't auto-generate IDs)
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    // Show error message
     const showError = (id, msg) => {
       const e = document.getElementById(id);
       e.textContent = msg;
       setTimeout(() => e.textContent = '', 5000);
     };
 
-    const toggleForms = (showLogin) => {
-      document.getElementById('login-section').classList.toggle('hidden', !showLogin);
-      document.getElementById('signup-section').classList.toggle('hidden', showLogin);
+    // Toggle between sections
+    const toggleSections = (sectionToShow) => {
+      const sections = ['login-section', 'role-section', 'signup-passenger-section', 'signup-driver-section', 'signup-owner-section', 'signup-association-section'];
+      sections.forEach(section => {
+        document.getElementById(section).classList.toggle('hidden', section !== sectionToShow);
+      });
     };
 
-    document.getElementById('show-signup').addEventListener('click', () => toggleForms(false));
-    document.getElementById('show-login').addEventListener('click', () => toggleForms(true));
+    // Event listeners for navigation
+    document.getElementById('show-signup').addEventListener('click', () => toggleSections('role-section'));
+    document.getElementById('show-login-from-role').addEventListener('click', () => toggleSections('login-section'));
+    document.getElementById('show-login-from-passenger').addEventListener('click', () => toggleSections('login-section'));
+    document.getElementById('show-login-from-driver').addEventListener('click', () => toggleSections('login-section'));
+    document.getElementById('show-login-from-owner').addEventListener('click', () => toggleSections('login-section'));
+    document.getElementById('show-login-from-association').addEventListener('click', () => toggleSections('login-section'));
+    document.getElementById('passenger-back-btn').addEventListener('click', () => toggleSections('role-section'));
+    document.getElementById('driver-back-btn').addEventListener('click', () => toggleSections('role-section'));
+    document.getElementById('owner-back-btn').addEventListener('click', () => toggleSections('role-section'));
+    document.getElementById('association-back-btn').addEventListener('click', () => toggleSections('role-section'));
 
-    // Dynamically show/hide association field based on role
-    const roleSelect = document.getElementById('signup-role');
-    const associationField = document.getElementById('signup-association');
-    roleSelect.addEventListener('change', async () => {
-      if (roleSelect.value === 'owner') {
-        associationField.classList.remove('hidden');
-        await populateAssociations();
-      } else {
-        associationField.classList.add('hidden');
+    // Role selection
+    document.getElementById('role-next-btn').addEventListener('click', () => {
+      const role = document.getElementById('signup-role').value;
+      if (!role) {
+        showError('role-error-message', 'Please select a role.');
+        return;
       }
+      toggleSections(`signup-${role}-section`);
     });
 
-    // Populate associations dropdown
-    async function populateAssociations() {
-      try {
-        const { data: associations, error } = await supabase.from('associations').select('id, name');
-        if (error) throw error;
-        associationField.innerHTML = '<option value="" disabled selected>Select Association</option>';
-        if (associations?.length) {
-          associations.forEach(assoc => {
-            const option = document.createElement('option');
-            option.value = assoc.id;
-            option.textContent = assoc.name || `Association ${assoc.id}`;
-            associationField.appendChild(option);
-          });
-        } else {
-          associationField.innerHTML = '<option value="" disabled>No associations available</option>';
-        }
-      } catch (error) {
-        console.error('Error fetching associations:', error);
-        showError('signup-error-message', 'Failed to load associations.');
-      }
-    }
-
+    // Google login
     async function handleGoogleLogin() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + '/Taxi-Drive/' }
       });
-      if (error) showError('login-error-message', 'Google login failed.');
+      if (error) showError('login-error-message', 'Google login failed: ' + error.message);
     }
     document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
 
+    // Email login
     async function handleEmailLogin(email, password, role) {
-      if (!email || !password || !role)
-        return showError('login-error-message', 'Please fill in all fields.');
+      if (!email || !password || !role) {
+        showError('login-error-message', 'Please fill in all fields.');
+        return;
+      }
 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return showError('login-error-message', error.message);
+      if (error) {
+        showError('login-error-message', error.message);
+        return;
+      }
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -225,67 +407,119 @@
         .eq('id', data.user.id)
         .single();
 
-      if (profileError || !profile)
-        return showError('login-error-message', 'Profile not found. Try signing up again.');
+      if (profileError || !profile) {
+        showError('login-error-message', 'Profile not found. Try signing up again.');
+        return;
+      }
 
-      if (profile.role !== role)
-        return showError('login-error-message', `Invalid role. You are registered as ${profile.role}.`);
+      if (profile.role !== role) {
+        showError('login-error-message', `Invalid role. You are registered as ${profile.role}.`);
+        return;
+      }
 
       redirectToDashboard(profile.role);
     }
 
-    async function handleSignUp(name, email, password, confirm, role, associationId) {
-      if (!name || !email || !password || !confirm || !role)
-        return showError('signup-error-message', 'Please fill in all fields.');
-      if (password !== confirm)
-        return showError('signup-error-message', 'Passwords do not match.');
-      if (role === 'owner' && !associationId)
-        return showError('signup-error-message', 'Please select an association.');
+    // Onboarding logic for signup
+    async function handleSignUp(role, formData) {
+      const { email, password, confirmPassword, ...additionalData } = formData;
 
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin + '/Taxi-Drive/',
-            data: { name }
-          }
-        });
-        if (error) throw error;
-
-        let userId = data.user?.id;
-        if (!userId) {
-          const { data: userData } = await supabase.auth.getUser();
-          userId = userData?.user?.id;
-        }
-
-        if (!userId)
-          throw new Error('Could not verify user ID.');
-
-        // Create or update profile with correct role
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert([{ id: userId, email, role }], { onConflict: 'id' });
-        if (profileError) throw profileError;
-
-        // Create owner record if role is owner
-        if (role === 'owner') {
-          const ownerId = crypto.randomUUID(); // Generate UUID for owner id
-          const { error: ownerError } = await supabase
-            .from('owners')
-            .insert([{ id: ownerId, admin_id: userId, association_id: associationId }]);
-          if (ownerError) throw ownerError;
-        }
-
-        // Sign in immediately to activate credentials
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-        if (loginError) throw loginError;
-
-        redirectToDashboard(role);
-      } catch (error) {
-        console.error('Signup error:', error);
-        showError('signup-error-message', error.message || 'Failed to sign up.');
+      if (!email || !password || !confirmPassword || !role) {
+        showError(`${role}-error-message`, 'Please fill in all required fields.');
+        return;
       }
+      if (password !== confirmPassword) {
+        showError(`${role}-error-message`, 'Passwords do not match.');
+        return;
+      }
+
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
+      });
+      if (error) {
+        showError(`${role}-error-message`, error.message);
+        return;
+      }
+
+      let userId = data.user?.id;
+      if (!userId) {
+        const { data: userData } = await supabase.auth.getUser();
+        userId = userData?.user?.id;
+      }
+
+      if (!userId) {
+        showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+        return;
+      }
+
+      // Create profile
+      const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+      const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+      if (profileError) {
+        showError(`${role}-error-message`, 'Failed to save profile: ' + profileError.message);
+        return;
+      }
+
+      // Role-specific onboarding
+      try {
+        if (role === 'owner') {
+          if (!additionalData.associationId) {
+            showError('owner-error-message', 'Association ID is required.');
+            return;
+          }
+          const ownerId = generateUUID();
+          const { error: ownerError } = await supabase.from('owners').insert([
+            { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
+          ]);
+          if (ownerError) {
+            showError('owner-error-message', 'Failed to create owner profile: ' + ownerError.message);
+            return;
+          }
+        } else if (role === 'association') {
+          const associationId = generateUUID();
+          const { error: assocError } = await supabase.from('associations').insert([
+            { id: associationId, name: additionalData.associationName }
+          ]);
+          if (assocError) {
+            showError('association-error-message', 'Failed to create association: ' + assocError.message);
+            return;
+          }
+        } else if (role === 'driver') {
+          const driverId = generateUUID();
+          const driverData = {
+            id: driverId,
+            owner_id: null, // Can be linked later
+            association_id: additionalData.associationId || null,
+            name: additionalData.name,
+            surname: additionalData.surname,
+            id_number: additionalData.idNumber,
+            license_type: additionalData.licenseType,
+            license_expiry: additionalData.licenseExpiry || null,
+            prdp: additionalData.prdp === 'true'
+          };
+          const { error: driverError } = await supabase.from('drivers').insert([driverData]);
+          if (driverError) {
+            showError('driver-error-message', 'Failed to create driver profile: ' + driverError.message);
+            return;
+          }
+        }
+        // Passenger requires only profile, already created
+      } catch (error) {
+        showError(`${role}-error-message`, 'Onboarding failed: ' + error.message);
+        return;
+      }
+
+      // Sign in after signup
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) {
+        showError(`${role}-error-message`, 'Login failed after signup: ' + loginError.message);
+        return;
+      }
+
+      redirectToDashboard(role);
     }
 
     function redirectToDashboard(role) {
@@ -298,6 +532,7 @@
       window.location.href = map[role] || '/Taxi-Drive/dashboard.html';
     }
 
+    // Form submissions
     document.getElementById('login-form').addEventListener('submit', e => {
       e.preventDefault();
       handleEmailLogin(
@@ -307,16 +542,51 @@
       );
     });
 
-    document.getElementById('signup-form').addEventListener('submit', e => {
+    document.getElementById('signup-passenger-form').addEventListener('submit', e => {
       e.preventDefault();
-      handleSignUp(
-        document.getElementById('signup-name').value,
-        document.getElementById('signup-email').value,
-        document.getElementById('signup-password').value,
-        document.getElementById('signup-confirm-password').value,
-        document.getElementById('signup-role').value,
-        document.getElementById('signup-association').value
-      );
+      handleSignUp('passenger', {
+        email: document.getElementById('passenger-email').value,
+        name: document.getElementById('passenger-name').value,
+        password: document.getElementById('passenger-password').value,
+        confirmPassword: document.getElementById('passenger-confirm-password').value
+      });
+    });
+
+    document.getElementById('signup-driver-form').addEventListener('submit', e => {
+      e.preventDefault();
+      handleSignUp('driver', {
+        email: document.getElementById('driver-email').value,
+        name: document.getElementById('driver-name').value,
+        surname: document.getElementById('driver-surname').value,
+        idNumber: document.getElementById('driver-id-number').value,
+        licenseType: document.getElementById('driver-license-type').value,
+        licenseExpiry: document.getElementById('driver-license-expiry').value,
+        prdp: document.getElementById('driver-prdp').value,
+        associationId: document.getElementById('driver-association-id').value,
+        password: document.getElementById('driver-password').value,
+        confirmPassword: document.getElementById('driver-confirm-password').value
+      });
+    });
+
+    document.getElementById('signup-owner-form').addEventListener('submit', e => {
+      e.preventDefault();
+      handleSignUp('owner', {
+        email: document.getElementById('owner-email').value,
+        name: document.getElementById('owner-name').value,
+        associationId: document.getElementById('owner-association-id').value,
+        password: document.getElementById('owner-password').value,
+        confirmPassword: document.getElementById('owner-confirm-password').value
+      });
+    });
+
+    document.getElementById('signup-association-form').addEventListener('submit', e => {
+      e.preventDefault();
+      handleSignUp('association', {
+        email: document.getElementById('association-email').value,
+        associationName: document.getElementById('association-name').value,
+        password: document.getElementById('association-password').value,
+        confirmPassword: document.getElementById('association-confirm-password').value
+      });
     });
   </script>
 </body>
