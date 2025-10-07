@@ -47,6 +47,9 @@ async function initializeDashboard() {
       currentAssociationId = owner.association_id;
     }
 
+    // Initialize map on dashboard load
+    initMap();
+
     await loadDrivers();
     await loadVehicles();
     await loadFinancials();
@@ -119,7 +122,7 @@ async function loadVehicles() {
         <td>${v.status}</td>
         <td>
           <button class="btn btn-sm" onclick="editVehicle('${v.id}')">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${v.id}')">🗑️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${d.id}')">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -408,15 +411,34 @@ function initMap(lat = -28.214, lng = 32.043) {
   const mapContainer = document.getElementById('map');
   if (!mapContainer) {
     console.error('Map container not found');
+    showNotification('Map container not found. Please try again.', 'error');
     return;
   }
 
-  map = L.map('map').setView([lat, lng], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Ensure map container is visible and has proper dimensions
+  mapContainer.style.width = '100%';
+  mapContainer.style.height = '400px';
+
+  // Initialize map
+  map = L.map('map', {
+    center: [lat, lng],
+    zoom: 12,
+    zoomControl: true
+  });
+
+  // Add OpenStreetMap tile layer with error handling
+  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19
-  }).addTo(map);
+  });
 
+  tileLayer.addTo(map);
+  tileLayer.on('tileerror', (error) => {
+    console.error('Tile loading error:', error);
+    showNotification('Failed to load map tiles. Please check your internet connection.', 'error');
+  });
+
+  // Force map to re-render
   setTimeout(() => {
     map.invalidateSize();
   }, 100);
@@ -424,7 +446,7 @@ function initMap(lat = -28.214, lng = 32.043) {
 
 function renderMapMarkers(vehicles) {
   if (!map) {
-    // If map isn't initialized, initialize it with default or geolocation
+    // Initialize map with geolocation or default coordinates
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -432,13 +454,16 @@ function renderMapMarkers(vehicles) {
           updateMapMarkers(vehicles);
         },
         (error) => {
-          console.warn('Geolocation failed, using default coordinates:', error.message);
+          console.warn('Geolocation failed:', error.message);
+          showNotification('Unable to access location. Showing default map view.', 'warning');
           initMap(); // Fallback to default coordinates
           updateMapMarkers(vehicles);
-        }
+        },
+        { timeout: 10000, maximumAge: 60000 }
       );
     } else {
       console.warn('Geolocation not supported, using default coordinates');
+      showNotification('Geolocation not supported. Showing default map view.', 'warning');
       initMap(); // Fallback to default coordinates
       updateMapMarkers(vehicles);
     }
@@ -452,12 +477,15 @@ function updateMapMarkers(vehicles) {
   Object.values(fleetMarkers).forEach(m => map.removeLayer(m));
   fleetMarkers = {};
 
-  // If no vehicles, ensure map is still visible
+  // Ensure map is properly sized
+  map.invalidateSize();
+
+  // If no vehicles, show a placeholder message on the map
   if (!vehicles || vehicles.length === 0) {
-    if (!map) {
-      initMap(); // Ensure map is initialized if not already
-    }
-    map.invalidateSize();
+    L.marker(map.getCenter())
+      .addTo(map)
+      .bindPopup('No vehicles available. Map centered on your location or default view.')
+      .openPopup();
     return;
   }
 
@@ -480,6 +508,39 @@ function updateMapMarkers(vehicles) {
 
 function openMapModal() {
   showModal('map-modal');
+  if (map) {
+    // Force map re-render when modal opens
+    setTimeout(() => {
+      map.invalidateSize();
+      // Recenter map if no markers are present
+      if (Object.keys(fleetMarkers).length === 0) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              map.setView([position.coords.latitude, position.coords.longitude], 12);
+              L.marker([position.coords.latitude, position.coords.longitude])
+                .addTo(map)
+                .bindPopup('Your current location')
+                .openPopup();
+            },
+            () => {
+              map.setView([-28.214, 32.043], 12);
+              L.marker([-28.214, 32.043])
+                .addTo(map)
+                .bindPopup('Default location (No vehicles)')
+                .openPopup();
+            }
+          );
+        } else {
+          map.setView([-28.214, 32.043], 12);
+          L.marker([-28.214, 32.043])
+            .addTo(map)
+            .bindPopup('Default location (No vehicles)')
+            .openPopup();
+        }
+      }
+    }, 200);
+  }
   // Trigger vehicle load to ensure map updates with latest data
   loadVehicles();
 }
