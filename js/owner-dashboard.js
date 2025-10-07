@@ -7,9 +7,14 @@ let currentUser = null;
 let currentOwner = null;
 let currentOwnerId = null;
 let currentAssociationId = null;
-let map, fleetMarkers = {};
+let map = null;
+let fleetMarkers = {};
 
-document.addEventListener('DOMContentLoaded', initializeDashboard);
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize map immediately to ensure it's available
+  initMap();
+  initializeDashboard();
+});
 
 async function initializeDashboard() {
   try {
@@ -46,9 +51,6 @@ async function initializeDashboard() {
       currentOwnerId = owner.id;
       currentAssociationId = owner.association_id;
     }
-
-    // Initialize map on dashboard load
-    initMap();
 
     await loadDrivers();
     await loadVehicles();
@@ -109,7 +111,7 @@ async function loadVehicles() {
 
     if (!vehicles?.length) {
       tbody.innerHTML = '<tr><td colspan="4">No vehicles yet</td></tr>';
-      renderMapMarkers([]); // Call with empty array to handle no vehicles
+      renderMapMarkers([]);
       return;
     }
 
@@ -122,7 +124,7 @@ async function loadVehicles() {
         <td>${v.status}</td>
         <td>
           <button class="btn btn-sm" onclick="editVehicle('${v.id}')">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${d.id}')">🗑️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${v.id}')">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -234,6 +236,7 @@ function showModal(modalId) {
     document.body.style.overflow = 'hidden';
   } else {
     console.error(`Modal ${modalId} not found`);
+    showNotification('Modal not found. Please try again.', 'error');
   }
 }
 
@@ -415,33 +418,44 @@ function initMap(lat = -28.214, lng = 32.043) {
     return;
   }
 
-  // Ensure map container is visible and has proper dimensions
+  // Ensure map container is properly sized
   mapContainer.style.width = '100%';
   mapContainer.style.height = '400px';
+  mapContainer.style.display = 'block'; // Ensure visibility
 
-  // Initialize map
-  map = L.map('map', {
-    center: [lat, lng],
-    zoom: 12,
-    zoomControl: true
-  });
+  try {
+    // Check if Leaflet is loaded
+    if (!window.L) {
+      throw new Error('Leaflet library not loaded');
+    }
 
-  // Add OpenStreetMap tile layer with error handling
-  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
-  });
+    // Initialize map
+    map = L.map('map', {
+      center: [lat, lng],
+      zoom: 12,
+      zoomControl: true
+    });
 
-  tileLayer.addTo(map);
-  tileLayer.on('tileerror', (error) => {
-    console.error('Tile loading error:', error);
-    showNotification('Failed to load map tiles. Please check your internet connection.', 'error');
-  });
+    // Add OpenStreetMap tile layer
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    });
 
-  // Force map to re-render
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 100);
+    tileLayer.addTo(map);
+    tileLayer.on('tileerror', (error) => {
+      console.error('Tile loading error:', error);
+      showNotification('Failed to load map tiles. Please check your internet connection.', 'error');
+    });
+
+    // Force map to re-render
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  } catch (error) {
+    console.error('Error initializing map:', error);
+    showNotification('Failed to initialize map. Please ensure Leaflet is loaded.', 'error');
+  }
 }
 
 function renderMapMarkers(vehicles) {
@@ -473,6 +487,8 @@ function renderMapMarkers(vehicles) {
 }
 
 function updateMapMarkers(vehicles) {
+  if (!map) return; // Exit if map is still not initialized
+
   // Clear existing markers
   Object.values(fleetMarkers).forEach(m => map.removeLayer(m));
   fleetMarkers = {};
@@ -480,7 +496,7 @@ function updateMapMarkers(vehicles) {
   // Ensure map is properly sized
   map.invalidateSize();
 
-  // If no vehicles, show a placeholder message on the map
+  // If no vehicles, show a placeholder marker
   if (!vehicles || vehicles.length === 0) {
     L.marker(map.getCenter())
       .addTo(map)
@@ -529,7 +545,8 @@ function openMapModal() {
                 .addTo(map)
                 .bindPopup('Default location (No vehicles)')
                 .openPopup();
-            }
+            },
+            { timeout: 10000, maximumAge: 60000 }
           );
         } else {
           map.setView([-28.214, 32.043], 12);
@@ -540,6 +557,8 @@ function openMapModal() {
         }
       }
     }, 200);
+  } else {
+    showNotification('Map not initialized. Please try again.', 'error');
   }
   // Trigger vehicle load to ensure map updates with latest data
   loadVehicles();
@@ -547,12 +566,17 @@ function openMapModal() {
 
 // === REALTIME UPDATES ===
 function listenRealtime() {
-  supabase.channel('realtime-updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' },
-      payload => { if (payload.new?.owner_id === currentOwnerId) loadVehicles(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' },
-      payload => { if (payload.new?.owner_id === currentOwnerId) loadDrivers(); })
-    .subscribe();
+  try {
+    supabase.channel('realtime-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' },
+        payload => { if (payload.new?.owner_id === currentOwnerId) loadVehicles(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' },
+        payload => { if (payload.new?.owner_id === currentOwnerId) loadDrivers(); })
+      .subscribe();
+  } catch (error) {
+    console.error('Error setting up realtime updates:', error);
+    showNotification('Failed to set up realtime updates.', 'error');
+  }
 }
 
 // === PROFILE ===
