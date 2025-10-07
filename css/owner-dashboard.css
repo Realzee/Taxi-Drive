@@ -1,14 +1,35 @@
-/* Owner Dashboard - COMPLETE STYLES */
+/* TaxiDrive Owner Dashboard - Modern, Clean, Professional Styles */
+
+:root {
+    --dark-blue: #1A2A44;
+    --light-blue: #A3C9E6;
+    --white: #FFFFFF;
+    --gray: #D3D3D3;
+    --success: #4CAF50;
+    --warning: #FF9800;
+    --danger: #F44336;
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-backdrop: blur(12px);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    --text-xs: clamp(10px, 1.5vw, 12px);
+    --text-sm: clamp(12px, 2vw, 14px);
+    --text-base: clamp(14px, 2.5vw, 16px);
+    --text-lg: clamp(16px, 3vw, 18px);
+    --text-xl: clamp(18px, 3.5vw, 20px);
+    --text-2xl: clamp(20px, 4vw, 24px);
+    --text-3xl: clamp(24px, 5vw, 28px);
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
 }
 
-/* Fix body positioning */
 body.owner-dashboard {
-    font-family: 'Montserrat', sans-serif;
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
+    background: linear-gradient(135deg, var(--dark-blue) 0%, var(--light-blue) 100%);
     background-attachment: fixed;
     width: 100%;
     max-width: 480px;
@@ -19,33 +40,26 @@ body.owner-dashboard {
     display: block;
 }
 
-/* Remove any conflicting container styles */
-body.owner-dashboard .container {
-    all: unset !important;
-}
-
-/* Main app container */
 .dashboard-app {
     width: 100%;
     max-width: 480px;
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 1rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--glass-shadow);
     min-height: 100vh;
     position: relative;
     overflow: hidden;
 }
 
-/* Header Styles - Simplified */
 .header {
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
-    color: white;
-    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--dark-blue) 0%, var(--light-blue) 100%);
+    color: var(--white);
+    padding: 1rem;
     width: 100%;
     max-width: 480px;
     z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     border-radius: 1rem 1rem 0 0;
     position: fixed;
     top: 0;
@@ -53,26 +67,205 @@ body.owner-dashboard .container {
     transform: translateX(-50%);
 }
 
-/* ... (Keep the rest of the CSS from association-dashboard.css, but replace "association" specific terms with "owner", e.g., .association-name to .owner-name, remove map-related styles if not needed, and adapt section classes for fleet, drivers, financial.) */
-
-.list-container {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 1rem;
-}
-
-.financial-card {
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid rgba(76, 175, 80, 0.2);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
+.header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
-/* Keep modal styles the same */
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#main-logo {
+    height: 80px;
+    width: auto;
+    border-radius: 10px;
+    border: 2px solid var(--glass-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+#main-logo:hover {
+    transform: scale(1.05);
+}
+
+.association-logo {
+    height: 60px;
+    width: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--glass-border);
+    display: none;
+}
+
+.association-logo[src]:not([src=""]) {
+    display: block;
+}
+
+.title-section {
+    flex: 1;
+    margin-left: 1rem;
+}
+
+.title-section h1 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.title-section span {
+    font-size: var(--text-sm);
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logout-btn {
+    background: var(--danger);
+    color: var(--white);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: var(--text-sm);
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.main-content {
+    margin-top: 120px;
+    padding: 1.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+    font-size: var(--text-2xl);
+    margin-bottom: 0.5rem;
+    color: var(--dark-blue);
+}
+
+.stat-card h3 {
+    font-size: var(--text-lg);
+    color: var(--dark-blue);
+    margin-bottom: 0.5rem;
+}
+
+.stat-card p {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--dark-blue);
+}
+
+.management-section {
+    margin-bottom: 2rem;
+}
+
+.management-section h2 {
+    font-size: var(--text-xl);
+    color: var(--dark-blue);
+    margin-bottom: 1rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    font-size: var(--text-sm);
+}
+
+th {
+    background: var(--dark-blue);
+    color: var(--white);
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+tr:hover {
+    background: rgba(163, 201, 230, 0.1);
+}
+
+.btn {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: var(--text-base);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    background: var(--dark-blue);
+    color: var(--white);
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--dark-blue) 0%, var(--light-blue) 100%);
+    border: 1px solid var(--glass-border);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #15233a 0%, #8bb8d4 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: var(--text-sm);
+}
+
 .modal-overlay {
     display: none;
     position: fixed;
@@ -80,22 +273,178 @@ body.owner-dashboard .container {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     z-index: 1000;
     justify-content: center;
     align-items: center;
     overflow: auto;
 }
 
-.modal-content {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    max-width: 600px;
-    width: 90%;
+.modal-overlay[style*="display: flex"] {
+    display: flex !important;
+}
+
+.app-modal {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 480px;
     max-height: 80vh;
     overflow-y: auto;
+    box-shadow: var(--glass-shadow);
+}
+
+.modal-header {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--dark-blue);
+    margin-bottom: 1rem;
     position: relative;
 }
 
-/* ... (rest of modal and button styles from association) */
+.modal-close {
+    background: none;
+    border: none;
+    font-size: var(--text-lg);
+    color: var(--dark-blue);
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+#map {
+    width: 100%;
+    height: 400px;
+    border-radius: 0.5rem;
+    box-shadow: var(--glass-shadow);
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--dark-blue);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--white);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-item.active {
+    background: var(--light-blue);
+    border-radius: 0.5rem;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-item i {
+    font-size: var(--text-lg);
+    margin-bottom: 0.25rem;
+}
+
+.notification {
+    position: fixed;
+    top: 100px;
+    right: 50%;
+    transform: translateX(50%);
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: var(--glass-shadow);
+    padding: 1rem;
+    z-index: 3000;
+    max-width: 400px;
+    width: calc(100% - 2rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: var(--text-lg);
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.notification-success {
+    border-left: 4px solid var(--success);
+}
+
+.notification-error {
+    border-left: 4px solid var(--danger);
+}
+
+.notification-info {
+    border-left: 4px solid #17a2b8;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(50%) translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-app {
+        border-radius: 0;
+    }
+    .header {
+        border-radius: 0;
+    }
+    .app-modal {
+        max-width: 100%;
+        border-radius: 0;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .bottom-nav {
+        border-radius: 0;
+    }
+}
+
+@media (min-width: 481px) {
+    body.owner-dashboard {
+        border-left: 1px solid var(--gray);
+        border-right: 1px solid var(--gray);
+    }
+}
