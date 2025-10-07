@@ -106,6 +106,7 @@ async function loadVehicles() {
 
     if (!vehicles?.length) {
       tbody.innerHTML = '<tr><td colspan="4">No vehicles yet</td></tr>';
+      renderMapMarkers([]); // Call with empty array to handle no vehicles
       return;
     }
 
@@ -403,14 +404,14 @@ async function editVehicle(id) {
 }
 
 // === MAP ===
-function initMap() {
+function initMap(lat = -28.214, lng = 32.043) {
   const mapContainer = document.getElementById('map');
   if (!mapContainer) {
     console.error('Map container not found');
     return;
   }
 
-  map = L.map('map').setView([-28.214, 32.043], 12);
+  map = L.map('map').setView([lat, lng], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19
@@ -422,8 +423,45 @@ function initMap() {
 }
 
 function renderMapMarkers(vehicles) {
+  if (!map) {
+    // If map isn't initialized, initialize it with default or geolocation
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          initMap(position.coords.latitude, position.coords.longitude);
+          updateMapMarkers(vehicles);
+        },
+        (error) => {
+          console.warn('Geolocation failed, using default coordinates:', error.message);
+          initMap(); // Fallback to default coordinates
+          updateMapMarkers(vehicles);
+        }
+      );
+    } else {
+      console.warn('Geolocation not supported, using default coordinates');
+      initMap(); // Fallback to default coordinates
+      updateMapMarkers(vehicles);
+    }
+  } else {
+    updateMapMarkers(vehicles);
+  }
+}
+
+function updateMapMarkers(vehicles) {
+  // Clear existing markers
   Object.values(fleetMarkers).forEach(m => map.removeLayer(m));
   fleetMarkers = {};
+
+  // If no vehicles, ensure map is still visible
+  if (!vehicles || vehicles.length === 0) {
+    if (!map) {
+      initMap(); // Ensure map is initialized if not already
+    }
+    map.invalidateSize();
+    return;
+  }
+
+  // Add markers for vehicles with valid coordinates
   vehicles.forEach(v => {
     if (v.live_lat && v.live_lng) {
       const marker = L.marker([v.live_lat, v.live_lng])
@@ -432,15 +470,18 @@ function renderMapMarkers(vehicles) {
       fleetMarkers[v.id] = marker;
     }
   });
+
+  // Adjust map view to fit all markers if any exist
+  if (Object.keys(fleetMarkers).length > 0) {
+    const group = L.featureGroup(Object.values(fleetMarkers));
+    map.fitBounds(group.getBounds(), { padding: [50, 50] });
+  }
 }
 
 function openMapModal() {
   showModal('map-modal');
-  if (!map) {
-    initMap();
-  } else {
-    map.invalidateSize();
-  }
+  // Trigger vehicle load to ensure map updates with latest data
+  loadVehicles();
 }
 
 // === REALTIME UPDATES ===
