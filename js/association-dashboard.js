@@ -74,27 +74,33 @@ async function checkAssociationAuthentication() {
 
 // Initialize dashboard
 async function initializeDashboard() {
-    try {
-        const user = await checkAssociationAuthentication();
-        if (!user) return;
+  console.log('Starting authentication check...');
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error('Authentication failed:', authError);
+    window.location.href = '/Taxi-Drive/index.html';
+    return;
+  }
+  console.log('User found:', user.id, user.email);
 
-        currentUser = user;
-        console.log('Association user authenticated:', user.email);
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, name')
+    .eq('id', user.id)
+    .single();
 
-        await loadUserData();
-        await loadAssociationData();
+  if (profileError || !profile || profile.role !== 'association') {
+    console.error('Profile error or not association:', profileError);
+    window.location.href = '/Taxi-Drive/index.html';
+    return;
+  }
+  console.log('Authentication successful:', { id: user.id, email: user.email, role: profile.role, name: profile.name });
+  console.log('Association user authenticated:', user.email);
 
-        setupEventListeners();
-        await loadDashboardData();
-
-        showNotification('Dashboard loaded successfully!', 'success');
-
-    } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showNotification('Failed to initialize dashboard. Please try refreshing.', 'error');
-    }
+  await loadAssociationData(user.id);
+  initializeMap();
+  setupEventListeners();
 }
-
 async function loadUserData() {
     try {
         updateUserHeader(currentUser);
@@ -127,40 +133,35 @@ function updateUserHeader(userData) {
 }
 
 // Load association data - UPDATED FOR NEW SCHEMA
-async function loadAssociationData() {
-    try {
-        console.log('Loading association data for admin:', currentUser.id);
-        
-        let associationData = null;
+async function loadAssociationData(userId) {
+  console.log('Loading association data for user:', userId);
+  const { data, error } = await supabase
+    .from('associations')
+    .select('id, association_name, email, phone, address, description, admin_name, admin_phone, logo_url, wallet_balance')
+    .eq('id', userId)
+    .single();
 
-        // Try to get association by admin_id (NEW SCHEMA)
-        const { data, error } = await supabase
-            .from('associations')
-            .select('*')
-            .eq('admin_id', currentUser.id)
-            .single();
+  if (error || !data) {
+    console.error('Error fetching association:', error);
+    console.log('No association found, creating new one');
+    await createNewAssociation(userId);
+    return;
+  }
 
-        if (error) {
-            console.log('No association found, creating new one');
-            associationData = await createNewAssociation();
-        } else {
-            associationData = data;
-            console.log('Found existing association:', data);
-        }
-
-        currentAssociation = associationData;
-        currentAssociationId = associationData.id;
-        updateAssociationProfile(currentAssociation);
-        
-    } catch (error) {
-        console.error('Error loading association data:', error);
-        showNotification('Using demo mode. Database setup may be incomplete.', 'warning');
-        currentAssociation = createDemoAssociation();
-        currentAssociationId = 'demo-mode';
-        updateAssociationProfile(currentAssociation);
-    }
+  console.log('Association data loaded:', data);
+  document.getElementById('profile-association-name').value = data.association_name || '';
+  document.getElementById('profile-association-email').value = data.email || '';
+  document.getElementById('profile-association-phone').value = data.phone || '';
+  document.getElementById('profile-association-address').value = data.address || '';
+  document.getElementById('profile-association-description').value = data.description || '';
+  document.getElementById('profile-admin-name').value = data.admin_name || '';
+  document.getElementById('profile-admin-phone').value = data.admin_phone || '';
+  if (data.logo_url) {
+    document.getElementById('edit-logo-preview-img').src = data.logo_url;
+    document.getElementById('edit-logo-preview-container').style.display = 'block';
+  }
+  document.getElementById('wallet-balance').textContent = `R ${data.wallet_balance.toFixed(2)}`;
 }
-
 // CREDENTIAL MANAGEMENT FOR MEMBERS/OWNERS
 async function generateMemberCredentials(memberId, memberData) {
     try {
@@ -421,39 +422,27 @@ function copyCredentials() {
     });
 }
 
-async function createNewAssociation() {
-    try {
-        const newAssociation = {
-            association_name: 'My Taxi Association',
-            email: currentUser.email,
-            phone: '',
-            address: '',
-            admin_id: currentUser.id,
-            admin_name: currentUser.name || currentUser.email.split('@')[0],
-            admin_phone: '',
-            description: '',
-            logo_url: null,
-            wallet_balance: 0
-        };
-
-        const { data, error } = await supabase
-            .from('associations')
-            .insert([newAssociation])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Failed to create association:', error);
-            return createDemoAssociation();
-        }
-
-        showNotification('New association created successfully!', 'success');
-        return data;
-        
-    } catch (error) {
-        console.error('Error creating association:', error);
-        return createDemoAssociation();
-    }
+async function createNewAssociation(userId) {
+  const formData = {
+    id: userId,
+    association_name: document.getElementById('profile-association-name')?.value || 'New Association',
+    email: document.getElementById('profile-association-email')?.value,
+    phone: document.getElementById('profile-association-phone')?.value,
+    address: document.getElementById('profile-association-address')?.value,
+    description: document.getElementById('profile-association-description')?.value,
+    admin_name: document.getElementById('profile-admin-name')?.value,
+    admin_phone: document.getElementById('profile-admin-phone')?.value,
+    logo_url: document.getElementById('edit-logo-preview-img')?.src,
+    wallet_balance: 0.0
+  };
+  console.log('Creating association:', formData);
+  const { error } = await supabase.from('associations').insert([formData]);
+  if (error) {
+    console.error('Failed to create association:', error);
+    showError('profile-error-message', `Failed to create association: ${error.message}`);
+    return;
+  }
+  console.log('Association created successfully');
 }
 
 function createDemoAssociation() {
