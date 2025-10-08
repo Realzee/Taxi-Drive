@@ -464,116 +464,121 @@
 
     // Onboarding logic for signup
     async function handleSignUp(role, formData) {
-      const { email, password, confirmPassword, ...additionalData } = formData;
+  const { email, password, confirmPassword, ...additionalData } = formData;
+  console.log('Signup payload:', { email, password, confirmPassword, additionalData });
 
-      if (!email || !password || !confirmPassword || !role) {
-        showError(`${role}-error-message`, 'Please fill in all required fields.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        showError(`${role}-error-message`, 'Passwords do not match.');
-        return;
-      }
+  if (!email || !password || !confirmPassword || !role) {
+    showError(`${role}-error-message`, 'Please fill in all required fields.');
+    return;
+  }
+  if (password !== confirmPassword) {
+    showError(`${role}-error-message`, 'Passwords do not match.');
+    return;
+  }
 
-      // Sign up with Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin + '/Taxi-Drive/' }
-      });
-      if (error) {
-        showError(`${role}-error-message`, error.message);
-        return;
-      }
+  // Sign up with Supabase
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
+  });
+  if (error) {
+    console.error('Signup error:', error);
+    showError(`${role}-error-message`, error.message);
+    return;
+  }
 
-      let userId = data.user?.id;
-      if (!userId) {
-        const { data: userData } = await supabase.auth.getUser();
-        userId = userData?.user?.id;
-      }
-
-      if (!userId) {
-        showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
-        return;
-      }
-
-      // Create profile
-      const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
-      const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
-      if (profileError) {
-        showError(`${role}-error-message`, 'Failed to save profile: ' + profileError.message);
-        return;
-      }
-
-      // Role-specific onboarding
-      try {
-        if (role === 'owner') {
-          if (!additionalData.associationId) {
-            showError('owner-error-message', 'Please select an association.');
-            return;
-          }
-          const ownerId = generateUUID();
-          const { error: ownerError } = await supabase.from('owners').insert([
-            { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
-          ]);
-          if (ownerError) {
-            showError('owner-error-message', 'Failed to create owner profile: ' + ownerError.message);
-            return;
-          }
-        } else if (role === 'association') {
-          const associationId = generateUUID();
-          const { error: assocError } = await supabase.from('associations').insert([
-            { id: associationId, association_name: additionalData.associationName }
-          ]);
-          if (assocError) {
-            showError('association-error-message', 'Failed to create association: ' + assocError.message);
-            return;
-          }
-        } else if (role === 'driver') {
-          const driverId = generateUUID();
-          const driverData = {
-            id: driverId,
-            owner_id: null,
-            association_id: additionalData.associationId || null,
-            name: additionalData.name,
-            surname: additionalData.surname,
-            id_number: additionalData.idNumber,
-            license_type: additionalData.licenseType,
-            license_expiry: additionalData.licenseExpiry || null,
-            prdp: additionalData.prdp === 'true'
-          };
-          if (driverData.association_id) {
-            const { data: assoc, error: assocError } = await supabase
-              .from('associations')
-              .select('id')
-              .eq('id', driverData.association_id)
-              .single();
-            if (assocError || !assoc) {
-              showError('driver-error-message', 'Invalid Association ID.');
-              return;
-            }
-          }
-          const { error: driverError } = await supabase.from('drivers').insert([driverData]);
-          if (driverError) {
-            showError('driver-error-message', 'Failed to create driver profile: ' + driverError.message);
-            return;
-          }
-        }
-        // Passenger requires only profile, already created
-      } catch (error) {
-        showError(`${role}-error-message`, 'Onboarding failed: ' + error.message);
-        return;
-      }
-
-      // Sign in after signup
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) {
-        showError(`${role}-error-message`, 'Login failed after signup: ' + loginError.message);
-        return;
-      }
-
-      redirectToDashboard(role);
+  let userId = data.user?.id;
+  if (!userId) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      showError(`${role}-error-message`, 'Failed to fetch user ID: ' + userError.message);
+      return;
     }
+    userId = userData?.user?.id;
+  }
+
+  if (!userId) {
+    showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+    return;
+  }
+
+  // Create profile
+  const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+  const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+  if (profileError) {
+    showError(`${role}-error-message`, 'Failed to save profile: ' + profileError.message);
+    return;
+  }
+
+  // Role-specific onboarding
+  try {
+    if (role === 'owner') {
+      if (!additionalData.associationId) {
+        showError('owner-error-message', 'Please select an association.');
+        return;
+      }
+      const ownerId = generateUUID();
+      const { error: ownerError } = await supabase.from('owners').insert([
+        { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
+      ]);
+      if (ownerError) {
+        showError('owner-error-message', 'Failed to create owner profile: ' + ownerError.message);
+        return;
+      }
+    } else if (role === 'association') {
+      const associationId = generateUUID();
+      const { error: assocError } = await supabase.from('associations').insert([
+        { id: associationId, association_name: additionalData.associationName }
+      ]);
+      if (assocError) {
+        showError('association-error-message', 'Failed to create association: ' + assocError.message);
+        return;
+      }
+    } else if (role === 'driver') {
+      const driverId = generateUUID();
+      const driverData = {
+        id: driverId,
+        owner_id: null,
+        association_id: additionalData.associationId || null,
+        name: additionalData.name,
+        surname: additionalData.surname,
+        id_number: additionalData.idNumber,
+        license_type: additionalData.licenseType,
+        license_expiry: additionalData.licenseExpiry || null,
+        prdp: additionalData.prdp === 'true'
+      };
+      if (driverData.association_id) {
+        const { data: assoc, error: assocError } = await supabase
+          .from('associations')
+          .select('id')
+          .eq('id', driverData.association_id)
+          .single();
+        if (assocError || !assoc) {
+          showError('driver-error-message', 'Invalid Association ID.');
+          return;
+        }
+      }
+      const { error: driverError } = await supabase.from('drivers').insert([driverData]);
+      if (driverError) {
+        showError('driver-error-message', 'Failed to create driver profile: ' + driverError.message);
+        return;
+      }
+    }
+  } catch (error) {
+    showError(`${role}-error-message`, 'Onboarding failed: ' + error.message);
+    return;
+  }
+
+  // Sign in after signup
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  if (loginError) {
+    showError(`${role}-error-message`, 'Login failed after signup: ' + loginError.message);
+    return;
+  }
+
+  redirectToDashboard(role);
+}
 
     function redirectToDashboard(role) {
       const map = {
