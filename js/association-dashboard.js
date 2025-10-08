@@ -1451,7 +1451,7 @@ function initializeMap() {
         try {
             const { data: vehicles, error } = await supabase
                 .from('vehicles')
-                .select('id, registration_number, latitude, longitude')
+                .select('id, reg_no, live_lat, live_lng')
                 .eq('association_id', currentAssociationId);
 
             if (error) {
@@ -1464,7 +1464,7 @@ function initializeMap() {
                 if (vehicle.latitude && vehicle.longitude) {
                     L.marker([vehicle.latitude, vehicle.longitude])
                         .addTo(mapInstance)
-                        .bindPopup(`Vehicle: ${vehicle.registration_number}`);
+                        .bindPopup(`Vehicle: ${vehicle.reg_no}`);
                 }
             });
         } catch (error) {
