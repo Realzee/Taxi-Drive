@@ -7,10 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="theme-color" content="#052438">
   <title>TaxiDrive - Login</title>
-
   <link rel="icon" href="./assets/favicon.ico">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -242,8 +240,10 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-association-id">Association ID (Optional)</label>
-          <input id="driver-association-id" type="text" placeholder="Association UUID (if known)" class="form-input">
+          <label class="form-label" for="driver-association-id">Association (Optional)</label>
+          <select id="driver-association-id" class="form-input">
+            <option value="" selected>No Association</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-password">Password</label>
@@ -278,8 +278,7 @@
         <div class="form-group">
           <label class="form-label" for="owner-association-id">Association</label>
           <select id="owner-association-id" class="form-input" required>
-            <option value="" disabled selected>Select Association</option>
-            <!-- Options populated dynamically -->
+            <option value="" disabled selected>Loading associations...</option>
           </select>
         </div>
         <div class="form-group">
@@ -337,7 +336,7 @@
     window.addEventListener('load', () => {
       if (!window.supabase) {
         console.error('Supabase library failed to load');
-        document.querySelectorAll('.error').forEach(el => {
+        document.querySelectorAll('.error-message').forEach(el => {
           el.textContent = 'Failed to load Supabase library. Please try again later.';
           el.style.display = 'block';
         });
@@ -361,29 +360,39 @@
       }
 
       function clearErrors() {
-        document.querySelectorAll('.error').forEach(el => {
+        document.querySelectorAll('.error-message').forEach(el => {
           el.textContent = '';
           el.style.display = 'none';
         });
       }
 
       function showLogin() {
-        document.getElementById('login-form').style.display = 'block';
-        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('role-section').style.display = 'none';
+        document.getElementById('signup-passenger-section').style.display = 'none';
+        document.getElementById('signup-driver-section').style.display = 'none';
+        document.getElementById('signup-owner-section').style.display = 'none';
+        document.getElementById('signup-association-section').style.display = 'none';
         clearErrors();
       }
 
-      function showSignup() {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('signup-form').style.display = 'block';
+      function showRoleSelection() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('role-section').style.display = 'block';
+        document.getElementById('signup-passenger-section').style.display = 'none';
+        document.getElementById('signup-driver-section').style.display = 'none';
+        document.getElementById('signup-owner-section').style.display = 'none';
+        document.getElementById('signup-association-section').style.display = 'none';
         clearErrors();
       }
 
-      function showRoleForm(role) {
-        document.getElementById('passenger-signup-form').style.display = role === 'passenger' ? 'block' : 'none';
-        document.getElementById('driver-signup-form').style.display = role === 'driver' ? 'block' : 'none';
-        document.getElementById('owner-signup-form').style.display = role === 'owner' ? 'block' : 'none';
-        document.getElementById('association-signup-form').style.display = role === 'association' ? 'block' : 'none';
+      function showSignupForm(role) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('role-section').style.display = 'none';
+        document.getElementById('signup-passenger-section').style.display = role === 'passenger' ? 'block' : 'none';
+        document.getElementById('signup-driver-section').style.display = role === 'driver' ? 'block' : 'none';
+        document.getElementById('signup-owner-section').style.display = role === 'owner' ? 'block' : 'none';
+        document.getElementById('signup-association-section').style.display = role === 'association' ? 'block' : 'none';
         clearErrors();
         if (role === 'owner' || role === 'driver') {
           populateAssociationDropdown();
@@ -433,7 +442,8 @@
         }
       }
 
-      async function handleLogin() {
+      async function handleLogin(event) {
+        event.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         const role = document.getElementById('login-role').value;
@@ -492,7 +502,8 @@
         window.location.href = `/Taxi-Drive/${dashboards[role]}`;
       }
 
-      async function submitSignup(role) {
+      async function submitSignup(role, event) {
+        event.preventDefault();
         const formData = {};
         if (role === 'passenger') {
           formData.email = document.getElementById('passenger-email').value;
@@ -676,20 +687,60 @@
         redirectToDashboard(role);
       }
 
+      // Event Listeners
       document.addEventListener('DOMContentLoaded', () => {
-        // Populate association dropdown for owner and driver forms
-        if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
-          populateAssociationDropdown();
-        }
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+
+        // Google login
+        document.getElementById('google-login-btn').addEventListener('click', () => {
+          supabase.auth.signInWithOAuth({ provider: 'google' });
+        });
+
+        // Show signup (role selection)
+        document.getElementById('show-signup').addEventListener('click', showRoleSelection);
+
+        // Role selection next
+        document.getElementById('role-next-btn').addEventListener('click', () => {
+          const role = document.getElementById('signup-role').value;
+          if (!role) {
+            showError('role-error-message', 'Please select a role.');
+            return;
+          }
+          showSignupForm(role);
+        });
+
+        // Back buttons
+        document.getElementById('passenger-back-btn').addEventListener('click', showRoleSelection);
+        document.getElementById('driver-back-btn').addEventListener('click', showRoleSelection);
+        document.getElementById('owner-back-btn').addEventListener('click', showRoleSelection);
+        document.getElementById('association-back-btn').addEventListener('click', showRoleSelection);
+
+        // Show login from various sections
+        document.getElementById('show-login-from-role').addEventListener('click', showLogin);
+        document.getElementById('show-login-from-passenger').addEventListener('click', showLogin);
+        document.getElementById('show-login-from-driver').addEventListener('click', showLogin);
+        document.getElementById('show-login-from-owner').addEventListener('click', showLogin);
+        document.getElementById('show-login-from-association').addEventListener('click', showLogin);
+
+        // Signup forms
+        document.getElementById('signup-passenger-form').addEventListener('submit', (e) => submitSignup('passenger', e));
+        document.getElementById('signup-driver-form').addEventListener('submit', (e) => submitSignup('driver', e));
+        document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
+        document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
 
         // Handle Google OAuth redirect
         supabase.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_IN' && session?.provider === 'google') {
             console.log('Google OAuth sign-in:', session);
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('signup-form').style.display = 'block';
+            showRoleSelection();
           }
         });
+
+        // Populate association dropdown for owner and driver forms if preselected
+        if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
+          populateAssociationDropdown();
+        }
       });
     });
   </script>
