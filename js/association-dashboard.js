@@ -468,26 +468,38 @@ function copyCredentials() {
 }
 
 async function createNewAssociation(userId) {
-  const formData = {
-    id: userId,
-    association_name: document.getElementById('profile-association-name')?.value || 'New Association',
-    email: document.getElementById('profile-association-email')?.value,
-    phone: document.getElementById('profile-association-phone')?.value,
-    address: document.getElementById('profile-association-address')?.value,
-    description: document.getElementById('profile-association-description')?.value,
-    admin_name: document.getElementById('profile-admin-name')?.value,
-    admin_phone: document.getElementById('profile-admin-phone')?.value,
-    logo_url: document.getElementById('edit-logo-preview-img')?.src,
-    wallet_balance: 0.0
-  };
-  console.log('Creating association:', formData);
-  const { error } = await supabase.from('associations').insert([formData]);
-  if (error) {
-    console.error('Failed to create association:', error);
-    showError('profile-error-message', `Failed to create association: ${error.message}`);
-    return;
-  }
-  console.log('Association created successfully');
+    const formData = {
+        id: userId,
+        association_name: document.getElementById('profile-association-name')?.value || 'New Association',
+        email: document.getElementById('profile-association-email')?.value || '',
+        phone: document.getElementById('profile-association-phone')?.value || '',
+        address: document.getElementById('profile-association-address')?.value || '',
+        description: document.getElementById('profile-association-description')?.value || '',
+        admin_name: document.getElementById('profile-admin-name')?.value || '',
+        admin_phone: document.getElementById('profile-admin-phone')?.value || '',
+        logo_url: document.getElementById('edit-logo-preview-img')?.src || '',
+        wallet_balance: 0.0
+    };
+    
+    console.log('Creating association:', formData);
+    
+    const { data, error } = await supabase
+        .from('associations')
+        .insert([formData])
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Failed to create association:', error);
+        showNotification(`Failed to create association: ${error.message}`, 'error');
+        return;
+    }
+    
+    console.log('Association created successfully:', data);
+    currentAssociation = data;
+    currentAssociationId = data.id;
+    
+    showNotification('Association profile created successfully!', 'success');
 }
 
 function createDemoAssociation() {
@@ -725,6 +737,61 @@ function updateDashboardStats(stats) {
             element.textContent = statElements[id];
         }
     });
+}
+
+async function checkAssociationSchema() {
+    try {
+        // Try to get one association record to see the actual columns
+        const { data, error } = await supabase
+            .from('associations')
+            .select('*')
+            .limit(1)
+            .single();
+
+        if (error) {
+            console.error('Error checking association schema:', error);
+            return;
+        }
+
+        console.log('Association table columns:', Object.keys(data));
+        console.log('Sample association data:', data);
+    } catch (error) {
+        console.error('Failed to check association schema:', error);
+    }
+}
+
+// Call this in your initializeDashboard function after authentication
+async function initializeDashboard() {
+    console.log('Starting authentication check...');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        console.error('Authentication failed:', authError);
+        window.location.href = '/Taxi-Drive/index.html';
+        return;
+    }
+    console.log('User found:', user.id, user.email);
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, name')
+        .eq('id', user.id)
+        .single();
+
+    if (profileError || !profile || profile.role !== 'association') {
+        console.error('Profile error or not association:', profileError);
+        window.location.href = '/Taxi-Drive/index.html';
+        return;
+    }
+    
+    console.log('Authentication successful:', { id: user.id, email: user.email, role: profile.role, name: profile.name });
+    console.log('Association user authenticated:', user.email);
+
+    // Check schema for debugging
+    await checkAssociationSchema();
+
+    await loadAssociationData(user.id);
+    initializeMap();
+    setupEventListeners();
 }
 
 // MEMBER MANAGEMENT - UPDATED FOR NEW SCHEMA
@@ -1190,8 +1257,8 @@ async function saveAssociationProfile() {
             address: document.getElementById('profile-association-address')?.value || '',
             description: document.getElementById('profile-association-description')?.value || '',
             admin_name: document.getElementById('profile-admin-name')?.value || '',
-            admin_phone: document.getElementById('profile-admin-phone')?.value || '',
-            updated_at: new Date().toISOString()
+            admin_phone: document.getElementById('profile-admin-phone')?.value || ''
+            // REMOVED: updated_at: new Date().toISOString() - column doesn't exist
         };
 
         let logoUrl = currentAssociation ? currentAssociation.logo_url : '';
@@ -1240,11 +1307,17 @@ async function saveAssociationProfile() {
                 logo_url: logoUrl
             };
 
+            console.log('Updating association with data:', updateData);
+            
             const { error } = await supabase
                 .from('associations')
                 .update(updateData)
                 .eq('id', currentAssociationId);
-            if (error) throw error;
+
+            if (error) {
+                console.error('❌ Database update error:', error);
+                throw error;
+            }
         }
 
         // Update current association data
@@ -1256,7 +1329,7 @@ async function saveAssociationProfile() {
         
     } catch (error) {
         console.error('Error updating profile:', error);
-        showNotification('Failed to update profile.', 'error');
+        showNotification('Failed to update profile: ' + error.message, 'error');
     }
 }
 
@@ -1509,6 +1582,12 @@ function initializeMap() {
     // Fetch vehicle locations from Supabase (if applicable)
     async function loadVehicles() {
         try {
+            // Make sure we have a valid association ID
+            if (!currentAssociationId || currentAssociationId === 'null') {
+                console.warn('No valid association ID for vehicle loading');
+                return;
+            }
+
             const { data: vehicles, error } = await supabase
                 .from('vehicles')
                 .select('id, reg_no, live_lat, live_lng')
@@ -1520,9 +1599,11 @@ function initializeMap() {
                 return;
             }
 
+            console.log('Loaded vehicles:', vehicles);
+
             vehicles.forEach(vehicle => {
-                if (vehicle.latitude && vehicle.longitude) {
-                    L.marker([vehicle.latitude, vehicle.longitude])
+                if (vehicle.live_lat && vehicle.live_lng) {
+                    L.marker([vehicle.live_lat, vehicle.live_lng])
                         .addTo(mapInstance)
                         .bindPopup(`Vehicle: ${vehicle.reg_no}`);
                 }
@@ -1539,8 +1620,9 @@ function initializeMap() {
     if (navigator.geolocation) {
         // Initial location
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
+            function(position) {  // Fixed: use function declaration instead of arrow if needed
+                const { latitude, longitude, accuracy } = position.coords;
+                
                 // Center map on user's location
                 mapInstance.setView([latitude, longitude], 13);
 
@@ -1559,9 +1641,21 @@ function initializeMap() {
                       .bindPopup('Your Current Location');
                 }
 
+                // Add accuracy circle
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+                } else {
+                    userAccuracyCircle = L.circle([latitude, longitude], {
+                        radius: accuracy,
+                        color: '#007bff',
+                        fillOpacity: 0.1,
+                        weight: 1
+                    }).addTo(mapInstance);
+                }
+
                 showNotification('Your location is now displayed on the map.', 'success');
             },
-            (error) => {
+            function(error) {  // Fixed: use function declaration
                 console.error('Geolocation error:', error);
                 showNotification('Unable to access your location. Please enable location services.', 'error');
             }
@@ -1569,14 +1663,16 @@ function initializeMap() {
 
         // Watch for location updates
         userLocationWatcher = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
+            function(position) {  // Fixed: use function declaration
+                const { latitude, longitude, accuracy } = position.coords;
                 if (userLocationMarker) {
                     userLocationMarker.setLatLng([latitude, longitude]);
-                    mapInstance.panTo([latitude, longitude]); // Optional: Keep map centered
+                }
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
                 }
             },
-            (error) => {
+            function(error) {  // Fixed: use function declaration
                 console.error('Geolocation watch error:', error);
                 showNotification('Location update failed.', 'error');
             },
