@@ -275,8 +275,11 @@
           <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="owner-association-id">Association ID</label>
-          <input id="owner-association-id" type="text" placeholder="Association UUID" class="form-input" required>
+          <label class="form-label" for="owner-association-id">Association</label>
+          <select id="owner-association-id" class="form-input" required>
+            <option value="" disabled selected>Select Association</option>
+            <!-- Options populated dynamically -->
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label" for="owner-password">Password</label>
@@ -333,7 +336,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Utility to generate UUID (since tables don't auto-generate IDs)
+    // Utility to generate UUID
     function generateUUID() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -354,7 +357,46 @@
       sections.forEach(section => {
         document.getElementById(section).classList.toggle('hidden', section !== sectionToShow);
       });
+      if (sectionToShow === 'signup-owner-section') {
+        populateAssociationDropdown();
+      }
     };
+
+    // Fetch associations and populate dropdown
+    async function populateAssociationDropdown() {
+      const select = document.getElementById('owner-association-id');
+      select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
+
+      try {
+        const { data, error } = await supabase
+          .from('associations')
+          .select('id, name')
+          .order('name', { ascending: true });
+
+        if (error) {
+          showError('owner-error-message', 'Failed to load associations: ' + error.message);
+          select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          showError('owner-error-message', 'No associations available. Please create one first.');
+          select.innerHTML = '<option value="" disabled selected>No associations available</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="" disabled selected>Select Association</option>';
+        data.forEach(assoc => {
+          const option = document.createElement('option');
+          option.value = assoc.id;
+          option.textContent = assoc.name;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        showError('owner-error-message', 'Error loading associations: ' + error.message);
+        select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+      }
+    }
 
     // Event listeners for navigation
     document.getElementById('show-signup').addEventListener('click', () => toggleSections('role-section'));
@@ -467,7 +509,7 @@
       try {
         if (role === 'owner') {
           if (!additionalData.associationId) {
-            showError('owner-error-message', 'Association ID is required.');
+            showError('owner-error-message', 'Please select an association.');
             return;
           }
           const ownerId = generateUUID();
@@ -491,7 +533,7 @@
           const driverId = generateUUID();
           const driverData = {
             id: driverId,
-            owner_id: null, // Can be linked later
+            owner_id: null,
             association_id: additionalData.associationId || null,
             name: additionalData.name,
             surname: additionalData.surname,
@@ -500,6 +542,17 @@
             license_expiry: additionalData.licenseExpiry || null,
             prdp: additionalData.prdp === 'true'
           };
+          if (driverData.association_id) {
+            const { data: assoc, error: assocError } = await supabase
+              .from('associations')
+              .select('id')
+              .eq('id', driverData.association_id)
+              .single();
+            if (assocError || !assoc) {
+              showError('driver-error-message', 'Invalid Association ID.');
+              return;
+            }
+          }
           const { error: driverError } = await supabase.from('drivers').insert([driverData]);
           if (driverError) {
             showError('driver-error-message', 'Failed to create driver profile: ' + driverError.message);
