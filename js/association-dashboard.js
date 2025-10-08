@@ -697,13 +697,22 @@ async function loadDashboardStats() {
             return;
         }
 
+        console.log('Loading dashboard stats for association:', currentAssociation.id);
+
         // UPDATED QUERIES FOR OWNERS
         const [vehicles, owners, routes, alerts] = await Promise.all([
             supabase.from('vehicles').select('id').eq('association_id', currentAssociation.id),
-            supabase.from('members').select('id, role').eq('association_id', currentAssociation.id).eq('role', 'owner'),
+            supabase.from('members').select('id').eq('association_id', currentAssociation.id).eq('role', 'owner'),
             supabase.from('routes').select('id').eq('association_id', currentAssociation.id).eq('status', 'active'),
             supabase.from('panic_alerts').select('id').eq('association_id', currentAssociation.id).eq('status', 'active')
         ]);
+
+        console.log('Stats loaded:', {
+            vehicles: vehicles.data?.length,
+            owners: owners.data?.length,
+            routes: routes.data?.length,
+            alerts: alerts.data?.length
+        });
 
         updateDashboardStats({
             registeredVehicles: vehicles.data?.length || 0,
@@ -721,6 +730,34 @@ async function loadDashboardStats() {
             passengerAlarms: 2
         });
     }
+}
+
+function subscribeToNewOwners() {
+    if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe();
+    }
+
+    realtimeSubscription = supabase
+        .channel('owners-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'members',
+                filter: `association_id=eq.${currentAssociation.id}`
+            },
+            (payload) => {
+                console.log('New owner registered:', payload.new);
+                showNotification(`New owner registered: ${payload.new.member_name}`, 'info');
+                // Refresh the owners list
+                loadRecentMembers();
+                loadDashboardStats();
+            }
+        )
+        .subscribe();
+
+    console.log('Subscribed to owner changes');
 }
 
 function updateDashboardStats(stats) {
@@ -790,6 +827,7 @@ async function initializeDashboard() {
     await checkAssociationSchema();
 
     await loadAssociationData(user.id);
+    subscribeToNewOwners();
     initializeMap();
     setupEventListeners();
 }
@@ -807,6 +845,8 @@ async function loadRecentMembers() {
             return;
         }
 
+        console.log('Loading owners for association:', currentAssociation.id);
+        
         // Only fetch owners from the members table
         const { data: owners, error } = await supabase
             .from('members')
@@ -816,7 +856,12 @@ async function loadRecentMembers() {
             .order('created_at', { ascending: false })
             .limit(3);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching owners:', error);
+            throw error;
+        }
+
+        console.log('Owners loaded:', owners);
         renderRecentMembers(owners || []);
         
     } catch (error) {
