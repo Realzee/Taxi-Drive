@@ -345,9 +345,7 @@
   </div>
 
   <script>
-    // Wait for DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', () => {
-      // Wait for Supabase library to load
       if (!window.supabase) {
         console.error('Supabase library failed to load');
         document.querySelectorAll('.error-message').forEach(el => {
@@ -367,27 +365,11 @@
         );
       }
 
-      function showError(elementId, message, type = 'error') {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    
-    element.textContent = message;
-    element.style.display = 'block';
-    
-    // Remove previous classes
-    element.classList.remove('error-message-success', 'error-message-info');
-    
-    // Add appropriate class based on type
-    if (type === 'success') {
-        element.classList.add('error-message-success');
-        element.style.color = '#4CAF50';
-    } else if (type === 'info') {
-        element.classList.add('error-message-info');
-        element.style.color = '#2196F3';
-    } else {
-        element.style.color = '#ff8c8c';
-    }
-}
+      function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        element.textContent = message;
+        element.style.display = 'block';
+      }
 
       function clearErrors() {
         document.querySelectorAll('.error-message').forEach(el => {
@@ -473,84 +455,53 @@
       }
 
       async function handleLogin(event) {
-    event.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const role = document.getElementById('login-role').value;
+        event.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const role = document.getElementById('login-role').value;
 
-    clearErrors();
-    if (!email || !password || !role) {
-        showError('login-error-message', 'Please fill in all fields.');
-        return;
-    }
-
-    console.log('Login attempt:', { email, role });
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-        console.error('Login error:', error);
-        showError('login-error-message', `Login failed: ${error.message}`);
-        return;
-    }
-
-    // Verify role
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-        console.error('Failed to fetch user:', userError);
-        showError('login-error-message', 'Failed to verify user.');
-        return;
-    }
-
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userData.user.id)
-        .single();
-
-    if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        
-        // If no profile exists, create one with the selected role
-        if (profileError.code === 'PGRST116') { // No rows returned
-            console.log('No profile found, creating new profile with role:', role);
-            const { error: createProfileError } = await supabase.from('profiles').insert([
-                { 
-                    id: userData.user.id, 
-                    email: userData.user.email, 
-                    role: role,
-                    name: userData.user.email.split('@')[0]
-                }
-            ]);
-            
-            if (createProfileError) {
-                console.error('Failed to create profile:', createProfileError);
-                showError('login-error-message', 'Failed to create user profile. Please try again.');
-                return;
-            }
-            
-            console.log('Profile created successfully, redirecting to dashboard');
-            redirectToDashboard(role);
-            return;
-        } else {
-            showError('login-error-message', 'Profile not found.');
-            return;
+        clearErrors();
+        if (!email || !password || !role) {
+          showError('login-error-message', 'Please fill in all fields.');
+          return;
         }
-    }
 
-    if (!profile) {
-        console.error('Profile not found for user:', userData.user.id);
-        showError('login-error-message', 'Profile not found.');
-        return;
-    }
+        console.log('Login attempt:', { email, role });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          console.error('Login error:', error);
+          showError('login-error-message', `Login failed: ${error.message}`);
+          return;
+        }
 
-    if (profile.role !== role) {
-        console.error('Role mismatch:', { selected: role, actual: profile.role });
-        showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
-        return;
-    }
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          console.error('Failed to fetch user:', userError);
+          showError('login-error-message', 'Failed to verify user.');
+          return;
+        }
 
-    console.log('Redirecting to dashboard for role:', role);
-    redirectToDashboard(role);
-}
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (profileError || !profile) {
+          console.error('Profile fetch error:', profileError);
+          showError('login-error-message', 'Profile not found.');
+          return;
+        }
+
+        if (profile.role !== role) {
+          console.error('Role mismatch:', { selected: role, actual: profile.role });
+          showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
+          return;
+        }
+
+        console.log('Redirecting to dashboard for role:', role);
+        redirectToDashboard(role);
+      }
 
       function redirectToDashboard(role) {
         const dashboards = {
@@ -598,273 +549,168 @@
       }
 
       async function handleSignUp(role, formData) {
-    const { email, password, confirmPassword, ...additionalData } = formData;
-    console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
+        const { email, password, confirmPassword, ...additionalData } = formData;
+        console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
 
-    if (!email || !password || !confirmPassword || !role) {
-        showError(`${role}-error-message`, 'Please fill in all required fields.');
-        console.error('Missing required fields:', { email, password, confirmPassword, role });
-        return;
-    }
-    if (password !== confirmPassword) {
-        showError(`${role}-error-message`, 'Passwords do not match.');
-        console.error('Password mismatch:', { password, confirmPassword });
-        return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-        showError(`${role}-error-message`, 'Invalid email format.');
-        console.error('Invalid email:', email);
-        return;
-    }
-
-    // First, check if user exists but doesn't have a profile
-    let userId;
-    let isExistingUser = false;
-
-    try {
-        // Try to sign in to see if user exists
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        if (signInData?.user) {
-            // User exists and password is correct
-            userId = signInData.user.id;
-            isExistingUser = true;
-            console.log('Existing user found:', userId);
+        if (!email || !password || !confirmPassword || !role) {
+          showError(`${role}-error-message`, 'Please fill in all required fields.');
+          console.error('Missing required fields:', { email, password, confirmPassword, role });
+          return;
         }
-    } catch (signInError) {
-        // User doesn't exist or password is wrong, proceed with signup
-        console.log('User does not exist or invalid credentials, proceeding with signup');
-    }
+        if (password !== confirmPassword) {
+          showError(`${role}-error-message`, 'Passwords do not match.');
+          console.error('Password mismatch:', { password, confirmPassword });
+          return;
+        }
 
-    if (!isExistingUser) {
-        // Sign up new user
-        console.log('Creating new user account');
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+          showError(`${role}-error-message`, 'Invalid email format.');
+          console.error('Invalid email:', email);
+          return;
+        }
+
+        console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
         const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
+          email,
+          password,
+          options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
         });
-        
         if (error) {
-            console.error('Supabase signup error:', error);
-            if (error.message === 'User already registered') {
-                showError(`${role}-error-message`, 'Email already registered. Please log in or use "Forgot Password" to reset your password.');
-            } else {
-                showError(`${role}-error-message`, `Signup failed: ${error.message}`);
-            }
-            return;
+          console.error('Supabase signup error:', error);
+          if (error.message === 'User already registered') {
+            showError(`${role}-error-message`, 'Email already registered. Please log in or use a different email.');
+          } else {
+            showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+          }
+          return;
         }
 
-        userId = data.user?.id;
-    }
-
-    if (!userId) {
-        // If we still don't have a user ID, try to get current user
-        console.log('No user ID, fetching current user...');
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) {
+        let userId = data.user?.id;
+        if (!userId) {
+          console.log('No user ID in signup response, fetching current user...');
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (userError) {
             console.error('Failed to fetch user:', userError);
             showError(`${role}-error-message`, `Failed to fetch user ID: ${userError.message}`);
             return;
+          }
+          userId = userData?.user?.id;
         }
-        userId = userData?.user?.id;
-    }
 
-    if (!userId) {
-        showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
-        console.error('No user ID found after signup');
-        return;
-    }
-    console.log('User ready:', { userId, email, isExistingUser });
+        if (!userId) {
+          showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+          console.error('No user ID found after signup');
+          return;
+        }
+        console.log('User signed up:', { userId, email });
 
-    // Create or update profile
-    const profileData = { 
-        id: userId, 
-        email, 
-        role, 
-        name: additionalData.name || email.split('@')[0] 
-    };
-    console.log('Creating/updating profile:', profileData);
-    
-    const { error: profileError } = await supabase.from('profiles').upsert([profileData], { 
-        onConflict: 'id',
-        ignoreDuplicates: false
-    });
-    
-    if (profileError) {
-        console.error('Profile creation error:', profileError);
-        showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
-        return;
-    }
+        // Create profile
+        const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+        console.log('Creating/updating profile:', profileData);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert([profileData], { onConflict: 'id' })
+          .select()
+          .single();
 
-    // Role-specific onboarding
-    try {
-        if (role === 'owner') {
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          if (profileError.code === '42501') {
+            showError(`${role}-error-message`, 'Permission denied for profile creation. Please contact support.');
+          } else {
+            showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
+          }
+          return;
+        }
+
+        // Role-specific onboarding
+        try {
+          if (role === 'owner') {
             if (!additionalData.associationId) {
-                showError('owner-error-message', 'Please select an association.');
-                console.error('No association selected:', additionalData);
-                return;
+              showError('owner-error-message', 'Please select an association.');
+              console.error('No association selected:', additionalData);
+              return;
             }
-            
-            // Check if owner already exists in members table
-            const { data: existingOwner, error: checkError } = await supabase
-                .from('members')
-                .select('id')
-                .eq('auth_id', userId)
-                .eq('role', 'owner')
-                .single();
-
-            if (checkError && checkError.code !== 'PGRST116') { // Ignore "no rows" error
-                console.error('Error checking existing owner:', checkError);
+            const ownerId = generateUUID();
+            console.log('Creating owner record:', { ownerId, admin_id: userId, association_id: additionalData.associationId });
+            const { error: ownerError } = await supabase.from('owners').insert([
+              { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
+            ]);
+            if (ownerError) {
+              console.error('Owner creation error:', ownerError);
+              showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
+              return;
             }
-
-            if (!existingOwner) {
-                // Create owner record in members table
-                const ownerId = generateUUID();
-                console.log('Creating owner record:', { 
-                    ownerId, 
-                    auth_id: userId, 
-                    association_id: additionalData.associationId,
-                    member_email: email,
-                    member_name: additionalData.name,
-                    role: 'owner',
-                    is_verified: false // New owners need verification
-                });
-                
-                const { error: ownerError } = await supabase.from('members').insert([
-                    { 
-                        id: ownerId, 
-                        auth_id: userId, 
-                        association_id: additionalData.associationId,
-                        member_email: email,
-                        member_name: additionalData.name,
-                        role: 'owner',
-                        is_verified: false // Association needs to verify
-                    }
-                ]);
-                if (ownerError) {
-                    console.error('Owner creation error:', ownerError);
-                    showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
-                    return;
-                }
-            } else {
-                console.log('Owner already exists in members table:', existingOwner.id);
-                // Update existing owner record if needed
-                const { error: updateError } = await supabase
-                    .from('members')
-                    .update({
-                        association_id: additionalData.associationId,
-                        member_name: additionalData.name,
-                        is_verified: false // Reset verification when changing association
-                    })
-                    .eq('id', existingOwner.id);
-                
-                if (updateError) {
-                    console.error('Owner update error:', updateError);
-                }
+          } else if (role === 'association') {
+            const associationId = userId; // Use user ID for association
+            console.log('Creating association:', { associationId, association_name: additionalData.associationName });
+            const { error: assocError } = await supabase.from('associations').insert([
+              { id: associationId, association_name: additionalData.associationName }
+            ]);
+            if (assocError) {
+              console.error('Association creation error:', assocError);
+              showError('association-error-message', `Failed to create association: ${assocError.message}`);
+              return;
             }
-        } else if (role === 'association') {
-            // Check if association already exists
-            const { data: existingAssociation, error: checkError } = await supabase
-                .from('associations')
-                .select('id')
-                .eq('id', userId)
-                .single();
-
-            if (checkError && checkError.code !== 'PGRST116') {
-                console.error('Error checking existing association:', checkError);
-            }
-
-            if (!existingAssociation) {
-                const associationId = userId; // Use user ID as association ID
-                console.log('Creating association:', { associationId, association_name: additionalData.associationName });
-                const { error: assocError } = await supabase.from('associations').insert([
-                    { 
-                        id: associationId, 
-                        association_name: additionalData.associationName,
-                        email: email,
-                        admin_name: additionalData.name
-                    }
-                ]);
-                if (assocError) {
-                    console.error('Association creation error:', assocError);
-                    showError('association-error-message', `Failed to create association: ${assocError.message}`);
-                    return;
-                }
-            }
-        } else if (role === 'driver') {
+          } else if (role === 'driver') {
             const driverId = generateUUID();
             const driverData = {
-                id: driverId,
-                owner_id: null,
-                association_id: additionalData.associationId || null,
-                name: additionalData.name,
-                surname: additionalData.surname,
-                id_number: additionalData.idNumber,
-                license_type: additionalData.licenseType,
-                license_expiry: additionalData.licenseExpiry || null,
-                prdp: additionalData.prdp === 'true'
+              id: driverId,
+              owner_id: null,
+              association_id: additionalData.associationId || null,
+              name: additionalData.name,
+              surname: additionalData.surname,
+              id_number: additionalData.idNumber,
+              license_type: additionalData.licenseType,
+              license_expiry: additionalData.licenseExpiry || null,
+              prdp: additionalData.prdp === 'true'
             };
             console.log('Creating driver:', driverData);
             if (driverData.association_id) {
-                const { data: assoc, error: assocError } = await supabase
-                    .from('associations')
-                    .select('id')
-                    .eq('id', driverData.association_id)
-                    .single();
-                if (assocError || !assoc) {
-                    console.error('Invalid association ID:', assocError);
-                    showError('driver-error-message', 'Invalid Association ID.');
-                    return;
-                }
+              const { data: assoc, error: assocError } = await supabase
+                .from('associations')
+                .select('id')
+                .eq('id', driverData.association_id)
+                .single();
+              if (assocError || !assoc) {
+                console.error('Invalid association ID:', assocError);
+                showError('driver-error-message', 'Invalid Association ID.');
+                return;
+              }
             }
             const { error: driverError } = await supabase.from('drivers').insert([driverData]);
             if (driverError) {
-                console.error('Driver creation error:', driverError);
-                showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
-                return;
+              console.error('Driver creation error:', driverError);
+              showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
+              return;
             }
+          }
+        } catch (error) {
+          console.error('Onboarding error:', error);
+          showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
+          return;
         }
-    } catch (error) {
-        console.error('Onboarding error:', error);
-        showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
-        return;
-    }
 
-    // Only sign in if it's a new user
-    if (!isExistingUser) {
+        // Sign in after signup
         console.log('Attempting login after signup:', { email });
         const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
         if (loginError) {
-            console.error('Login error after signup:', loginError);
-            showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}. Please confirm your email if required.`);
-            return;
+          console.error('Login error after signup:', loginError);
+          showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}. Please confirm your email if required.`);
+          return;
         }
-    }
 
-    console.log('Redirecting to dashboard for role:', role);
-    redirectToDashboard(role);
-}
+        console.log('Redirecting to dashboard for role:', role);
+        redirectToDashboard(role);
+      }
 
       // Event Listeners
-      // Login form
       document.getElementById('login-form').addEventListener('submit', handleLogin);
-
-      // Google login
       document.getElementById('google-login-btn').addEventListener('click', () => {
         supabase.auth.signInWithOAuth({ provider: 'google' });
       });
-
-      // Show signup (role selection)
       document.getElementById('show-signup').addEventListener('click', showRoleSelection);
-
-      // Role selection next
       document.getElementById('role-next-btn').addEventListener('click', () => {
         const role = document.getElementById('signup-role').value;
         if (!role) {
@@ -873,47 +719,20 @@
         }
         showSignupForm(role);
       });
-
-      // Add forgot password functionality
-document.getElementById('show-forgot-password')?.addEventListener('click', async function() {
-    const email = document.getElementById('login-email').value;
-    
-    if (!email) {
-        showError('login-error-message', 'Please enter your email address to reset password.');
-        return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://realzee.github.io/Taxi-Drive/update-password.html',
-    });
-
-    if (error) {
-        showError('login-error-message', `Error sending reset email: ${error.message}`);
-    } else {
-        showError('login-error-message', 'Password reset email sent! Check your inbox.', 'success');
-    }
-});
-
-      // Back buttons
       document.getElementById('passenger-back-btn').addEventListener('click', showRoleSelection);
       document.getElementById('driver-back-btn').addEventListener('click', showRoleSelection);
       document.getElementById('owner-back-btn').addEventListener('click', showRoleSelection);
       document.getElementById('association-back-btn').addEventListener('click', showRoleSelection);
-
-      // Show login from various sections
       document.getElementById('show-login-from-role').addEventListener('click', showLogin);
       document.getElementById('show-login-from-passenger').addEventListener('click', showLogin);
       document.getElementById('show-login-from-driver').addEventListener('click', showLogin);
       document.getElementById('show-login-from-owner').addEventListener('click', showLogin);
       document.getElementById('show-login-from-association').addEventListener('click', showLogin);
-
-      // Signup forms
       document.getElementById('signup-passenger-form').addEventListener('submit', (e) => submitSignup('passenger', e));
       document.getElementById('signup-driver-form').addEventListener('submit', (e) => submitSignup('driver', e));
       document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
       document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
 
-      // Handle Google OAuth redirect
       supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session?.provider === 'google') {
           console.log('Google OAuth sign-in:', session);
@@ -921,7 +740,6 @@ document.getElementById('show-forgot-password')?.addEventListener('click', async
         }
       });
 
-      // Populate association dropdown for owner and driver forms if preselected
       if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
         populateAssociationDropdown();
       }
