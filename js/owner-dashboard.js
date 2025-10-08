@@ -904,6 +904,7 @@ function setupEventListeners() {
 }
 
 // Make functions globally available
+window.completeOwnerRegistration = completeOwnerRegistration;
 window.editDriver = editDriver;
 window.deleteDriver = deleteDriver;
 window.editVehicle = editVehicle;
