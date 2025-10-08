@@ -10,6 +10,7 @@
   <link rel="icon" href="./assets/favicon.ico">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <style>
+    /* Previous CSS unchanged */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -101,13 +102,6 @@
       background: rgba(255, 255, 255, 0.2);
       margin: 0 0.5rem;
     }
-    .error-message-success {
-    color: #4CAF50 !important;
-    }
-
-    .error-message-info {
-    color: #2196F3 !important;
-    }
     .text-sm { font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); }
     .text-link { color: #fff; text-decoration: underline; cursor: pointer; }
     .text-link:hover { color: #aee; }
@@ -140,7 +134,6 @@
         <div class="form-group">
           <label class="form-label" for="login-password">Password</label>
           <input id="login-password" type="password" placeholder="Password" class="form-input" required>
-        <span id="show-forgot-password" class="text-link" style="font-size: 0.8rem;">Forgot Password?</span>
         </div>
         <div class="form-group">
           <label class="form-label" for="login-role">Role</label>
@@ -225,8 +218,8 @@
           <input id="driver-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-name">First Name</label>
-          <input id="driver-name" type="text" placeholder="First Name" class="form-input" required>
+          <label class="form-label" for="driver-name">Name</label>
+          <input id="driver-name" type="text" placeholder="Name" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-surname">Surname</label>
@@ -238,7 +231,12 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-license-type">License Type</label>
-          <input id="driver-license-type" type="text" placeholder="License Type (e.g., Code B)" class="form-input" required>
+          <select id="driver-license-type" class="form-input" required>
+            <option value="" disabled selected>Select License Type</option>
+            <option value="Code 8">Code 8</option>
+            <option value="Code 10">Code 10</option>
+            <option value="Code 14">Code 14</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-license-expiry">License Expiry</label>
@@ -246,13 +244,14 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-prdp">PrDP</label>
-          <select id="driver-prdp" class="form-input">
+          <select id="driver-prdp" class="form-input" required>
+            <option value="" disabled selected>PrDP Status</option>
             <option value="true">Yes</option>
-            <option value="false" selected>No</option>
+            <option value="false">No</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-association-id">Association (Optional)</label>
+          <label class="form-label" for="driver-association-id">Association</label>
           <select id="driver-association-id" class="form-input">
             <option value="" selected>No Association</option>
           </select>
@@ -277,41 +276,40 @@
     </div>
 
     <!-- OWNER SIGNUP FORM -->
-<div id="signup-owner-section" class="hidden">
-    <form id="signup-owner-form">
+    <div id="signup-owner-section" class="hidden">
+      <form id="signup-owner-form">
         <div class="form-group">
-            <label class="form-label" for="owner-email">Email</label>
-            <input id="owner-email" type="email" placeholder="Email" class="form-input" required>
+          <label class="form-label" for="owner-email">Email</label>
+          <input id="owner-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-            <label class="form-label" for="owner-name">Full Name</label>
-            <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
+          <label class="form-label" for="owner-name">Full Name</label>
+          <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
         </div>
         <div class="form-group">
-            <label class="form-label" for="owner-association-id">Select Association</label>
-            <select id="owner-association-id" class="form-input" required>
-                <option value="" disabled selected>Loading associations...</option>
-            </select>
-            <small class="text-sm">You will need to be verified by the association before you can access all features.</small>
+          <label class="form-label" for="owner-association-id">Association</label>
+          <select id="owner-association-id" class="form-input" required>
+            <option value="" disabled selected>Select Association</option>
+          </select>
         </div>
         <div class="form-group">
-            <label class="form-label" for="owner-password">Password</label>
-            <input id="owner-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+          <label class="form-label" for="owner-password">Password</label>
+          <input id="owner-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
         </div>
         <div class="form-group">
-            <label class="form-label" for="owner-confirm-password">Confirm Password</label>
-            <input id="owner-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+          <label class="form-label" for="owner-confirm-password">Confirm Password</label>
+          <input id="owner-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
         </div>
         <div id="owner-error-message" class="error-message"></div>
-        <div style="display: flex; gap: 1rem;">
-            <button type="button" id="owner-back-btn" class="btn btn-secondary">Back</button>
-            <button type="submit" class="btn">Sign Up as Owner</button>
+        <div class="flex gap-4">
+          <button type="button" id="owner-back-btn" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn">Sign Up</button>
         </div>
-    </form>
-    <p class="text-sm mt-4">Already have an account?
+      </form>
+      <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-owner" class="text-link">Login</span>
-    </p>
-</div>
+      </p>
+    </div>
 
     <!-- ASSOCIATION SIGNUP FORM -->
     <div id="signup-association-section" class="hidden">
@@ -367,8 +365,10 @@
 
       function showError(elementId, message) {
         const element = document.getElementById(elementId);
-        element.textContent = message;
-        element.style.display = 'block';
+        if (element) {
+          element.textContent = message;
+          element.style.display = 'block';
+        }
       }
 
       function clearErrors() {
@@ -489,7 +489,7 @@
 
         if (profileError || !profile) {
           console.error('Profile fetch error:', profileError);
-          showError('login-error-message', 'Profile not found.');
+          showError('login-error-message', 'Profile not found. Please sign up first.');
           return;
         }
 
@@ -550,7 +550,7 @@
 
       async function handleSignUp(role, formData) {
         const { email, password, confirmPassword, ...additionalData } = formData;
-        console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
+        console.log('Signup attempt:', { role, email, passwordLength: password?.length, additionalData });
 
         if (!email || !password || !confirmPassword || !role) {
           showError(`${role}-error-message`, 'Please fill in all required fields.');
@@ -579,11 +579,18 @@
         if (error) {
           console.error('Supabase signup error:', error);
           if (error.message === 'User already registered') {
-            showError(`${role}-error-message`, 'Email already registered. Please log in or use a different email.');
+            console.log('Existing user found:', data.user?.id);
+            // Attempt login for existing user
+            const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+            if (loginError) {
+              console.error('Login error for existing user:', loginError);
+              showError(`${role}-error-message`, `Login failed: ${loginError.message}. Please use a different email or recover your password.`);
+              return;
+            }
           } else {
             showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+            return;
           }
-          return;
         }
 
         let userId = data.user?.id;
@@ -599,16 +606,25 @@
         }
 
         if (!userId) {
-          showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+          showError(`${role}-error-message`, 'Could not verify user ID. Please try again.');
           console.error('No user ID found after signup');
           return;
         }
-        console.log('User signed up:', { userId, email });
+        console.log('User ready:', { userId, email, isExistingUser: !!data.user?.aud });
+
+        // Verify authenticated session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          console.error('No active session:', sessionError);
+          showError(`${role}-error-message`, 'Authentication session not found. Please try again.');
+          return;
+        }
+        console.log('Authenticated session:', { userId: sessionData.session.user.id, accessToken: sessionData.session.access_token.substring(0, 10) + '...' });
 
         // Create profile
-        const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+        const profileData = { id: userId, email, role, name: additionalData.name || additionalData.associationName || email.split('@')[0] };
         console.log('Creating/updating profile:', profileData);
-        const { error: profileError } = await supabase
+        const { data: profileResult, error: profileError } = await supabase
           .from('profiles')
           .upsert([profileData], { onConflict: 'id' })
           .select()
@@ -617,12 +633,14 @@
         if (profileError) {
           console.error('Profile creation error:', profileError);
           if (profileError.code === '42501') {
-            showError(`${role}-error-message`, 'Permission denied for profile creation. Please contact support.');
+            showError(`${role}-error-message`, 'Permission denied for profile creation. Please contact support or verify your account.');
+            console.error('RLS permission issue. Check policies for profiles table.');
           } else {
             showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
           }
           return;
         }
+        console.log('Profile created/updated:', profileResult);
 
         // Role-specific onboarding
         try {
