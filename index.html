@@ -370,8 +370,8 @@
       try {
         const { data, error } = await supabase
           .from('associations')
-          .select('id, name')
-          .order('name', { ascending: true });
+          .select('id, association_name')
+          .order('association_name', { ascending: true });
 
         if (error) {
           showError('owner-error-message', 'Failed to load associations: ' + error.message);
@@ -389,7 +389,7 @@
         data.forEach(assoc => {
           const option = document.createElement('option');
           option.value = assoc.id;
-          option.textContent = assoc.name;
+          option.textContent = assoc.association_name;
           select.appendChild(option);
         });
       } catch (error) {
@@ -523,7 +523,7 @@
         } else if (role === 'association') {
           const associationId = generateUUID();
           const { error: assocError } = await supabase.from('associations').insert([
-            { id: associationId, name: additionalData.associationName }
+            { id: associationId, association_name: additionalData.associationName }
           ]);
           if (assocError) {
             showError('association-error-message', 'Failed to create association: ' + assocError.message);
