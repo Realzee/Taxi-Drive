@@ -629,37 +629,75 @@
       }
       console.log('Authenticated session:', { userId: sessionData.session.user.id, accessToken: sessionData.session.access_token.substring(0, 10) + '...' });
 
-      // Create/update profile with retry logic
-      const profileData = { id: userId, email, role, name: additionalData.name || additionalData.associationName || email.split('@')[0] };
-      console.log('Creating/updating profile:', profileData);
-      let profileResult, profileError;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        console.log(`Profile upsert attempt ${attempt}`);
-        const { data, error } = await supabase
+      // Check if profile exists for existing users
+      if (isExistingUser) {
+        const { data: existingProfile, error: profileCheckError } = await supabase
           .from('profiles')
-          .upsert([profileData], { onConflict: 'id' })
-          .select()
+          .select('id, role')
+          .eq('id', userId)
           .single();
-        profileResult = data;
-        profileError = error;
-        if (!error) break;
-        console.warn(`Profile upsert attempt ${attempt} failed:`, error);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+        if (existingProfile && existingProfile.role === role) {
+          console.log('Existing profile found, skipping upsert:', existingProfile);
+        } else if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error('Profile check error:', profileCheckError);
+          showError(`${role}-error-message`, `Failed to check existing profile: ${profileCheckError.message}`);
+          return;
+        } else {
+          // Proceed with upsert for new profile or role mismatch
+          await upsertProfile(role, userId, email, additionalData);
+        }
+      } else {
+        // New user, always upsert profile
+        await upsertProfile(role, userId, email, additionalData);
       }
 
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        if (profileError.code === '42501') {
-          showError(`${role}-error-message`, 'Permission denied for profile creation. Please contact support or verify your account.');
-          console.error('RLS permission issue. Check policies for profiles table.');
-        } else {
-          showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
+      async function upsertProfile(role, userId, email, additionalData) {
+        const profileData = { id: userId, email, role, name: additionalData.name || additionalData.associationName || email.split('@')[0] };
+        console.log('Creating/updating profile:', profileData);
+        let profileResult, profileError;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          console.log(`Profile upsert attempt ${attempt}`);
+          const { data, error } = await supabase
+            .from('profiles')
+            .upsert([profileData], { onConflict: 'id' })
+            .select()
+            .single();
+          profileResult = data;
+          profileError = error;
+          if (!error) break;
+          console.warn(`Profile upsert attempt ${attempt} failed:`, error);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        return;
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          if (profileError.code === '42501') {
+            showError(`${role}-error-message`, 'Permission denied for profile creation. Please contact support or verify your account.');
+            console.error('RLS permission issue. Check policies for profiles table.');
+            console.log('Debug: User ID:', userId, 'Auth UID:', await supabase.auth.getUser().then(d => d.data.user?.id));
+          } else {
+            showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
+          }
+          return false;
+        }
+        console.log('Profile created/updated:', profileResult);
+        return true;
       }
-      console.log('Profile created/updated:', profileResult);
 
       // Role-specific onboarding
+      if (isExistingUser) {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+        if (existingProfile && existingProfile.role !== role) {
+          console.error('Role mismatch for existing user:', { selected: role, actual: existingProfile.role });
+          showError(`${role}-error-message`, `Account already registered with role ${existingProfile.role}. Please log in with that role.`);
+          return;
+        }
+      }
+
       try {
         if (role === 'owner') {
           if (!additionalData.associationId) {
