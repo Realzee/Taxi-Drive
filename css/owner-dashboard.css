@@ -478,6 +478,27 @@ tr:hover {
     border-left: 4px solid #17a2b8;
 }
 
+.verification-badge {
+    margin-top: 5px;
+    font-size: 0.8rem;
+}
+
+.status-pending {
+    background: #ff9800;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.status-verified {
+    background: #4caf50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(50%) translateY(-20px);
