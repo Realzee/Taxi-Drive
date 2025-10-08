@@ -765,4 +765,3 @@ window.openMapModal = openMapModal;
 window.openProfileModal = openProfileModal;
 window.openWalletModal = openWalletModal;
 window.handleLogout = handleLogout;
-
