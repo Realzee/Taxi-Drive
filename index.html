@@ -48,6 +48,7 @@
       background: rgba(255, 255, 255, 0.12);
       color: #fff;
       font-size: 0.95rem;
+      box-sizing: border-box;
     }
     .form-input::placeholder { color: rgba(255, 255, 255, 0.6); }
     select.form-input {
@@ -104,8 +105,11 @@
     .text-link { color: #fff; text-decoration: underline; cursor: pointer; }
     .text-link:hover { color: #aee; }
     .error-message { color: #ff8c8c; font-size: 0.85rem; margin-bottom: 0.8rem; }
-    .form-group { margin-bottom: 1rem; }
+    .form-group { margin-bottom: 1rem; width: 100%; }
     .form-label { font-size: 0.9rem; margin-bottom: 0.3rem; display: block; }
+    .mt-4 { margin-top: 1.5rem; }
+    .flex { display: flex; }
+    .gap-4 { gap: 1rem; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -195,7 +199,7 @@
           <input id="passenger-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
         </div>
         <div id="passenger-error-message" class="error-message"></div>
-        <div style="display: flex; gap: 1rem;">
+        <div class="flex gap-4">
           <button type="button" id="passenger-back-btn" class="btn btn-secondary">Back</button>
           <button type="submit" class="btn">Sign Up</button>
         </div>
@@ -254,7 +258,7 @@
           <input id="driver-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
         </div>
         <div id="driver-error-message" class="error-message"></div>
-        <div style="display: flex; gap: 1rem;">
+        <div class="flex gap-4">
           <button type="button" id="driver-back-btn" class="btn btn-secondary">Back</button>
           <button type="submit" class="btn">Sign Up</button>
         </div>
@@ -290,7 +294,7 @@
           <input id="owner-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
         </div>
         <div id="owner-error-message" class="error-message"></div>
-        <div style="display: flex; gap: 1rem;">
+        <div class="flex gap-4">
           <button type="button" id="owner-back-btn" class="btn btn-secondary">Back</button>
           <button type="submit" class="btn">Sign Up</button>
         </div>
@@ -320,7 +324,7 @@
           <input id="association-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
         </div>
         <div id="association-error-message" class="error-message"></div>
-        <div style="display: flex; gap: 1rem;">
+        <div class="flex gap-4">
           <button type="button" id="association-back-btn" class="btn btn-secondary">Back</button>
           <button type="submit" class="btn">Sign Up</button>
         </div>
@@ -332,8 +336,9 @@
   </div>
 
   <script>
-    // Wait for Supabase library to load
-    window.addEventListener('load', () => {
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wait for Supabase library to load
       if (!window.supabase) {
         console.error('Supabase library failed to load');
         document.querySelectorAll('.error-message').forEach(el => {
@@ -688,60 +693,58 @@
       }
 
       // Event Listeners
-      document.addEventListener('DOMContentLoaded', () => {
-        // Login form
-        document.getElementById('login-form').addEventListener('submit', handleLogin);
+      // Login form
+      document.getElementById('login-form').addEventListener('submit', handleLogin);
 
-        // Google login
-        document.getElementById('google-login-btn').addEventListener('click', () => {
-          supabase.auth.signInWithOAuth({ provider: 'google' });
-        });
+      // Google login
+      document.getElementById('google-login-btn').addEventListener('click', () => {
+        supabase.auth.signInWithOAuth({ provider: 'google' });
+      });
 
-        // Show signup (role selection)
-        document.getElementById('show-signup').addEventListener('click', showRoleSelection);
+      // Show signup (role selection)
+      document.getElementById('show-signup').addEventListener('click', showRoleSelection);
 
-        // Role selection next
-        document.getElementById('role-next-btn').addEventListener('click', () => {
-          const role = document.getElementById('signup-role').value;
-          if (!role) {
-            showError('role-error-message', 'Please select a role.');
-            return;
-          }
-          showSignupForm(role);
-        });
+      // Role selection next
+      document.getElementById('role-next-btn').addEventListener('click', () => {
+        const role = document.getElementById('signup-role').value;
+        if (!role) {
+          showError('role-error-message', 'Please select a role.');
+          return;
+        }
+        showSignupForm(role);
+      });
 
-        // Back buttons
-        document.getElementById('passenger-back-btn').addEventListener('click', showRoleSelection);
-        document.getElementById('driver-back-btn').addEventListener('click', showRoleSelection);
-        document.getElementById('owner-back-btn').addEventListener('click', showRoleSelection);
-        document.getElementById('association-back-btn').addEventListener('click', showRoleSelection);
+      // Back buttons
+      document.getElementById('passenger-back-btn').addEventListener('click', showRoleSelection);
+      document.getElementById('driver-back-btn').addEventListener('click', showRoleSelection);
+      document.getElementById('owner-back-btn').addEventListener('click', showRoleSelection);
+      document.getElementById('association-back-btn').addEventListener('click', showRoleSelection);
 
-        // Show login from various sections
-        document.getElementById('show-login-from-role').addEventListener('click', showLogin);
-        document.getElementById('show-login-from-passenger').addEventListener('click', showLogin);
-        document.getElementById('show-login-from-driver').addEventListener('click', showLogin);
-        document.getElementById('show-login-from-owner').addEventListener('click', showLogin);
-        document.getElementById('show-login-from-association').addEventListener('click', showLogin);
+      // Show login from various sections
+      document.getElementById('show-login-from-role').addEventListener('click', showLogin);
+      document.getElementById('show-login-from-passenger').addEventListener('click', showLogin);
+      document.getElementById('show-login-from-driver').addEventListener('click', showLogin);
+      document.getElementById('show-login-from-owner').addEventListener('click', showLogin);
+      document.getElementById('show-login-from-association').addEventListener('click', showLogin);
 
-        // Signup forms
-        document.getElementById('signup-passenger-form').addEventListener('submit', (e) => submitSignup('passenger', e));
-        document.getElementById('signup-driver-form').addEventListener('submit', (e) => submitSignup('driver', e));
-        document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
-        document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
+      // Signup forms
+      document.getElementById('signup-passenger-form').addEventListener('submit', (e) => submitSignup('passenger', e));
+      document.getElementById('signup-driver-form').addEventListener('submit', (e) => submitSignup('driver', e));
+      document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
+      document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
 
-        // Handle Google OAuth redirect
-        supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' && session?.provider === 'google') {
-            console.log('Google OAuth sign-in:', session);
-            showRoleSelection();
-          }
-        });
-
-        // Populate association dropdown for owner and driver forms if preselected
-        if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
-          populateAssociationDropdown();
+      // Handle Google OAuth redirect
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.provider === 'google') {
+          console.log('Google OAuth sign-in:', session);
+          showRoleSelection();
         }
       });
+
+      // Populate association dropdown for owner and driver forms if preselected
+      if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
+        populateAssociationDropdown();
+      }
     });
   </script>
 </body>
