@@ -26,7 +26,7 @@ async function initializeDashboard() {
       return;
     }
 
-    console.log('Authenticated user ID:', user.id); // Log user ID for debugging
+    console.log('Authenticated user ID:', user.id);
 
     const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profileError || !profile || profile.role !== 'owner') {
@@ -44,21 +44,60 @@ async function initializeDashboard() {
     }
     currentUser = user;
 
-    const { data: owner, error: ownerError } = await supabase.from('owners').select('*').eq('admin_id', user.id).maybeSingle();
+    // UPDATED: Look for owner in members table instead of owners table
+    const { data: owner, error: ownerError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('auth_id', user.id)
+      .eq('role', 'owner')
+      .maybeSingle();
+
     if (ownerError) {
       console.error('Error fetching owner:', ownerError);
       showNotification('Failed to load owner data. Please contact support.', 'error');
       return;
     }
+    
     if (!owner) {
       console.error('No owner record found for user:', user.id);
-      showNotification('No owner profile found. Please set up your owner account.', 'error');
+      showNotification('No owner profile found or your account is not verified yet. Please contact your association.', 'error');
+      
+      // Show a more helpful message for unverified owners
+      const userNameElement = document.getElementById('user-name');
+      if (userNameElement) {
+        userNameElement.textContent = `Welcome (Pending Verification) - ${user.email}`;
+      }
       return;
+    }
+
+    // Check if owner is verified
+    if (!owner.is_verified) {
+      console.warn('Owner account not verified:', owner.id);
+      showNotification('Your owner account is pending verification by the association. Some features may be limited.', 'warning');
     }
 
     currentOwner = owner;
     currentOwnerId = owner.id;
     currentAssociationId = owner.association_id;
+
+    console.log('Owner data loaded:', {
+      id: currentOwnerId,
+      association_id: currentAssociationId,
+      is_verified: owner.is_verified
+    });
+
+    if (currentOwner) {
+    // Show verification status
+    const verificationElement = document.getElementById('verification-status');
+    if (verificationElement) {
+        verificationElement.style.display = 'block';
+        if (currentOwner.is_verified) {
+            verificationElement.innerHTML = '<span class="status-verified">✓ Verified Owner</span>';
+        } else {
+            verificationElement.innerHTML = '<span class="status-pending">⏳ Pending Verification</span>';
+        }
+    }
+}
 
     await loadDrivers();
     await loadVehicles();
@@ -82,7 +121,11 @@ async function loadDrivers() {
   }
 
   try {
-    const { data: drivers, error } = await supabase.from('drivers').select('*').eq('owner_id', currentOwnerId);
+    const { data: drivers, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('owner_id', currentOwnerId);
+
     if (error) throw error;
 
     const tbody = document.querySelector('#driver-table tbody');
@@ -119,12 +162,16 @@ async function loadVehicles() {
   if (!currentOwnerId) {
     console.warn('Cannot load vehicles: currentOwnerId is null');
     showNotification('Unable to load vehicles due to missing owner profile.', 'error');
-    renderMapMarkers([]); // Render map with no vehicles
+    renderMapMarkers([]);
     return;
   }
 
   try {
-    const { data: vehicles, error } = await supabase.from('vehicles').select('*').eq('owner_id', currentOwnerId);
+    const { data: vehicles, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('owner_id', currentOwnerId);
+
     if (error) throw error;
 
     const tbody = document.querySelector('#vehicle-table tbody');
@@ -154,7 +201,7 @@ async function loadVehicles() {
   } catch (error) {
     console.error('Error loading vehicles:', error);
     showNotification('Failed to load vehicles. Please try again.', 'error');
-    renderMapMarkers([]); // Render map even if vehicle load fails
+    renderMapMarkers([]);
   }
 }
 
@@ -166,7 +213,11 @@ async function loadFinancials() {
   }
 
   try {
-    const { data: txns, error } = await supabase.from('transactions').select('*').eq('owner_id', currentOwnerId);
+    const { data: txns, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('owner_id', currentOwnerId);
+
     if (error) throw error;
 
     const total = txns?.reduce((sum, t) => sum + t.amount, 0) || 0;
@@ -472,6 +523,68 @@ async function editVehicle(id) {
   }
 }
 
+
+// Add this debug function
+async function debugOwnerData(userId) {
+  try {
+    console.log('=== DEBUG OWNER DATA ===');
+    
+    // Check profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    console.log('Profile data:', profile, 'Error:', profileError);
+
+    // Check members table for owner record
+    const { data: owner, error: ownerError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('auth_id', userId)
+      .eq('role', 'owner')
+      .single();
+    console.log('Owner data from members table:', owner, 'Error:', ownerError);
+
+    // Check associations table if needed
+    if (owner?.association_id) {
+      const { data: association, error: assocError } = await supabase
+        .from('associations')
+        .select('association_name')
+        .eq('id', owner.association_id)
+        .single();
+      console.log('Association data:', association, 'Error:', assocError);
+    }
+
+  } catch (error) {
+    console.error('Debug error:', error);
+  }
+}
+
+// Call this in initializeDashboard for debugging
+async function initializeDashboard() {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.log('No authenticated user, redirecting to login. Error:', authError?.message || 'No user found');
+      showNotification('No authenticated user. Redirecting to login.', 'error');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    console.log('Authenticated user ID:', user.id);
+
+    // Debug: Check what data exists for this user
+    await debugOwnerData(user.id);
+
+    // ... rest of the initializeDashboard function
+  } catch (error) {
+    console.error('Error initializing dashboard:', error);
+    showNotification('Failed to initialize dashboard. Please try refreshing or contact support.', 'error');
+  }
+}
+
+
 // === MAP ===
 function initMap(lat = -28.214, lng = 32.043) {
   const mapContainer = document.getElementById('map');
@@ -640,11 +753,46 @@ function listenRealtime() {
 
   try {
     supabase.channel('realtime-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' },
-        payload => { if (payload.new?.owner_id === currentOwnerId) loadVehicles(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' },
-        payload => { if (payload.new?.owner_id === currentOwnerId) loadDrivers(); })
-      .subscribe();
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'vehicles',
+        filter: `owner_id=eq.${currentOwnerId}`
+      }, payload => {
+        console.log('Vehicle update:', payload);
+        loadVehicles();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'drivers',
+        filter: `owner_id=eq.${currentOwnerId}`
+      }, payload => {
+        console.log('Driver update:', payload);
+        loadDrivers();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'members',
+        filter: `auth_id=eq.${currentUser.id}`
+      }, payload => {
+        console.log('Owner profile update:', payload);
+        // Reload owner data if profile changes (like verification status)
+        if (payload.new && payload.new.auth_id === currentUser.id) {
+          currentOwner = payload.new;
+          currentOwnerId = payload.new.id;
+          currentAssociationId = payload.new.association_id;
+          
+          // Update UI if owner gets verified
+          if (payload.new.is_verified && !payload.old?.is_verified) {
+            showNotification('Your owner account has been verified! Full access granted.', 'success');
+          }
+        }
+      })
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
   } catch (error) {
     console.error('Error setting up realtime updates:', error);
     showNotification('Failed to set up realtime updates.', 'error');
