@@ -78,7 +78,7 @@
                         </div>
                         <div class="stat-info">
                             <h4 class="stat-value" id="stat-members">0</h4>
-                            <p class="stat-label">Registered Members</p>
+                            <p class="stat-label">Registered Owners</p>
                         </div>
                     </div>
                     
@@ -125,7 +125,7 @@
                     
                     <button class="quick-action-btn btn btn-primary" data-action="add-member">
                         <i class="fas fa-user-plus"></i>
-                        <span>Add Member</span>
+                        <span>Add Owner</span>
                     </button>
                     
                     <button class="quick-action-btn btn btn-secondary" data-action="manage-parts">
@@ -143,15 +143,15 @@
             <!-- Recent Members -->
             <section class="recent-section">
                 <div class="section-header">
-                    <h3 class="section-title">Recent Members</h3>
+                    <h3 class="section-title">Recent Owners</h3>
                     <a href="#" class="view-all">View All</a>
                 </div>
                 <div class="list-container" id="recent-members-content">
                     <!-- Members will be loaded here dynamically -->
                     <div class="empty-state">
                         <i class="fas fa-users"></i>
-                        <h3>No Members Yet</h3>
-                        <p>Start by adding members to your association.</p>
+                        <h3>No Owners Yet</h3>
+                        <p>Start by adding owners to your association.</p>
                     </div>
                 </div>
             </section>
@@ -402,20 +402,20 @@
     <div id="add-member-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add New Member</h3>
+                <h3>Add New Owner</h3>
                 <button class="modal-close">&times;</button>
             </div>
 
                 <div class="form-group checkbox-group">
                 <input type="checkbox" id="generate-credentials" class="form-checkbox">
-                <label for="generate-credentials">Generate login credentials for this member</label>
+                <label for="generate-credentials">Generate login credentials for this owner</label>
                 </div>
 
 
             <div class="modal-body">
                 <form id="add-member-form">
                     <div class="form-group">
-                        <label for="member-email">Member Email</label>
+                        <label for="member-email">Owner Email</label>
                         <input type="email" id="member-email" class="form-input" required>
                     </div>
                     
@@ -434,7 +434,6 @@
                         <select id="member-role" class="form-input" required>
                             <option value="driver">Driver</option>
                             <option value="owner">Owner</option>
-                            <option value="member">Member</option>
                         </select>
                     </div>
                     
@@ -445,7 +444,7 @@
                     
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary btn-cancel">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Member</button>
+                        <button type="submit" class="btn btn-primary">Add Owner</button>
                     </div>
                 </form>
             </div>
