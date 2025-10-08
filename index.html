@@ -333,351 +333,363 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    function generateUUID() {
-      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-      );
-    }
-
-    function showError(elementId, message) {
-      const element = document.getElementById(elementId);
-      element.textContent = message;
-      element.style.display = 'block';
-    }
-
-    function clearErrors() {
-      document.querySelectorAll('.error').forEach(el => {
-        el.textContent = '';
-        el.style.display = 'none';
-      });
-    }
-
-    function showLogin() {
-      document.getElementById('login-form').style.display = 'block';
-      document.getElementById('signup-form').style.display = 'none';
-      clearErrors();
-    }
-
-    function showSignup() {
-      document.getElementById('login-form').style.display = 'none';
-      document.getElementById('signup-form').style.display = 'block';
-      clearErrors();
-    }
-
-    function showRoleForm(role) {
-      document.getElementById('passenger-signup-form').style.display = role === 'passenger' ? 'block' : 'none';
-      document.getElementById('driver-signup-form').style.display = role === 'driver' ? 'block' : 'none';
-      document.getElementById('owner-signup-form').style.display = role === 'owner' ? 'block' : 'none';
-      document.getElementById('association-signup-form').style.display = role === 'association' ? 'block' : 'none';
-      clearErrors();
-      if (role === 'owner' || role === 'driver') {
-        populateAssociationDropdown();
-      }
-    }
-
-    async function populateAssociationDropdown() {
-      const select = document.getElementById('owner-association-id');
-      const driverSelect = document.getElementById('driver-association-id');
-      select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
-      driverSelect.innerHTML = '<option value="" selected>No Association</option>';
-
-      try {
-        console.log('Fetching associations from Supabase');
-        const { data, error } = await supabase
-          .from('associations')
-          .select('id, association_name')
-          .order('association_name', { ascending: true });
-
-        if (error) {
-          console.error('Association fetch error:', error);
-          showError('owner-error-message', 'Failed to load associations: ' + error.message);
-          select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          console.warn('No associations found');
-          showError('owner-error-message', 'No associations available. Please create one first.');
-          select.innerHTML = '<option value="" disabled selected>No associations available</option>';
-          return;
-        }
-
-        console.log('Associations loaded:', data);
-        select.innerHTML = '<option value="" disabled selected>Select Association</option>';
-        data.forEach(assoc => {
-          const option = document.createElement('option');
-          option.value = assoc.id;
-          option.textContent = assoc.association_name;
-          select.appendChild(option);
-          driverSelect.appendChild(option.cloneNode(true));
+    // Wait for Supabase library to load
+    window.addEventListener('load', () => {
+      if (!window.supabase) {
+        console.error('Supabase library failed to load');
+        document.querySelectorAll('.error').forEach(el => {
+          el.textContent = 'Failed to load Supabase library. Please try again later.';
+          el.style.display = 'block';
         });
-      } catch (error) {
-        console.error('Unexpected error in populateAssociationDropdown:', error);
-        showError('owner-error-message', 'Error loading associations: ' + error.message);
-        select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
-      }
-    }
-
-    async function handleLogin() {
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-      const role = document.getElementById('login-role').value;
-
-      clearErrors();
-      if (!email || !password || !role) {
-        showError('login-error-message', 'Please fill in all fields.');
         return;
       }
 
-      console.log('Login attempt:', { email, role });
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Login error:', error);
-        showError('login-error-message', `Login failed: ${error.message}`);
-        return;
+      const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      function generateUUID() {
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
       }
 
-      // Verify role
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        console.error('Failed to fetch user:', userError);
-        showError('login-error-message', 'Failed to verify user.');
-        return;
+      function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        element.textContent = message;
+        element.style.display = 'block';
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        console.error('Profile fetch error:', profileError);
-        showError('login-error-message', 'Profile not found.');
-        return;
+      function clearErrors() {
+        document.querySelectorAll('.error').forEach(el => {
+          el.textContent = '';
+          el.style.display = 'none';
+        });
       }
 
-      if (profile.role !== role) {
-        console.error('Role mismatch:', { selected: role, actual: profile.role });
-        showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
-        return;
+      function showLogin() {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
+        clearErrors();
       }
 
-      console.log('Redirecting to dashboard for role:', role);
-      redirectToDashboard(role);
-    }
-
-    function redirectToDashboard(role) {
-      const dashboards = {
-        passenger: 'passenger-dashboard.html',
-        driver: 'driver-dashboard.html',
-        owner: 'owner-dashboard.html',
-        association: 'association-dashboard.html'
-      };
-      window.location.href = `/Taxi-Drive/${dashboards[role]}`;
-    }
-
-    async function submitSignup(role) {
-      const formData = {};
-      if (role === 'passenger') {
-        formData.email = document.getElementById('passenger-email').value;
-        formData.name = document.getElementById('passenger-name').value;
-        formData.password = document.getElementById('passenger-password').value;
-        formData.confirmPassword = document.getElementById('passenger-confirm-password').value;
-      } else if (role === 'driver') {
-        formData.email = document.getElementById('driver-email').value;
-        formData.name = document.getElementById('driver-name').value;
-        formData.surname = document.getElementById('driver-surname').value;
-        formData.idNumber = document.getElementById('driver-id-number').value;
-        formData.licenseType = document.getElementById('driver-license-type').value;
-        formData.licenseExpiry = document.getElementById('driver-license-expiry').value;
-        formData.prdp = document.getElementById('driver-prdp').value;
-        formData.associationId = document.getElementById('driver-association-id').value;
-        formData.password = document.getElementById('driver-password').value;
-        formData.confirmPassword = document.getElementById('driver-confirm-password').value;
-      } else if (role === 'owner') {
-        formData.email = document.getElementById('owner-email').value;
-        formData.name = document.getElementById('owner-name').value;
-        formData.associationId = document.getElementById('owner-association-id').value;
-        formData.password = document.getElementById('owner-password').value;
-        formData.confirmPassword = document.getElementById('owner-confirm-password').value;
-      } else if (role === 'association') {
-        formData.email = document.getElementById('association-email').value;
-        formData.associationName = document.getElementById('association-name').value;
-        formData.password = document.getElementById('association-password').value;
-        formData.confirmPassword = document.getElementById('association-confirm-password').value;
+      function showSignup() {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('signup-form').style.display = 'block';
+        clearErrors();
       }
 
-      await handleSignUp(role, formData);
-    }
-
-    async function handleSignUp(role, formData) {
-      const { email, password, confirmPassword, ...additionalData } = formData;
-      console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
-
-      if (!email || !password || !confirmPassword || !role) {
-        showError(`${role}-error-message`, 'Please fill in all required fields.');
-        console.error('Missing required fields:', { email, password, confirmPassword, role });
-        return;
-      }
-      if (password !== confirmPassword) {
-        showError(`${role}-error-message`, 'Passwords do not match.');
-        console.error('Password mismatch:', { password, confirmPassword });
-        return;
-      }
-
-      // Validate email format
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email)) {
-        showError(`${role}-error-message`, 'Invalid email format.');
-        console.error('Invalid email:', email);
-        return;
-      }
-
-      // Sign up with Supabase
-      console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
-      });
-      if (error) {
-        console.error('Supabase signup error:', error);
-        if (error.message === 'User already registered') {
-          showError(`${role}-error-message`, 'Email already registered. Please log in or use a different email.');
-        } else {
-          showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+      function showRoleForm(role) {
+        document.getElementById('passenger-signup-form').style.display = role === 'passenger' ? 'block' : 'none';
+        document.getElementById('driver-signup-form').style.display = role === 'driver' ? 'block' : 'none';
+        document.getElementById('owner-signup-form').style.display = role === 'owner' ? 'block' : 'none';
+        document.getElementById('association-signup-form').style.display = role === 'association' ? 'block' : 'none';
+        clearErrors();
+        if (role === 'owner' || role === 'driver') {
+          populateAssociationDropdown();
         }
-        return;
       }
 
-      let userId = data.user?.id;
-      if (!userId) {
-        console.log('No user ID in signup response, fetching current user...');
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          console.error('Failed to fetch user:', userError);
-          showError(`${role}-error-message`, `Failed to fetch user ID: ${userError.message}`);
+      async function populateAssociationDropdown() {
+        const select = document.getElementById('owner-association-id');
+        const driverSelect = document.getElementById('driver-association-id');
+        select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
+        driverSelect.innerHTML = '<option value="" selected>No Association</option>';
+
+        try {
+          console.log('Fetching associations from Supabase');
+          const { data, error } = await supabase
+            .from('associations')
+            .select('id, association_name')
+            .order('association_name', { ascending: true });
+
+          if (error) {
+            console.error('Association fetch error:', error);
+            showError('owner-error-message', 'Failed to load associations: ' + error.message);
+            select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            console.warn('No associations found');
+            showError('owner-error-message', 'No associations available. Please create one first.');
+            select.innerHTML = '<option value="" disabled selected>No associations available</option>';
+            return;
+          }
+
+          console.log('Associations loaded:', data);
+          select.innerHTML = '<option value="" disabled selected>Select Association</option>';
+          data.forEach(assoc => {
+            const option = document.createElement('option');
+            option.value = assoc.id;
+            option.textContent = assoc.association_name;
+            select.appendChild(option);
+            driverSelect.appendChild(option.cloneNode(true));
+          });
+        } catch (error) {
+          console.error('Unexpected error in populateAssociationDropdown:', error);
+          showError('owner-error-message', 'Error loading associations: ' + error.message);
+          select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+        }
+      }
+
+      async function handleLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const role = document.getElementById('login-role').value;
+
+        clearErrors();
+        if (!email || !password || !role) {
+          showError('login-error-message', 'Please fill in all fields.');
           return;
         }
-        userId = userData?.user?.id;
+
+        console.log('Login attempt:', { email, role });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          console.error('Login error:', error);
+          showError('login-error-message', `Login failed: ${error.message}`);
+          return;
+        }
+
+        // Verify role
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          console.error('Failed to fetch user:', userError);
+          showError('login-error-message', 'Failed to verify user.');
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (profileError || !profile) {
+          console.error('Profile fetch error:', profileError);
+          showError('login-error-message', 'Profile not found.');
+          return;
+        }
+
+        if (profile.role !== role) {
+          console.error('Role mismatch:', { selected: role, actual: profile.role });
+          showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
+          return;
+        }
+
+        console.log('Redirecting to dashboard for role:', role);
+        redirectToDashboard(role);
       }
 
-      if (!userId) {
-        showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
-        console.error('No user ID found after signup');
-        return;
-      }
-      console.log('User signed up:', { userId, email });
-
-      // Create profile
-      const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
-      console.log('Creating profile:', profileData);
-      const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
-        return;
+      function redirectToDashboard(role) {
+        const dashboards = {
+          passenger: 'passenger-dashboard.html',
+          driver: 'driver-dashboard.html',
+          owner: 'owner-dashboard.html',
+          association: 'association-dashboard.html'
+        };
+        window.location.href = `/Taxi-Drive/${dashboards[role]}`;
       }
 
-      // Role-specific onboarding
-      try {
-        if (role === 'owner') {
-          if (!additionalData.associationId) {
-            showError('owner-error-message', 'Please select an association.');
-            console.error('No association selected:', additionalData);
-            return;
-          }
-          const ownerId = generateUUID();
-          console.log('Creating owner record:', { ownerId, admin_id: userId, association_id: additionalData.associationId });
-          const { error: ownerError } = await supabase.from('owners').insert([
-            { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
-          ]);
-          if (ownerError) {
-            console.error('Owner creation error:', ownerError);
-            showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
-            return;
-          }
-        } else if (role === 'association') {
-          const associationId = generateUUID();
-          console.log('Creating association:', { associationId, association_name: additionalData.associationName });
-          const { error: assocError } = await supabase.from('associations').insert([
-            { id: associationId, association_name: additionalData.associationName }
-          ]);
-          if (assocError) {
-            console.error('Association creation error:', assocError);
-            showError('association-error-message', `Failed to create association: ${assocError.message}`);
-            return;
-          }
+      async function submitSignup(role) {
+        const formData = {};
+        if (role === 'passenger') {
+          formData.email = document.getElementById('passenger-email').value;
+          formData.name = document.getElementById('passenger-name').value;
+          formData.password = document.getElementById('passenger-password').value;
+          formData.confirmPassword = document.getElementById('passenger-confirm-password').value;
         } else if (role === 'driver') {
-          const driverId = generateUUID();
-          const driverData = {
-            id: driverId,
-            owner_id: null,
-            association_id: additionalData.associationId || null,
-            name: additionalData.name,
-            surname: additionalData.surname,
-            id_number: additionalData.idNumber,
-            license_type: additionalData.licenseType,
-            license_expiry: additionalData.licenseExpiry || null,
-            prdp: additionalData.prdp === 'true'
-          };
-          console.log('Creating driver:', driverData);
-          if (driverData.association_id) {
-            const { data: assoc, error: assocError } = await supabase
-              .from('associations')
-              .select('id')
-              .eq('id', driverData.association_id)
-              .single();
-            if (assocError || !assoc) {
-              console.error('Invalid association ID:', assocError);
-              showError('driver-error-message', 'Invalid Association ID.');
+          formData.email = document.getElementById('driver-email').value;
+          formData.name = document.getElementById('driver-name').value;
+          formData.surname = document.getElementById('driver-surname').value;
+          formData.idNumber = document.getElementById('driver-id-number').value;
+          formData.licenseType = document.getElementById('driver-license-type').value;
+          formData.licenseExpiry = document.getElementById('driver-license-expiry').value;
+          formData.prdp = document.getElementById('driver-prdp').value;
+          formData.associationId = document.getElementById('driver-association-id').value;
+          formData.password = document.getElementById('driver-password').value;
+          formData.confirmPassword = document.getElementById('driver-confirm-password').value;
+        } else if (role === 'owner') {
+          formData.email = document.getElementById('owner-email').value;
+          formData.name = document.getElementById('owner-name').value;
+          formData.associationId = document.getElementById('owner-association-id').value;
+          formData.password = document.getElementById('owner-password').value;
+          formData.confirmPassword = document.getElementById('owner-confirm-password').value;
+        } else if (role === 'association') {
+          formData.email = document.getElementById('association-email').value;
+          formData.associationName = document.getElementById('association-name').value;
+          formData.password = document.getElementById('association-password').value;
+          formData.confirmPassword = document.getElementById('association-confirm-password').value;
+        }
+
+        await handleSignUp(role, formData);
+      }
+
+      async function handleSignUp(role, formData) {
+        const { email, password, confirmPassword, ...additionalData } = formData;
+        console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
+
+        if (!email || !password || !confirmPassword || !role) {
+          showError(`${role}-error-message`, 'Please fill in all required fields.');
+          console.error('Missing required fields:', { email, password, confirmPassword, role });
+          return;
+        }
+        if (password !== confirmPassword) {
+          showError(`${role}-error-message`, 'Passwords do not match.');
+          console.error('Password mismatch:', { password, confirmPassword });
+          return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+          showError(`${role}-error-message`, 'Invalid email format.');
+          console.error('Invalid email:', email);
+          return;
+        }
+
+        // Sign up with Supabase
+        console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
+        });
+        if (error) {
+          console.error('Supabase signup error:', error);
+          if (error.message === 'User already registered') {
+            showError(`${role}-error-message`, 'Email already registered. Please log in or use a different email.');
+          } else {
+            showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+          }
+          return;
+        }
+
+        let userId = data.user?.id;
+        if (!userId) {
+          console.log('No user ID in signup response, fetching current user...');
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (userError) {
+            console.error('Failed to fetch user:', userError);
+            showError(`${role}-error-message`, `Failed to fetch user ID: ${userError.message}`);
+            return;
+          }
+          userId = userData?.user?.id;
+        }
+
+        if (!userId) {
+          showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+          console.error('No user ID found after signup');
+          return;
+        }
+        console.log('User signed up:', { userId, email });
+
+        // Create profile
+        const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+        console.log('Creating profile:', profileData);
+        const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
+          return;
+        }
+
+        // Role-specific onboarding
+        try {
+          if (role === 'owner') {
+            if (!additionalData.associationId) {
+              showError('owner-error-message', 'Please select an association.');
+              console.error('No association selected:', additionalData);
+              return;
+            }
+            const ownerId = generateUUID();
+            console.log('Creating owner record:', { ownerId, admin_id: userId, association_id: additionalData.associationId });
+            const { error: ownerError } = await supabase.from('owners').insert([
+              { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
+            ]);
+            if (ownerError) {
+              console.error('Owner creation error:', ownerError);
+              showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
+              return;
+            }
+          } else if (role === 'association') {
+            const associationId = generateUUID();
+            console.log('Creating association:', { associationId, association_name: additionalData.associationName });
+            const { error: assocError } = await supabase.from('associations').insert([
+              { id: associationId, association_name: additionalData.associationName }
+            ]);
+            if (assocError) {
+              console.error('Association creation error:', assocError);
+              showError('association-error-message', `Failed to create association: ${assocError.message}`);
+              return;
+            }
+          } else if (role === 'driver') {
+            const driverId = generateUUID();
+            const driverData = {
+              id: driverId,
+              owner_id: null,
+              association_id: additionalData.associationId || null,
+              name: additionalData.name,
+              surname: additionalData.surname,
+              id_number: additionalData.idNumber,
+              license_type: additionalData.licenseType,
+              license_expiry: additionalData.licenseExpiry || null,
+              prdp: additionalData.prdp === 'true'
+            };
+            console.log('Creating driver:', driverData);
+            if (driverData.association_id) {
+              const { data: assoc, error: assocError } = await supabase
+                .from('associations')
+                .select('id')
+                .eq('id', driverData.association_id)
+                .single();
+              if (assocError || !assoc) {
+                console.error('Invalid association ID:', assocError);
+                showError('driver-error-message', 'Invalid Association ID.');
+                return;
+              }
+            }
+            const { error: driverError } = await supabase.from('drivers').insert([driverData]);
+            if (driverError) {
+              console.error('Driver creation error:', driverError);
+              showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
               return;
             }
           }
-          const { error: driverError } = await supabase.from('drivers').insert([driverData]);
-          if (driverError) {
-            console.error('Driver creation error:', driverError);
-            showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
-            return;
+        } catch (error) {
+          console.error('Onboarding error:', error);
+          showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
+          return;
+        }
+
+        // Sign in after signup
+        console.log('Attempting login after signup:', { email });
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) {
+          console.error('Login error after signup:', loginError);
+          showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}. Please confirm your email if required.`);
+          return;
+        }
+
+        console.log('Redirecting to dashboard for role:', role);
+        redirectToDashboard(role);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        // Populate association dropdown for owner and driver forms
+        if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
+          populateAssociationDropdown();
+        }
+
+        // Handle Google OAuth redirect
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session?.provider === 'google') {
+            console.log('Google OAuth sign-in:', session);
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'block';
           }
-        }
-      } catch (error) {
-        console.error('Onboarding error:', error);
-        showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
-        return;
-      }
-
-      // Sign in after signup
-      console.log('Attempting login after signup:', { email });
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) {
-        console.error('Login error after signup:', loginError);
-        showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}. Please confirm your email if required.`);
-        return;
-      }
-
-      console.log('Redirecting to dashboard for role:', role);
-      redirectToDashboard(role);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      // Populate association dropdown for owner and driver forms
-      if (document.getElementById('signup-role')?.value === 'owner' || document.getElementById('signup-role')?.value === 'driver') {
-        populateAssociationDropdown();
-      }
-
-      // Handle Google OAuth redirect
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.provider === 'google') {
-          console.log('Google OAuth sign-in:', session);
-          document.getElementById('login-form').style.display = 'none';
-          document.getElementById('signup-form').style.display = 'block';
-        }
+        });
       });
     });
   </script>
