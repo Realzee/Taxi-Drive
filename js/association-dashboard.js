@@ -690,24 +690,24 @@ async function loadDashboardStats() {
         if (currentAssociation.is_demo) {
             updateDashboardStats({
                 registeredVehicles: 12,
-                registeredMembers: demoData.members.length || 8,
+                registeredOwners: demoData.members.filter(m => m.role === 'owner').length || 5,
                 activeRoutes: demoData.routes.length || 5,
                 passengerAlarms: 2
             });
             return;
         }
 
-        // UPDATED QUERIES FOR NEW SCHEMA
-        const [vehicles, members, routes, alerts] = await Promise.all([
+        // UPDATED QUERIES FOR OWNERS
+        const [vehicles, owners, routes, alerts] = await Promise.all([
             supabase.from('vehicles').select('id').eq('association_id', currentAssociation.id),
-            supabase.from('members').select('id').eq('association_id', currentAssociation.id),
+            supabase.from('members').select('id, role').eq('association_id', currentAssociation.id).eq('role', 'owner'),
             supabase.from('routes').select('id').eq('association_id', currentAssociation.id).eq('status', 'active'),
             supabase.from('panic_alerts').select('id').eq('association_id', currentAssociation.id).eq('status', 'active')
         ]);
 
         updateDashboardStats({
             registeredVehicles: vehicles.data?.length || 0,
-            registeredMembers: members.data?.length || 0,
+            registeredOwners: owners.data?.length || 0,
             activeRoutes: routes.data?.length || 0,
             passengerAlarms: alerts.data?.length || 0
         });
@@ -716,7 +716,7 @@ async function loadDashboardStats() {
         console.error('Error loading dashboard stats:', error);
         updateDashboardStats({
             registeredVehicles: 12,
-            registeredMembers: 8,
+            registeredOwners: 5,
             activeRoutes: 5,
             passengerAlarms: 2
         });
@@ -726,7 +726,7 @@ async function loadDashboardStats() {
 function updateDashboardStats(stats) {
     const statElements = {
         'stat-vehicles': stats.registeredVehicles,
-        'stat-members': stats.registeredMembers,
+        'stat-members': stats.registeredOwners, // This will now show owner count
         'stat-routes': stats.activeRoutes,
         'stat-alarms': stats.passengerAlarms
     };
@@ -801,39 +801,35 @@ async function loadRecentMembers() {
             if (demoData.members.length === 0) {
                 demoData.members = getInitialDemoMembers();
             }
-            renderRecentMembers(demoData.members.slice(0, 3));
+            // Filter to show only owners
+            const owners = demoData.members.filter(m => m.role === 'owner').slice(0, 3);
+            renderRecentMembers(owners);
             return;
         }
 
-        const { data: members, error } = await supabase
+        // Only fetch owners from the members table
+        const { data: owners, error } = await supabase
             .from('members')
             .select('*')
             .eq('association_id', currentAssociation.id)
+            .eq('role', 'owner') // Only show owners
             .order('created_at', { ascending: false })
             .limit(3);
 
         if (error) throw error;
-        renderRecentMembers(members || []);
+        renderRecentMembers(owners || []);
         
     } catch (error) {
-        console.error('Error loading recent members:', error);
-        renderRecentMembers(getInitialDemoMembers().slice(0, 3));
+        console.error('Error loading recent owners:', error);
+        const demoOwners = getInitialDemoMembers().filter(m => m.role === 'owner').slice(0, 3);
+        renderRecentMembers(demoOwners);
     }
 }
 
 function getInitialDemoMembers() {
     return [
         {
-            id: 'demo-member-1',
-            member_name: 'John Driver',
-            member_email: 'john@taxi.com',
-            phone: '+27 82 111 2222',
-            role: 'driver',
-            is_verified: true,
-            created_at: new Date().toISOString()
-        },
-        {
-            id: 'demo-member-2', 
+            id: 'demo-owner-1',
             member_name: 'Sarah Owner',
             member_email: 'sarah@taxi.com',
             phone: '+27 82 333 4444',
@@ -842,12 +838,21 @@ function getInitialDemoMembers() {
             created_at: new Date().toISOString()
         },
         {
-            id: 'demo-member-3',
-            member_name: 'Mike Member',
-            member_email: 'mike@taxi.com', 
+            id: 'demo-owner-2',
+            member_name: 'Mike Owner', 
+            member_email: 'mike@taxi.com',
             phone: '+27 82 555 6666',
-            role: 'member',
-            is_verified: false,
+            role: 'owner',
+            is_verified: false, // Pending verification
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 'demo-owner-3',
+            member_name: 'John Owner',
+            member_email: 'john@taxi.com',
+            phone: '+27 82 777 8888',
+            role: 'owner',
+            is_verified: true,
             created_at: new Date().toISOString()
         }
     ];
@@ -900,34 +905,40 @@ function renderRecentMembers(members) {
 
 async function addMember(memberData) {
     try {
+        // Ensure the role is set to owner
+        const ownerData = {
+            ...memberData,
+            role: 'owner' // Force role to be owner
+        };
+
         if (currentAssociation.is_demo) {
-            const newMember = {
-                id: 'member-' + Date.now(),
-                ...memberData,
+            const newOwner = {
+                id: 'owner-' + Date.now(),
+                ...ownerData,
                 created_at: new Date().toISOString()
             };
-            demoData.members.unshift(newMember);
+            demoData.members.unshift(newOwner);
         } else {
-            const memberWithAssociation = {
-                ...memberData,
+            const ownerWithAssociation = {
+                ...ownerData,
                 association_id: currentAssociation.id
             };
 
             const { error } = await supabase
                 .from('members')
-                .insert([memberWithAssociation]);
+                .insert([ownerWithAssociation]);
 
             if (error) throw error;
         }
 
-        showNotification('Member added successfully!', 'success');
+        showNotification('Owner added successfully!', 'success');
         closeModal('add-member-modal');
         await loadRecentMembers();
         await loadDashboardStats();
         
     } catch (error) {
-        console.error('Error adding member:', error);
-        showNotification('Failed to add member.', 'error');
+        console.error('Error adding owner:', error);
+        showNotification('Failed to add owner.', 'error');
     }
 }
 
@@ -1020,6 +1031,33 @@ async function deleteMember(memberId) {
         showNotification('Failed to delete member.', 'error');
     }
 }
+
+async function verifyOwner(ownerId, isVerified) {
+    try {
+        if (currentAssociation.is_demo) {
+            const owner = demoData.members.find(m => m.id === ownerId);
+            if (owner) {
+                owner.is_verified = isVerified;
+            }
+        } else {
+            const { error } = await supabase
+                .from('members')
+                .update({ is_verified: isVerified })
+                .eq('id', ownerId);
+
+            if (error) throw error;
+        }
+
+        const action = isVerified ? 'verified' : 'unverified';
+        showNotification(`Owner ${action} successfully!`, 'success');
+        await loadRecentMembers();
+        
+    } catch (error) {
+        console.error('Error verifying owner:', error);
+        showNotification('Failed to update owner verification.', 'error');
+    }
+}
+
 
 // ROUTE MANAGEMENT - UPDATED FOR NEW SCHEMA
 async function loadRecentRoutes() {
