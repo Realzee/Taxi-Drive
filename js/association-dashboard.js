@@ -134,33 +134,78 @@ function updateUserHeader(userData) {
 
 // Load association data - UPDATED FOR NEW SCHEMA
 async function loadAssociationData(userId) {
-  console.log('Loading association data for user:', userId);
-  const { data, error } = await supabase
-    .from('associations')
-    .select('id, association_name, email, phone, address, description, admin_name, admin_phone, logo_url, wallet_balance')
-    .eq('id', userId)
-    .single();
+    console.log('Loading association data for user:', userId);
+    
+    try {
+        const { data, error } = await supabase
+            .from('associations')
+            .select('id, association_name, email, phone, address, description, admin_name, admin_phone, logo_url, wallet_balance')
+            .eq('id', userId)
+            .single();
 
-  if (error || !data) {
-    console.error('Error fetching association:', error);
-    console.log('No association found, creating new one');
-    await createNewAssociation(userId);
-    return;
-  }
+        if (error || !data) {
+            console.error('Error fetching association:', error);
+            console.log('No association found, creating new one');
+            await createNewAssociation(userId);
+            return;
+        }
 
-  console.log('Association data loaded:', data);
-  document.getElementById('profile-association-name').value = data.association_name || '';
-  document.getElementById('profile-association-email').value = data.email || '';
-  document.getElementById('profile-association-phone').value = data.phone || '';
-  document.getElementById('profile-association-address').value = data.address || '';
-  document.getElementById('profile-association-description').value = data.description || '';
-  document.getElementById('profile-admin-name').value = data.admin_name || '';
-  document.getElementById('profile-admin-phone').value = data.admin_phone || '';
-  if (data.logo_url) {
-    document.getElementById('edit-logo-preview-img').src = data.logo_url;
-    document.getElementById('edit-logo-preview-container').style.display = 'block';
-  }
-  document.getElementById('wallet-balance').textContent = `R ${data.wallet_balance.toFixed(2)}`;
+        console.log('Association data loaded:', data);
+        
+        // Set global variables
+        currentAssociation = data;
+        currentAssociationId = data.id;
+        
+        // Update UI elements safely
+        updateAssociationProfileUI(data);
+        updateAssociationProfile(data);
+        
+    } catch (error) {
+        console.error('Error in loadAssociationData:', error);
+        // Create demo association as fallback
+        currentAssociation = createDemoAssociation();
+        currentAssociationId = 'demo-mode';
+        updateAssociationProfileUI(currentAssociation);
+        updateAssociationProfile(currentAssociation);
+    }
+}
+
+function updateAssociationProfileUI(associationData) {
+    // Safely update all form fields with null checks
+    const fields = {
+        'profile-association-name': associationData.association_name || '',
+        'profile-association-email': associationData.email || '',
+        'profile-association-phone': associationData.phone || '',
+        'profile-association-address': associationData.address || '',
+        'profile-association-description': associationData.description || '',
+        'profile-admin-name': associationData.admin_name || '',
+        'profile-admin-phone': associationData.admin_phone || ''
+    };
+
+    Object.keys(fields).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = fields[id];
+        }
+    });
+
+    // Update wallet balance safely
+    const walletBalanceElement = document.getElementById('wallet-balance');
+    if (walletBalanceElement) {
+        walletBalanceElement.textContent = `R ${(associationData.wallet_balance || 0).toFixed(2)}`;
+    }
+
+    // Handle logo preview safely
+    const editLogoPreviewImg = document.getElementById('edit-logo-preview-img');
+    const editLogoPreviewContainer = document.getElementById('edit-logo-preview-container');
+    if (editLogoPreviewImg && editLogoPreviewContainer) {
+        if (associationData.logo_url) {
+            editLogoPreviewImg.src = associationData.logo_url;
+            editLogoPreviewContainer.style.display = 'block';
+        } else {
+            editLogoPreviewContainer.style.display = 'none';
+        }
+    }
 }
 // CREDENTIAL MANAGEMENT FOR MEMBERS/OWNERS
 async function generateMemberCredentials(memberId, memberData) {
@@ -577,6 +622,11 @@ function updateAssociationLogo(logoUrl) {
 }
 
 function updateAssociationProfileModal(associationData) {
+    if (!associationData) {
+        console.error('No association data provided to updateAssociationProfileModal');
+        return;
+    }
+
     const elements = {
         'profile-association-name': associationData.association_name || '',
         'profile-association-email': associationData.email || '',
@@ -599,7 +649,7 @@ function updateAssociationProfileModal(associationData) {
         }
     });
 
-    // Handle logo preview in profile modal
+    // Handle logo preview in profile modal safely
     const editLogoPreviewImg = document.getElementById('edit-logo-preview-img');
     const editLogoPreviewContainer = document.getElementById('edit-logo-preview-container');
     if (editLogoPreviewImg && editLogoPreviewContainer && associationData.logo_url) {
@@ -1144,7 +1194,7 @@ async function saveAssociationProfile() {
             updated_at: new Date().toISOString()
         };
 
-        let logoUrl = currentAssociation.logo_url;
+        let logoUrl = currentAssociation ? currentAssociation.logo_url : '';
 
         if (!currentAssociation.is_demo && logoFile) {
             try {
@@ -1418,11 +1468,21 @@ function resetForms() {
 function openProfileModal() {
     console.log('Opening profile modal');
     showModal('profile-modal');
-    updateAssociationProfileModal(currentAssociation);
     
-    // Load current profile data into form
+    // Only update if we have association data
+    if (currentAssociation) {
+        updateAssociationProfileModal(currentAssociation);
+    } else {
+        console.warn('No association data available for profile modal');
+        // You might want to load association data here
+        if (currentUser) {
+            loadAssociationData(currentUser.id);
+        }
+    }
+    
+    // Clear any previous file selection
     const logoInput = document.getElementById('edit-association-logo');
-    if (logoInput) logoInput.value = ''; // Clear any previous file selection
+    if (logoInput) logoInput.value = '';
 }
 
 // Global map variable to manage Leaflet instance
