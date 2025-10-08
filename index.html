@@ -364,39 +364,44 @@
 
     // Fetch associations and populate dropdown
     async function populateAssociationDropdown() {
-      const select = document.getElementById('owner-association-id');
-      select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
+  const select = document.getElementById('owner-association-id');
+  select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
 
-      try {
-        const { data, error } = await supabase
-          .from('associations')
-          .select('id, association_name')
-          .order('association_name', { ascending: true });
+  try {
+    console.log('Fetching associations from Supabase');
+    const { data, error } = await supabase
+      .from('associations')
+      .select('id, association_name')
+      .order('association_name', { ascending: true });
 
-        if (error) {
-          showError('owner-error-message', 'Failed to load associations: ' + error.message);
-          select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          showError('owner-error-message', 'No associations available. Please create one first.');
-          select.innerHTML = '<option value="" disabled selected>No associations available</option>';
-          return;
-        }
-
-        select.innerHTML = '<option value="" disabled selected>Select Association</option>';
-        data.forEach(assoc => {
-          const option = document.createElement('option');
-          option.value = assoc.id;
-          option.textContent = assoc.association_name;
-          select.appendChild(option);
-        });
-      } catch (error) {
-        showError('owner-error-message', 'Error loading associations: ' + error.message);
-        select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
-      }
+    if (error) {
+      console.error('Association fetch error:', error);
+      showError('owner-error-message', 'Failed to load associations: ' + error.message);
+      select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+      return;
     }
+
+    if (!data || data.length === 0) {
+      console.warn('No associations found');
+      showError('owner-error-message', 'No associations available. Please create one first.');
+      select.innerHTML = '<option value="" disabled selected>No associations available</option>';
+      return;
+    }
+
+    console.log('Associations loaded:', data);
+    select.innerHTML = '<option value="" disabled selected>Select Association</option>';
+    data.forEach(assoc => {
+      const option = document.createElement('option');
+      option.value = assoc.id;
+      option.textContent = assoc.association_name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Unexpected error in populateAssociationDropdown:', error);
+    showError('owner-error-message', 'Error loading associations: ' + error.message);
+    select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+  }
+}
 
     // Event listeners for navigation
     document.getElementById('show-signup').addEventListener('click', () => toggleSections('role-section'));
@@ -464,120 +469,167 @@
 
     // Onboarding logic for signup
     async function handleSignUp(role, formData) {
-  const { email, password, confirmPassword, ...additionalData } = formData;
-  console.log('Signup payload:', { email, password, confirmPassword, additionalData });
+    const { email, password, confirmPassword, ...additionalData } = formData;
+    console.log('Signup attempt:', { role, email, passwordLength: password.length, additionalData });
 
-  if (!email || !password || !confirmPassword || !role) {
-    showError(`${role}-error-message`, 'Please fill in all required fields.');
-    return;
-  }
-  if (password !== confirmPassword) {
-    showError(`${role}-error-message`, 'Passwords do not match.');
-    return;
-  }
-
-  // Sign up with Supabase
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
-  });
-  if (error) {
-    console.error('Signup error:', error);
-    showError(`${role}-error-message`, error.message);
-    return;
-  }
-
-  let userId = data.user?.id;
-  if (!userId) {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      showError(`${role}-error-message`, 'Failed to fetch user ID: ' + userError.message);
+    if (!email || !password || !confirmPassword || !role) {
+      showError(`${role}-error-message`, 'Please fill in all required fields.');
+      console.error('Missing required fields:', { email, password, confirmPassword, role });
       return;
     }
-    userId = userData?.user?.id;
-  }
+    if (password !== confirmPassword) {
+      showError(`${role}-error-message`, 'Passwords do not match.');
+      console.error('Password mismatch:', { password, confirmPassword });
+      return;
+    }
 
-  if (!userId) {
-    showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
-    return;
-  }
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      showError(`${role}-error-message`, 'Invalid email format.');
+      console.error('Invalid email:', email);
+      return;
+    }
 
-  // Create profile
-  const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
-  const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
-  if (profileError) {
-    showError(`${role}-error-message`, 'Failed to save profile: ' + profileError.message);
-    return;
-  }
+    // Check if user already exists
+    console.log('Checking if user exists:', email);
+    const { data: existingUser, error: userCheckError } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('email', email)
+      .single();
+    if (existingUser) {
+      showError(`${role}-error-message`, 'Email already registered. Please log in or use a different email.');
+      console.error('User already exists:', existingUser.id);
+      return;
+    }
+    if (userCheckError && userCheckError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('User check error:', userCheckError);
+      showError(`${role}-error-message`, `Failed to check user: ${userCheckError.message}`);
+      return;
+    }
 
-  // Role-specific onboarding
-  try {
-    if (role === 'owner') {
-      if (!additionalData.associationId) {
-        showError('owner-error-message', 'Please select an association.');
+    // Sign up with Supabase
+    console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
+    });
+    if (error) {
+      console.error('Supabase signup error:', error);
+      showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+      return;
+    }
+
+    let userId = data.user?.id;
+    if (!userId) {
+      console.log('No user ID in signup response, fetching current user...');
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Failed to fetch user:', userError);
+        showError(`${role}-error-message`, `Failed to fetch user ID: ${userError.message}`);
         return;
       }
-      const ownerId = generateUUID();
-      const { error: ownerError } = await supabase.from('owners').insert([
-        { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
-      ]);
-      if (ownerError) {
-        showError('owner-error-message', 'Failed to create owner profile: ' + ownerError.message);
-        return;
-      }
-    } else if (role === 'association') {
-      const associationId = generateUUID();
-      const { error: assocError } = await supabase.from('associations').insert([
-        { id: associationId, association_name: additionalData.associationName }
-      ]);
-      if (assocError) {
-        showError('association-error-message', 'Failed to create association: ' + assocError.message);
-        return;
-      }
-    } else if (role === 'driver') {
-      const driverId = generateUUID();
-      const driverData = {
-        id: driverId,
-        owner_id: null,
-        association_id: additionalData.associationId || null,
-        name: additionalData.name,
-        surname: additionalData.surname,
-        id_number: additionalData.idNumber,
-        license_type: additionalData.licenseType,
-        license_expiry: additionalData.licenseExpiry || null,
-        prdp: additionalData.prdp === 'true'
-      };
-      if (driverData.association_id) {
-        const { data: assoc, error: assocError } = await supabase
-          .from('associations')
-          .select('id')
-          .eq('id', driverData.association_id)
-          .single();
-        if (assocError || !assoc) {
-          showError('driver-error-message', 'Invalid Association ID.');
+      userId = userData?.user?.id;
+    }
+
+    if (!userId) {
+      showError(`${role}-error-message`, 'Could not verify user ID. Try again.');
+      console.error('No user ID found after signup');
+      return;
+    }
+    console.log('User signed up:', { userId, email });
+
+    // Create profile
+    const profileData = { id: userId, email, role, name: additionalData.name || email.split('@')[0] };
+    console.log('Creating profile:', profileData);
+    const { error: profileError } = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      showError(`${role}-error-message`, `Failed to save profile: ${profileError.message}`);
+      return;
+    }
+
+    // Role-specific onboarding
+    try {
+      if (role === 'owner') {
+        if (!additionalData.associationId) {
+          showError('owner-error-message', 'Please select an association.');
+          console.error('No association selected:', additionalData);
+          return;
+        }
+        const ownerId = generateUUID();
+        console.log('Creating owner record:', { ownerId, admin_id: userId, association_id: additionalData.associationId });
+        const { error: ownerError } = await supabase.from('owners').insert([
+          { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
+        ]);
+        if (ownerError) {
+          console.error('Owner creation error:', ownerError);
+          showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
+          return;
+        }
+      } else if (role === 'association') {
+        const associationId = generateUUID();
+        console.log('Creating association:', { associationId, association_name: additionalData.associationName });
+        const { error: assocError } = await supabase.from('associations').insert([
+          { id: associationId, association_name: additionalData.associationName }
+        ]);
+        if (assocError) {
+          console.error('Association creation error:', assocError);
+          showError('association-error-message', `Failed to create association: ${assocError.message}`);
+          return;
+        }
+      } else if (role === 'driver') {
+        const driverId = generateUUID();
+        const driverData = {
+          id: driverId,
+          owner_id: null,
+          association_id: additionalData.associationId || null,
+          name: additionalData.name,
+          surname: additionalData.surname,
+          id_number: additionalData.idNumber,
+          license_type: additionalData.licenseType,
+          license_expiry: additionalData.licenseExpiry || null,
+          prdp: additionalData.prdp === 'true'
+        };
+        console.log('Creating driver:', driverData);
+        if (driverData.association_id) {
+          const { data: assoc, error: assocError } = await supabase
+            .from('associations')
+            .select('id')
+            .eq('id', driverData.association_id)
+            .single();
+          if (assocError || !assoc) {
+            console.error('Invalid association ID:', assocError);
+            showError('driver-error-message', 'Invalid Association ID.');
+            return;
+          }
+        }
+        const { error: driverError } = await supabase.from('drivers').insert([driverData]);
+        if (driverError) {
+          console.error('Driver creation error:', driverError);
+          showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
           return;
         }
       }
-      const { error: driverError } = await supabase.from('drivers').insert([driverData]);
-      if (driverError) {
-        showError('driver-error-message', 'Failed to create driver profile: ' + driverError.message);
-        return;
-      }
+    } catch (error) {
+      console.error('Onboarding error:', error);
+      showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
+      return;
     }
-  } catch (error) {
-    showError(`${role}-error-message`, 'Onboarding failed: ' + error.message);
-    return;
-  }
 
-  // Sign in after signup
-  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-  if (loginError) {
-    showError(`${role}-error-message`, 'Login failed after signup: ' + loginError.message);
-    return;
-  }
+    // Sign in after signup
+    console.log('Attempting login after signup:', { email });
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    if (loginError) {
+      console.error('Login error after signup:', loginError);
+      showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}`);
+      return;
+    }
 
-  redirectToDashboard(role);
+    console.log('Redirecting to dashboard for role:', role);
+    redirectToDashboard(role);
 }
 
     function redirectToDashboard(role) {
