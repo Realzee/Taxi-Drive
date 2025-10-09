@@ -612,74 +612,72 @@ function redirectToDashboard(role) {
   }
 
   async function upsertProfile(role, userId, email, additionalData) {
-    if (!userId) {
-      console.error('No userId provided for profile upsert');
-      showError(`${role}-error-message`, 'Invalid user ID. Please try signing up again.');
-      return false;
-    }
-
-    const profileData = {
-      id: userId,
-      email,
-      role,
-      name: additionalData.name || additionalData.associationName || email.split('@')[0],
-      updated_at: new Date().toISOString()
-    };
-    console.log('Creating/updating profile:', profileData);
-    const maxRetries = 5;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(`Profile upsert attempt ${attempt}`);
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) {
-        console.warn('No active session, retrying...');
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        continue;
-      }
-      if (session.session.user.id !== userId) {
-        console.error('Session user ID does not match provided userId:', {
-          sessionUserId: session.session.user.id,
-          providedUserId: userId
-        });
-        showError(`${role}-error-message`, 'Authentication mismatch. Please try again.');
-        return false;
-      }
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert([profileData], { onConflict: 'id', ignoreDuplicates: false })
-        .select()
-        .single();
-      if (!error) {
-        console.log('Profile created/updated:', data);
-        return true;
-      }
-      console.warn(`Profile upsert attempt ${attempt} failed:`, error);
-      if (error.code === '23502') {
-        console.error('Null constraint violation:', {
-          userId,
-          authUid: session.session.user.id,
-          profileData,
-          errorDetails: error
-        });
-        showError(`${role}-error-message`, 'Failed to save profile due to missing required fields. Please contact support.');
-        return false;
-      }
-      if (error.code === '42501') {
-        console.error('RLS Debug Info:', {
-          userId,
-          authUid: session.session.user.id,
-          hasSession: !!session.session,
-          table: 'profiles',
-          operation: 'upsert',
-          profileData
-        });
-        showError(`${role}-error-message`, 'Database permissions issue. Please contact support or try logging in.');
-        return false;
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-    }
-    showError(`${role}-error-message`, 'Failed to save profile after multiple attempts. Please contact support.');
+  if (!userId) {
+    console.error('No userId provided for profile upsert');
+    showError(`${role}-error-message`, 'Invalid user ID. Please try signing up again.');
     return false;
   }
+
+  const profileData = {
+    id: userId,
+    email: email,
+    role: role,
+    name: additionalData.name || additionalData.associationName || email.split('@')[0],
+    updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString() // Add this line
+  };
+
+  console.log('Creating/updating profile:', profileData);
+  
+  try {
+    // First, check if profile already exists
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Profile check error:', checkError);
+    }
+
+    if (existingProfile) {
+      console.log('Profile already exists, updating:', existingProfile);
+      // Update existing profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Profile update error:', error);
+        return false;
+      }
+      console.log('Profile updated:', data);
+    } else {
+      console.log('Creating new profile');
+      // Insert new profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([profileData])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Profile creation error:', error);
+        return false;
+      }
+      console.log('Profile created:', data);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Unexpected error in upsertProfile:', error);
+    return false;
+  }
+}
 
   async function refreshSession() {
     const { data, error } = await supabase.auth.refreshSession();
@@ -692,273 +690,483 @@ function redirectToDashboard(role) {
   }
 
   async function checkAndRedirectUser(session) {
-    if (!session?.user) {
-      console.log('No user in session, showing login page');
-      showLogin();
+  if (!session?.user) {
+    console.log('No user in session, showing login page');
+    showLogin();
+    return;
+  }
+
+  const userId = session.user.id;
+  console.log('Checking profile for user:', userId);
+
+  try {
+    // Add a small delay to ensure profile is created
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      if (profileError.code === 'PGRST116') {
+        console.log('No profile found for user, creating default profile');
+        
+        // Auto-create a basic profile
+        const profileCreated = await upsertProfile('passenger', userId, session.user.email, {
+          name: session.user.email.split('@')[0]
+        });
+        
+        if (profileCreated) {
+          console.log('Default profile created, redirecting to passenger dashboard');
+          redirectToDashboard('passenger');
+        } else {
+          console.log('Failed to create profile, showing role selection');
+          showRoleSelection();
+        }
+      } else {
+        console.error('Profile fetch error:', profileError);
+        showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
+        showLogin();
+      }
       return;
     }
 
-    const userId = session.user.id;
-    console.log('Checking profile for user:', userId);
+    console.log('Profile found:', profile);
+    redirectToDashboard(profile.role);
+  } catch (error) {
+    console.error('Error checking profile:', error);
+    showError('login-error-message', 'Error checking user profile. Please try again.');
+    showLogin();
+  }
+}
 
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
+    async function debugAuthFlow() {
+  const { data: session } = await supabase.auth.getSession();
+  const { data: user } = await supabase.auth.getUser();
+  
+  console.log('=== DEBUG AUTH FLOW ===');
+  console.log('Session exists:', !!session?.session);
+  console.log('User exists:', !!user?.user);
+  console.log('User ID:', user?.user?.id);
+  
+  if (user?.user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.user.id)
+      .single();
+    
+    console.log('Profile exists:', !!profile);
+    console.log('Profile data:', profile);
+  }
+  console.log('=== END DEBUG ===');
+}
 
-      if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          console.log('No profile found for user, prompting for signup');
-          showRoleSelection();
-        } else {
-          console.error('Profile fetch error:', profileError);
-          showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
-          showLogin();
-        }
-        return;
+// Call this when needed for debugging
+// debugAuthFlow();
+
+    async function handleSignUp(role, formData) {
+  const { email, password, confirmPassword, ...additionalData } = formData;
+  console.log('Signup attempt:', { role, email, passwordLength: password?.length, additionalData });
+
+  // Validation
+  if (!email || !password || !confirmPassword || !role) {
+    showError(`${role}-error-message`, 'Please fill in all required fields.');
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    showError(`${role}-error-message`, 'Passwords do not match.');
+    return;
+  }
+  
+  if (password.length < 8) {
+    showError(`${role}-error-message`, 'Password must be at least 8 characters long.');
+    return;
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    showError(`${role}-error-message`, 'Invalid email format.');
+    return;
+  }
+
+  // Driver-specific validation
+  if (role === 'driver') {
+    const idRegex = /^\d{13}$/;
+    if (!idRegex.test(formData.idNumber)) {
+      showError('driver-error-message', 'ID Number must be a valid 13-digit South African ID.');
+      return;
+    }
+    
+    const isValidSAID = (id) => {
+      let sum = 0;
+      for (let i = 0; i < 13; i++) {
+        let digit = parseInt(id[i]);
+        if (i % 2 === 0) sum += digit;
+        else sum += (digit * 2 > 9 ? digit * 2 - 9 : digit * 2);
       }
-
-      console.log('Profile found:', profile);
-      redirectToDashboard(profile.role);
-    } catch (error) {
-      console.error('Error checking profile:', error);
-      showError('login-error-message', 'Error checking user profile. Please try again.');
-      showLogin();
+      return sum % 10 === 0;
+    };
+    
+    if (!isValidSAID(formData.idNumber)) {
+      showError('driver-error-message', 'Invalid South African ID number.');
+      return;
+    }
+    
+    if (!formData.licenseType) {
+      showError('driver-error-message', 'Please select a license type.');
+      return;
     }
   }
 
-  async function handleSignUp(role, formData) {
-    const { email, password, confirmPassword, ...additionalData } = formData;
-    console.log('Signup attempt:', { role, email, passwordLength: password?.length, additionalData });
+  // Owner-specific validation
+  if (role === 'owner' && !additionalData.associationId) {
+    showError('owner-error-message', 'Please select an association.');
+    return;
+  }
 
-    if (!email || !password || !confirmPassword || !role) {
-      showError(`${role}-error-message`, 'Please fill in all required fields.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      showError(`${role}-error-message`, 'Passwords do not match.');
-      return;
-    }
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      showError(`${role}-error-message`, 'Invalid email format.');
-      return;
-    }
-    if (role === 'driver') {
-      const idRegex = /^\d{13}$/;
-      if (!idRegex.test(formData.idNumber)) {
-        showError('driver-error-message', 'ID Number must be a valid 13-digit South African ID.');
-        return;
-      }
-      const isValidSAID = (id) => {
-        let sum = 0;
-        for (let i = 0; i < 13; i++) {
-          let digit = parseInt(id[i]);
-          if (i % 2 === 0) sum += digit;
-          else sum += (digit * 2 > 9 ? digit * 2 - 9 : digit * 2);
-        }
-        return sum % 10 === 0;
-      };
-      if (!isValidSAID(formData.idNumber)) {
-        showError('driver-error-message', 'Invalid South African ID number.');
-        return;
-      }
-    }
+  // Association-specific validation
+  if (role === 'association' && !additionalData.associationName) {
+    showError('association-error-message', 'Please enter association name.');
+    return;
+  }
 
-    let userId;
-    let isExistingUser = false;
+  let userId;
+  let isExistingUser = false;
 
+  try {
     // Attempt signup
     console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
-    const { data, error } = await supabase.auth.signUp({
+    const { data: signupData, error: signupError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/' }
+      options: { 
+        emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/',
+        data: { role: role } // Store role in user metadata
+      }
     });
 
-    if (error) {
-      console.error('Supabase signup error:', error.message, error.details);
-      if (error.message === 'User already registered') {
+    if (signupError) {
+      console.error('Supabase signup error:', signupError.message, signupError.details);
+      
+      if (signupError.message === 'User already registered') {
         console.log('Existing user detected, attempting login...');
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password 
+        });
+        
         if (loginError) {
           showError(`${role}-error-message`, `This email is already registered. Please use the correct password or recover it.`);
           return;
         }
+        
         isExistingUser = true;
-      } else if (error.message.includes('email confirmation')) {
-        showError(`${role}-error-message`, 'Please confirm your email to complete signup.');
+        userId = loginData.user.id;
+        console.log('Existing user logged in:', { userId, email });
+      } else if (signupError.message.includes('email confirmation')) {
+        showError(`${role}-error-message`, 'Please check your email to confirm your account before logging in.');
         return;
       } else {
-        showError(`${role}-error-message`, `Signup failed: ${error.message}`);
+        showError(`${role}-error-message`, `Signup failed: ${signupError.message}`);
         return;
       }
-    }
-
-    // Refresh session to ensure we have the latest token
-    if (!await refreshSession()) {
-      showError(`${role}-error-message`, 'Session refresh failed. Please try again.');
-      return;
-    }
-
-    // Fetch user ID with validation
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user?.id) {
-      console.error('Failed to fetch user:', userError?.message || 'No user data returned');
-      showError(`${role}-error-message`, `Failed to fetch user ID: ${userError?.message || 'Unknown error'}`);
-      return;
-    }
-    userId = userData.user.id;
-    console.log('User ready:', { userId, email, isExistingUser });
-
-    // Verify session
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session) {
-      console.error('Session error:', sessionError?.message);
-      showError(`${role}-error-message`, 'Authentication session not found. Please try again.');
-      return;
-    }
-    if (sessionData.session.user.id !== userId) {
-      console.error('Session user ID mismatch:', {
-        sessionUserId: sessionData.session.user.id,
-        fetchedUserId: userId
-      });
-      showError(`${role}-error-message`, 'Authentication session mismatch. Please try again.');
-      return;
-    }
-    console.log('Authenticated session:', { userId: sessionData.session.user.id });
-
-    // Check existing profile and upsert if needed
-    try {
-      let profileCreated = false;
-      if (isExistingUser) {
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('id', userId)
-          .single();
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('Profile check error:', profileCheckError.message);
-          showError(`${role}-error-message`, `Failed to check existing profile: ${profileCheckError.message}`);
-          return;
-        }
-        if (existingProfile) {
-          if (existingProfile.role !== role) {
-            showError(`${role}-error-message`, `This email is already registered as a ${existingProfile.role}. Please log in with that role or use a different email.`);
-            return;
-          }
-          console.log('Existing profile found, skipping upsert:', existingProfile);
-          profileCreated = true;
-        } else {
-          console.log('No profile found for existing user, creating new profile');
-          profileCreated = await upsertProfile(role, userId, email, additionalData);
-          if (!profileCreated) return;
-        }
-      } else {
-        profileCreated = await upsertProfile(role, userId, email, additionalData);
-        if (!profileCreated) return;
-      }
-
-      // Role-specific onboarding (only if profile was created or exists)
-      if (profileCreated) {
-        try {
-          if (role === 'owner') {
-            if (!additionalData.associationId) {
-              showError('owner-error-message', 'Please select a valid association.');
-              return;
-            }
-            const { data: assoc, error: assocError } = await supabase
-              .from('associations')
-              .select('id')
-              .eq('id', additionalData.associationId)
-              .single();
-            if (assocError || !assoc) {
-              console.error('Invalid association ID:', assocError?.message);
-              showError('owner-error-message', 'Selected association is invalid.');
-              return;
-            }
-            const ownerId = generateUUID();
-            console.log('Creating owner record:', { ownerId, admin_id: userId, association_id: additionalData.associationId });
-            const { error: ownerError } = await supabase.from('owners').insert([
-              { id: ownerId, admin_id: userId, association_id: additionalData.associationId }
-            ]);
-            if (ownerError) {
-              console.error('Owner creation error:', ownerError.message);
-              showError('owner-error-message', `Failed to create owner profile: ${ownerError.message}`);
-              return;
-            }
-          } else if (role === 'association') {
-            const associationId = userId;
-            console.log('Creating association:', { associationId, association_name: additionalData.associationName });
-            const { error: assocError } = await supabase.from('associations').insert([
-              { id: associationId, association_name: additionalData.associationName }
-            ]);
-            if (assocError) {
-              console.error('Association creation error:', assocError.message);
-              showError('association-error-message', `Failed to create association: ${assocError.message}`);
-              return;
-            }
-          } else if (role === 'driver') {
-            const driverId = generateUUID();
-            const driverData = {
-              id: driverId,
-              owner_id: null,
-              association_id: additionalData.associationId || null,
-              name: additionalData.name,
-              surname: additionalData.surname,
-              id_number: additionalData.idNumber,
-              license_type: additionalData.licenseType,
-              license_expiry: additionalData.licenseExpiry || null,
-              prdp: additionalData.prdp === 'true'
-            };
-            if (driverData.association_id) {
-              const { data: assoc, error: assocError } = await supabase
-                .from('associations')
-                .select('id')
-                .eq('id', driverData.association_id)
-                .single();
-              if (assocError || !assoc) {
-                console.error('Invalid association ID:', assocError?.message);
-                showError('driver-error-message', 'Invalid Association ID.');
-                return;
-              }
-            }
-            console.log('Creating driver:', driverData);
-            const { error: driverError } = await supabase.from('drivers').insert([driverData]);
-            if (driverError) {
-              console.error('Driver creation error:', driverError.message);
-              showError('driver-error-message', `Failed to create driver profile: ${driverError.message}`);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Onboarding error:', error.message, error.stack);
-          showError(`${role}-error-message`, `Onboarding failed: ${error.message}`);
+    } else {
+      // New user signed up
+      if (signupData.user) {
+        userId = signupData.user.id;
+        console.log('New user created:', { userId, email, requiresConfirmation: !signupData.session });
+        
+        // If email confirmation is required
+        if (!signupData.session) {
+          showError(`${role}-error-message`, 'Please check your email to confirm your account before logging in.');
           return;
         }
       }
-    } catch (error) {
-      console.error('Profile handling error:', error.message);
-      showError(`${role}-error-message`, `Failed during profile creation: ${error.message}`);
+    }
+
+    // For new users or when we have a session, proceed with profile creation
+    if (userId) {
+      // Refresh session to ensure we have the latest token
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error('Session error:', sessionError?.message);
+        
+        // If it's a new user that requires confirmation, we can still proceed
+        if (!isExistingUser && signupData?.user && !signupData.session) {
+          showError(`${role}-error-message`, 'Please check your email to confirm your account. You can complete your profile setup after confirmation.');
+          return;
+        }
+        
+        showError(`${role}-error-message`, 'Authentication session not found. Please try again.');
+        return;
+      }
+
+      // Verify session user matches our user ID
+      if (sessionData.session.user.id !== userId) {
+        console.error('Session user ID mismatch:', {
+          sessionUserId: sessionData.session.user.id,
+          fetchedUserId: userId
+        });
+        showError(`${role}-error-message`, 'Authentication session mismatch. Please try again.');
+        return;
+      }
+
+      console.log('Authenticated session verified:', { userId: sessionData.session.user.id });
+
+      // Create or update profile
+      console.log('Creating/updating profile for user:', userId);
+      const profileCreated = await upsertProfile(role, userId, email, additionalData);
+      
+      if (!profileCreated) {
+        showError(`${role}-error-message`, 'Failed to create user profile. Please try again.');
+        return;
+      }
+
+      console.log('Profile created successfully, proceeding with role-specific setup');
+
+      // Role-specific data creation
+      try {
+        if (role === 'owner') {
+          await handleOwnerSignup(userId, additionalData.associationId);
+        } else if (role === 'association') {
+          await handleAssociationSignup(userId, additionalData.associationName);
+        } else if (role === 'driver') {
+          await handleDriverSignup(userId, additionalData);
+        } else if (role === 'passenger') {
+          await handlePassengerSignup(userId, additionalData);
+        }
+      } catch (roleError) {
+        console.error(`${role} setup error:`, roleError);
+        showError(`${role}-error-message`, `Failed to complete ${role} setup: ${roleError.message}`);
+        return;
+      }
+
+      // Final session refresh before redirect
+      await refreshSession();
+
+      console.log(`Successfully completed ${role} signup, redirecting to dashboard`);
+      redirectToDashboard(role);
+
+    } else {
+      showError(`${role}-error-message`, 'Failed to get user ID. Please try again.');
       return;
     }
 
-    // Sign in after signup (if not already logged in)
-    if (!isExistingUser) {
-      console.log('Attempting login after signup:', { email });
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) {
-        console.error('Login error after signup:', loginError.message);
-        showError(`${role}-error-message`, `Login failed after signup: ${loginError.message}. Please confirm your email if required.`);
-        return;
-      }
-    }
-
-    console.log('Redirecting to dashboard for role:', role);
-    redirectToDashboard(role);
+  } catch (error) {
+    console.error('Unexpected error in handleSignUp:', error);
+    showError(`${role}-error-message`, `An unexpected error occurred: ${error.message}`);
   }
+}
+
+// Helper functions for role-specific signup
+async function handleOwnerSignup(userId, associationId) {
+  console.log('Creating owner record:', { userId, associationId });
+  
+  // Verify association exists
+  const { data: assoc, error: assocError } = await supabase
+    .from('associations')
+    .select('id')
+    .eq('id', associationId)
+    .single();
+  
+  if (assocError || !assoc) {
+    console.error('Invalid association ID:', assocError?.message);
+    throw new Error('Selected association is invalid.');
+  }
+
+  const ownerId = generateUUID();
+  const { error: ownerError } = await supabase.from('owners').insert([
+    { 
+      id: ownerId, 
+      admin_id: userId, 
+      association_id: associationId,
+      created_at: new Date().toISOString()
+    }
+  ]);
+  
+  if (ownerError) {
+    console.error('Owner creation error:', ownerError);
+    throw new Error(`Failed to create owner profile: ${ownerError.message}`);
+  }
+  
+  console.log('Owner record created successfully');
+}
+
+async function handleAssociationSignup(userId, associationName) {
+  console.log('Creating association:', { userId, associationName });
+  
+  const { error: assocError } = await supabase.from('associations').insert([
+    { 
+      id: userId, 
+      association_name: associationName,
+      created_at: new Date().toISOString()
+    }
+  ]);
+  
+  if (assocError) {
+    console.error('Association creation error:', assocError);
+    throw new Error(`Failed to create association: ${assocError.message}`);
+  }
+  
+  console.log('Association created successfully');
+}
+
+async function handleDriverSignup(userId, additionalData) {
+  const driverId = generateUUID();
+  const driverData = {
+    id: driverId,
+    admin_id: userId,
+    owner_id: null,
+    association_id: additionalData.associationId || null,
+    name: additionalData.name,
+    surname: additionalData.surname,
+    id_number: additionalData.idNumber,
+    license_type: additionalData.licenseType,
+    license_expiry: additionalData.licenseExpiry || null,
+    prdp: additionalData.prdp === 'true',
+    created_at: new Date().toISOString()
+  };
+
+  // Validate association if provided
+  if (driverData.association_id) {
+    const { data: assoc, error: assocError } = await supabase
+      .from('associations')
+      .select('id')
+      .eq('id', driverData.association_id)
+      .single();
+    
+    if (assocError || !assoc) {
+      console.error('Invalid association ID:', assocError?.message);
+      throw new Error('Invalid Association ID.');
+    }
+  }
+
+  console.log('Creating driver:', driverData);
+  const { error: driverError } = await supabase.from('drivers').insert([driverData]);
+  
+  if (driverError) {
+    console.error('Driver creation error:', driverError);
+    throw new Error(`Failed to create driver profile: ${driverError.message}`);
+  }
+  
+  console.log('Driver record created successfully');
+}
+
+async function handlePassengerSignup(userId, additionalData) {
+  // Passenger doesn't need additional tables, just the profile
+  console.log('Passenger signup completed with profile creation');
+}
+
+// Enhanced upsertProfile function
+async function upsertProfile(role, userId, email, additionalData) {
+  if (!userId) {
+    console.error('No userId provided for profile upsert');
+    return false;
+  }
+
+  const profileData = {
+    id: userId,
+    email: email,
+    role: role,
+    name: additionalData.name || additionalData.associationName || email.split('@')[0],
+    updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+
+  console.log('Creating/updating profile:', profileData);
+  
+  try {
+    // First, check if profile already exists
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Profile check error:', checkError);
+    }
+
+    let result;
+    if (existingProfile) {
+      console.log('Profile already exists, updating:', existingProfile);
+      // Update existing profile
+      result = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', userId)
+        .select()
+        .single();
+    } else {
+      console.log('Creating new profile');
+      // Insert new profile
+      result = await supabase
+        .from('profiles')
+        .insert([profileData])
+        .select()
+        .single();
+    }
+    
+    const { data, error } = result;
+    
+    if (error) {
+      console.error('Profile operation error:', error);
+      
+      // If it's a foreign key constraint error, the user might not exist in auth.users
+      if (error.code === '23503') {
+        console.error('Foreign key constraint violation - user might not exist in auth.users');
+        return false;
+      }
+      
+      // If it's a unique constraint error, profile already exists
+      if (error.code === '23505') {
+        console.log('Profile already exists (unique constraint), attempting update');
+        const updateResult = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', userId)
+          .select()
+          .single();
+        
+        if (updateResult.error) {
+          console.error('Profile update after constraint error failed:', updateResult.error);
+          return false;
+        }
+        
+        console.log('Profile updated after constraint violation');
+        return true;
+      }
+      
+      return false;
+    }
+
+    console.log('Profile operation successful:', data);
+    return true;
+  } catch (error) {
+    console.error('Unexpected error in upsertProfile:', error);
+    return false;
+  }
+}
+
+// Enhanced refreshSession function
+async function refreshSession() {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) {
+      console.error('Session refresh error:', error.message);
+      return false;
+    }
+    console.log('Session refreshed successfully');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error refreshing session:', error);
+    return false;
+  }
+}
 
   // Event Listeners
   document.getElementById('login-form').addEventListener('submit', handleLogin);
