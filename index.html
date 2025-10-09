@@ -8,8 +8,14 @@
   <meta name="theme-color" content="#052438">
   <title>TaxiDrive - Login</title>
   <link rel="icon" href="./assets/favicon.ico">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.65.0/dist/umd/supabase.min.js"></script>
-  <style>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js">
+  onerror="this.onerror=null; this.src='https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';">    
+  </script>
+    
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    
+    <style>
     /* Previous CSS unchanged */
     body {
       margin: 0;
@@ -345,17 +351,34 @@
   <script>
 document.addEventListener('DOMContentLoaded', () => {
   if (!window.supabase) {
-    console.error('Supabase library failed to load');
+    console.error('Supabase library failed to load. Check CDN availability or network connection.');
     document.querySelectorAll('.error-message').forEach(el => {
-      el.textContent = 'Failed to load Supabase library. Please try again later.';
+      el.textContent = 'Unable to load authentication service. Please check your internet connection or try again later.';
       el.style.display = 'block';
     });
+    // Optionally, attempt to reload the script
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';
+    script.defer = true;
+    script.onerror = () => {
+      console.error('Fallback Supabase library also failed to load.');
+    };
+    script.onload = () => {
+      console.log('Fallback Supabase library loaded successfully.');
+      // Reinitialize Supabase client if needed
+      initializeSupabase();
+    };
+    document.head.appendChild(script);
     return;
   }
+  initializeSupabase();
+});
 
+function initializeSupabase() {
   const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { debug: true } });
+  console.log('Supabase client initialized');
 
   function generateUUID() {
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -958,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await checkAndRedirectUser(session);
     }
   });
-});
+}
 </script>
 </body>
 </html>
