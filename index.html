@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#052438">
   <title>TaxiDrive - Login</title>
   <link rel="icon" href="./assets/favicon.ico">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.65.0/dist/umd/supabase.min.js"></script>
   <style>
     /* Previous CSS unchanged */
     body {
@@ -491,9 +491,13 @@
           .eq('id', userData.user.id)
           .single();
 
-        if (profileError || !profile) {
+        if (profileError) {
           console.error('Profile fetch error:', profileError);
-          showError('login-error-message', 'Profile not found. Please sign up first.');
+          if (profileError.code === 'PGRST116') {
+            showError('login-error-message', 'No profile found. Please sign up first.');
+          } else {
+            showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
+          }
           return;
         }
 
@@ -620,6 +624,44 @@
       return true;
     }
 
+    async function checkAndRedirectUser(session) {
+      if (!session?.user) {
+        console.log('No user in session, showing login page');
+        showLogin();
+        return;
+      }
+
+      const userId = session.user.id;
+      console.log('Checking profile for user:', userId);
+
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          if (profileError.code === 'PGRST116') {
+            console.log('No profile found for user, prompting for signup');
+            showRoleSelection();
+          } else {
+            console.error('Profile fetch error:', profileError);
+            showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
+            showLogin();
+          }
+          return;
+        }
+
+        console.log('Profile found:', profile);
+        redirectToDashboard(profile.role);
+      } catch (error) {
+        console.error('Error checking profile:', error);
+        showError('login-error-message', 'Error checking user profile. Please try again.');
+        showLogin();
+      }
+    }
+
     async function handleSignUp(role, formData) {
       const { email, password, confirmPassword, ...additionalData } = formData;
       console.log('Signup attempt:', { role, email, passwordLength: password?.length, additionalData });
@@ -643,7 +685,6 @@
           showError('driver-error-message', 'ID Number must be a valid 13-digit South African ID.');
           return;
         }
-        // Optional: Add Luhn algorithm check for SA ID validity
         const isValidSAID = (id) => {
           let sum = 0;
           for (let i = 0; i < 13; i++) {
@@ -876,10 +917,17 @@
     document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
     document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.provider === 'google') {
-        console.log('Google OAuth sign-in:', session);
-        showRoleSelection();
+    // Handle authentication state changes
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', { event, session });
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        await checkAndRedirectUser(session);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out, showing login page');
+        showLogin();
+      } else if (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+        console.log('User or token updated, rechecking profile');
+        await checkAndRedirectUser(session);
       }
     });
   });
