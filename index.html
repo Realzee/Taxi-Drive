@@ -478,76 +478,96 @@ function initializeSupabase() {
   }
 
   async function handleLogin(event) {
-    event.preventDefault();
-    const loginBtn = document.getElementById('login-btn');
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
-    try {
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-      const role = document.getElementById('login-role').value;
+  event.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const role = document.getElementById('login-role').value;
 
-      clearErrors();
-      if (!email || !password || !role) {
-        showError('login-error-message', 'Please fill in all fields.');
-        return;
-      }
-
-      console.log('Login attempt:', { email, role });
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Login error:', error);
-        showError('login-error-message', `Login failed: ${error.message}`);
-        return;
-      }
-
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        console.error('Failed to fetch user:', userError);
-        showError('login-error-message', 'Failed to verify user.');
-        return;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        if (profileError.code === 'PGRST116') {
-          showError('login-error-message', 'No profile found. Please sign up first.');
-        } else {
-          showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
-        }
-        return;
-      }
-
-      if (profile.role !== role) {
-        console.error('Role mismatch:', { selected: role, actual: profile.role });
-        showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
-        return;
-      }
-
-      console.log('Redirecting to dashboard for role:', role);
-      redirectToDashboard(role);
-    } finally {
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Login';
-    }
+  // Clear any existing errors
+  clearErrors();
+  if (!email || !password || !role) {
+    showError('login-error-message', 'Please fill in all fields.');
+    return;
   }
 
-  function redirectToDashboard(role) {
-    const dashboards = {
-      passenger: 'passenger-dashboard.html',
-      driver: 'driver-dashboard.html',
-      owner: 'owner-dashboard.html',
-      association: 'association-dashboard.html'
-    };
-    window.location.href = `/Taxi-Drive/${dashboards[role]}`;
+  console.log('Login attempt:', { email, role });
+
+  // Authenticate user
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error('Login error:', error.message, error.code);
+    showError('login-error-message', `Login failed: ${error.message}`);
+    return;
   }
 
+  // Fetch user data
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    console.error('Failed to fetch user:', userError?.message);
+    showError('login-error-message', 'Failed to verify user.');
+    return;
+  }
+  console.log('Authenticated user:', { userId: userData.user.id, email });
+
+  // Verify session
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session) {
+    console.error('Session error:', sessionError?.message);
+    showError('login-error-message', 'No active session. Please try logging in again.');
+    return;
+  }
+  console.log('Authenticated session:', { userId: sessionData.session.user.id });
+
+  // Fetch profile to verify role
+  console.log('Checking profile for user:', userData.user.id);
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userData.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error('Profile fetch error:', profileError.message, profileError.code);
+    showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
+    return;
+  }
+
+  if (!profile) {
+    console.log('No profile found for user:', userData.user.id);
+    showError('login-error-message', 'No profile found. Please sign up first.');
+    return;
+  }
+
+  if (profile.role !== role) {
+    console.error('Role mismatch:', { selected: role, actual: profile.role });
+    showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
+    return;
+  }
+
+  // Redirect to the appropriate dashboard based on role
+  console.log('Redirecting to dashboard for role:', role);
+  redirectToDashboard(role);
+}
+
+// Define redirectToDashboard function
+function redirectToDashboard(role) {
+  const dashboardMap = {
+    owner: 'owner-dashboard.html',
+    association: 'association-dashboard.html',
+    driver: 'driver-dashboard.html',
+    passenger: 'passenger-dashboard.html'
+  };
+
+  const dashboardUrl = dashboardMap[role];
+  if (!dashboardUrl) {
+    console.error('Invalid role for redirect:', role);
+    showError('login-error-message', 'Invalid role. Please contact support.');
+    return;
+  }
+
+  console.log('Navigating to:', dashboardUrl);
+  window.location.href = dashboardUrl;
+}
   async function submitSignup(role, event) {
     event.preventDefault();
     const submitBtn = document.querySelector(`#signup-${role}-form button[type="submit"]`);
