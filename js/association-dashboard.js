@@ -1,12 +1,33 @@
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-let supabase;
-try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('Supabase client initialized');
-} catch (error) {
-  console.error('Supabase init failed:', error);
-  showNotification('Failed to connect to backend. Please check your network.', 'error');
+let supabase = null;
+async function initializeSupabase() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const maxAttempts = 5;
+    const checkSupabase = () => {
+      if (window.supabase?.createClient) {
+        try {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          console.log('Supabase client initialized');
+          resolve();
+        } catch (error) {
+          console.error('Supabase init failed:', error);
+          showNotification('Failed to connect to backend. Please check your network.', 'error');
+          reject(error);
+        }
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        console.log(`Waiting for Supabase library to load... Attempt ${attempts}`);
+        setTimeout(checkSupabase, 500);
+      } else {
+        console.error('Supabase library failed to load after max attempts');
+        showNotification('Failed to load backend services. Please refresh the page.', 'error');
+        reject(new Error('Supabase library not loaded'));
+      }
+    };
+    checkSupabase();
+  });
 }
 let currentUser = null;
 let currentAssociation = null;
@@ -15,14 +36,24 @@ let mapInstance = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 let userLocationWatcher = null;
-document.addEventListener('DOMContentLoaded', () => {
-  initializeDashboard();
-  const logos = document.querySelectorAll('.association-logo, #main-logo');
-  logos.forEach(logo => {
-    logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
-  });
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initializeSupabase();
+    const logos = document.querySelectorAll('.association-logo, #main-logo');
+    logos.forEach(logo => {
+      logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
+    });
+    initializeDashboard();
+  } catch (error) {
+    console.error('Error during initialization:', error);
+    showNotification('Failed to initialize application.', 'error');
+  }
 });
 async function initializeDashboard() {
+  if (!supabase) {
+    showNotification('Backend services not loaded. Please try again.', 'error');
+    return;
+  }
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -104,6 +135,7 @@ function updateAssociationProfileUI(associationData) {
   }
 }
 async function loadStats() {
+  if (!supabase) return;
   try {
     const { data: vehicles } = await supabase.from('vehicles').select('id').eq('association_id', currentAssociationId);
     document.getElementById('stat-vehicles').textContent = vehicles?.length || 0;
@@ -119,6 +151,7 @@ async function loadStats() {
   }
 }
 async function loadRecentMembers() {
+  if (!supabase) return;
   try {
     const { data: members } = await supabase
       .from('members')
@@ -137,6 +170,7 @@ async function loadRecentMembers() {
   }
 }
 async function loadRecentRoutes() {
+  if (!supabase) return;
   try {
     const { data: routes } = await supabase
       .from('routes')
@@ -155,6 +189,7 @@ async function loadRecentRoutes() {
   }
 }
 async function loadAlerts() {
+  if (!supabase) return;
   try {
     const { data: alerts } = await supabase
       .from('alarms')
@@ -172,6 +207,7 @@ async function loadAlerts() {
   }
 }
 async function loadWallet() {
+  if (!supabase) return;
   try {
     const { data: wallet } = await supabase
       .from('associations')
@@ -256,13 +292,12 @@ function setupEventListeners() {
         showNotification('Please fill all required fields.', 'error');
         return;
       }
-      // Handle member addition
     });
   }
 }
 function listenToRealtimeUpdates() {
-  if (!currentAssociationId) {
-    console.warn('Cannot set up realtime: currentAssociationId is null');
+  if (!supabase || !currentAssociationId) {
+    console.warn('Cannot set up realtime: supabase or currentAssociationId is null');
     return;
   }
   try {
@@ -296,6 +331,7 @@ function listenToRealtimeUpdates() {
   }
 }
 async function handleLogout() {
+  if (!supabase) return;
   try {
     await supabase.auth.signOut();
     window.location.href = 'index.html';
