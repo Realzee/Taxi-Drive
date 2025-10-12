@@ -8,15 +8,10 @@
   <meta name="theme-color" content="#052438">
   <title>TaxiDrive - Login</title>
   <link rel="icon" href="./assets/favicon.ico">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js">
-  onerror="this.onerror=null; this.src='https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';">    
-  </script>
-    
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js"
+  onerror="this.onerror=null; this.src='https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
-    
-    <style>
-    /* Previous CSS unchanged */
+  <style>
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -123,14 +118,11 @@
     }
   </style>
 </head>
-
 <body>
   <div class="login-wrapper">
-    <img src="./assets/Logo1.png" alt="TaxiDrive Logo" class="logo">
+    <img src="./assets/Logo1.png" alt="TaxiDrive Logo" class="logo" onerror="this.src='./assets/placeholder-logo.png'">
     <h1>TaxiDrive</h1>
     <p class="subtitle">Connecting People. Powering Mobility.</p>
-
-    <!-- LOGIN FORM -->
     <div id="login-section">
       <form id="login-form">
         <div class="form-group">
@@ -154,23 +146,18 @@
         <div id="login-error-message" class="error-message"></div>
         <button type="submit" id="login-btn" class="btn">Login</button>
       </form>
-
       <div class="divider">OR</div>
-
       <button id="google-login-btn" class="btn" style="background:#fff; color:#444; display:flex; align-items:center; justify-content:center;">
         <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" width="24" height="24" style="margin-right:8px;">
         Continue with Google
       </button>
-
       <p class="text-sm mt-4">Don't have an account?
         <span id="show-signup" class="text-link">Sign Up</span>
       </p>
     </div>
-
-    <!-- ROLE SELECTION FOR SIGNUP -->
     <div id="role-section" class="hidden">
       <div class="form-group">
-        <label class="form-label" for="signup-role">Select Your Role</label>
+        <label class="form-label" for="signup-role">Select Role</label>
         <select id="signup-role" class="form-input" required>
           <option value="" disabled selected>Select Role</option>
           <option value="passenger">Passenger</option>
@@ -178,71 +165,60 @@
           <option value="owner">Owner</option>
           <option value="association">Association</option>
         </select>
+        <div id="role-error-message" class="error-message"></div>
       </div>
-      <div id="role-error-message" class="error-message"></div>
       <button id="role-next-btn" class="btn">Next</button>
       <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-role" class="text-link">Login</span>
       </p>
     </div>
-
-    <!-- PASSENGER SIGNUP FORM -->
-    <div id="signup-passenger-section" class="hidden">
+    <div id="passenger-section" class="hidden">
       <form id="signup-passenger-form">
+        <div class="form-group">
+          <label class="form-label" for="passenger-name">Name</label>
+          <input id="passenger-name" type="text" placeholder="Name" class="form-input" required>
+        </div>
         <div class="form-group">
           <label class="form-label" for="passenger-email">Email</label>
           <input id="passenger-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="passenger-name">Full Name</label>
-          <input id="passenger-name" type="text" placeholder="Full Name" class="form-input" required>
-        </div>
-        <div class="form-group">
           <label class="form-label" for="passenger-password">Password</label>
-          <input id="passenger-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+          <input id="passenger-password" type="password" placeholder="Password" class="form-input" required>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="passenger-confirm-password">Confirm Password</label>
-          <input id="passenger-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
-        </div>
-        <div id="passenger-error-message" class="error-message"></div>
-        <div class="flex gap-4">
-          <button type="button" id="passenger-back-btn" class="btn btn-secondary">Back</button>
-          <button type="submit" class="btn">Sign Up</button>
-        </div>
+        <div id="signup-passenger-error-message" class="error-message"></div>
+        <button type="submit" class="btn">Sign Up</button>
       </form>
+      <button id="passenger-back-btn" class="btn btn-secondary mt-4">Back</button>
       <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-passenger" class="text-link">Login</span>
       </p>
     </div>
-
-    <!-- DRIVER SIGNUP FORM -->
-    <div id="signup-driver-section" class="hidden">
+    <div id="driver-section" class="hidden">
       <form id="signup-driver-form">
-        <div class="form-group">
-          <label class="form-label" for="driver-email">Email</label>
-          <input id="driver-email" type="email" placeholder="Email" class="form-input" required>
-        </div>
         <div class="form-group">
           <label class="form-label" for="driver-name">Name</label>
           <input id="driver-name" type="text" placeholder="Name" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-surname">Surname</label>
-          <input id="driver-surname" type="text" placeholder="Surname" class="form-input" required>
+          <label class="form-label" for="driver-email">Email</label>
+          <input id="driver-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-id-number">ID Number</label>
-          <input id="driver-id-number" type="text" placeholder="ID Number" class="form-input" required>
+          <label class="form-label" for="driver-password">Password</label>
+          <input id="driver-password" type="password" placeholder="Password" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-association-id">Association ID</label>
+          <input id="driver-association-id" type="text" placeholder="Association ID" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-owner-id">Owner ID</label>
+          <input id="driver-owner-id" type="text" placeholder="Owner ID" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-license-type">License Type</label>
-          <select id="driver-license-type" class="form-input" required>
-            <option value="" disabled selected>Select License Type</option>
-            <option value="Code 8">Code 8</option>
-            <option value="Code 10">Code 10</option>
-            <option value="Code 14">Code 14</option>
-          </select>
+          <input id="driver-license-type" type="text" placeholder="License Type" class="form-input">
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-license-expiry">License Expiry</label>
@@ -250,966 +226,384 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-prdp">PrDP</label>
-          <select id="driver-prdp" class="form-input" required>
-            <option value="" disabled selected>PrDP Status</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <input id="driver-prdp" type="checkbox" class="form-checkbox">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="driver-association-id">Association</label>
-          <select id="driver-association-id" class="form-input">
-            <option value="" selected>No Association</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="driver-password">Password</label>
-          <input id="driver-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="driver-confirm-password">Confirm Password</label>
-          <input id="driver-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
-        </div>
-        <div id="driver-error-message" class="error-message"></div>
-        <div class="flex gap-4">
-          <button type="button" id="driver-back-btn" class="btn btn-secondary">Back</button>
-          <button type="submit" class="btn">Sign Up</button>
-        </div>
+        <div id="signup-driver-error-message" class="error-message"></div>
+        <button type="submit" class="btn">Sign Up</button>
       </form>
+      <button id="driver-back-btn" class="btn btn-secondary mt-4">Back</button>
       <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-driver" class="text-link">Login</span>
       </p>
     </div>
-
-    <!-- OWNER SIGNUP FORM -->
-    <div id="signup-owner-section" class="hidden">
+    <div id="owner-section" class="hidden">
       <form id="signup-owner-form">
+        <div class="form-group">
+          <label class="form-label" for="owner-name">Name</label>
+          <input id="owner-name" type="text" placeholder="Name" class="form-input" required>
+        </div>
         <div class="form-group">
           <label class="form-label" for="owner-email">Email</label>
           <input id="owner-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="owner-name">Full Name</label>
-          <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="owner-association-id">Association</label>
-          <select id="owner-association-id" class="form-input" required>
-            <option value="" disabled selected>Select Association</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label" for="owner-password">Password</label>
-          <input id="owner-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+          <input id="owner-password" type="password" placeholder="Password" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="owner-confirm-password">Confirm Password</label>
-          <input id="owner-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+          <label class="form-label" for="owner-association-id">Association ID</label>
+          <input id="owner-association-id" type="text" placeholder="Association ID" class="form-input" required>
         </div>
-        <div id="owner-error-message" class="error-message"></div>
-        <div class="flex gap-4">
-          <button type="button" id="owner-back-btn" class="btn btn-secondary">Back</button>
-          <button type="submit" class="btn">Sign Up</button>
-        </div>
+        <div id="signup-owner-error-message" class="error-message"></div>
+        <button type="submit" class="btn">Sign Up</button>
       </form>
+      <button id="owner-back-btn" class="btn btn-secondary mt-4">Back</button>
       <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-owner" class="text-link">Login</span>
       </p>
     </div>
-
-    <!-- ASSOCIATION SIGNUP FORM -->
-    <div id="signup-association-section" class="hidden">
+    <div id="association-section" class="hidden">
       <form id="signup-association-form">
-        <div class="form-group">
-          <label class="form-label" for="association-email">Email</label>
-          <input id="association-email" type="email" placeholder="Email" class="form-input" required>
-        </div>
         <div class="form-group">
           <label class="form-label" for="association-name">Association Name</label>
           <input id="association-name" type="text" placeholder="Association Name" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-password">Password</label>
-          <input id="association-password" type="password" placeholder="Password (min 8 characters)" class="form-input" minlength="8" required>
+          <label class="form-label" for="association-email">Email</label>
+          <input id="association-email" type="email" placeholder="Email" class="form-input" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-confirm-password">Confirm Password</label>
-          <input id="association-confirm-password" type="password" placeholder="Confirm Password" class="form-input" minlength="8" required>
+          <label class="form-label" for="association-password">Password</label>
+          <input id="association-password" type="password" placeholder="Password" class="form-input" required>
         </div>
-        <div id="association-error-message" class="error-message"></div>
-        <div class="flex gap-4">
-          <button type="button" id="association-back-btn" class="btn btn-secondary">Back</button>
-          <button type="submit" class="btn">Sign Up</button>
+        <div class="form-group">
+          <label class="form-label" for="association-phone">Phone</label>
+          <input id="association-phone" type="tel" placeholder="Phone" class="form-input">
         </div>
+        <div class="form-group">
+          <label class="form-label" for="association-address">Address</label>
+          <input id="association-address" type="text" placeholder="Address" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-description">Description</label>
+          <textarea id="association-description" placeholder="Description" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-admin-name">Admin Name</label>
+          <input id="association-admin-name" type="text" placeholder="Admin Name" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="association-admin-phone">Admin Phone</label>
+          <input id="association-admin-phone" type="tel" placeholder="Admin Phone" class="form-input">
+        </div>
+        <div id="signup-association-error-message" class="error-message"></div>
+        <button type="submit" class="btn">Sign Up</button>
       </form>
+      <button id="association-back-btn" class="btn btn-secondary mt-4">Back</button>
       <p class="text-sm mt-4">Already have an account?
         <span id="show-login-from-association" class="text-link">Login</span>
       </p>
     </div>
   </div>
-
   <script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (!window.supabase) {
-    console.error('Supabase library failed to load. Check CDN availability or network connection.');
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.textContent = 'Unable to load authentication service. Please check your internet connection or try again later.';
-      el.style.display = 'block';
-    });
-    // Optionally, attempt to reload the script
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';
-    script.defer = true;
-    script.onerror = () => {
-      console.error('Fallback Supabase library also failed to load.');
-    };
-    script.onload = () => {
-      console.log('Fallback Supabase library loaded successfully.');
-      // Reinitialize Supabase client if needed
-      initializeSupabase();
-    };
-    document.head.appendChild(script);
-    return;
-  }
-  initializeSupabase();
-});
-
-function initializeSupabase() {
-  const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { debug: true } });
-  console.log('Supabase client initialized');
-
-  function generateUUID() {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
-  }
-
-  function showError(elementId, message) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.textContent = message;
-      element.style.display = 'block';
-    }
-  }
-
-  function clearErrors() {
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.textContent = '';
-      el.style.display = 'none';
-    });
-  }
-
-  function showLogin() {
-    document.getElementById('login-section').style.display = 'block';
-    document.getElementById('role-section').style.display = 'none';
-    document.getElementById('signup-passenger-section').style.display = 'none';
-    document.getElementById('signup-driver-section').style.display = 'none';
-    document.getElementById('signup-owner-section').style.display = 'none';
-    document.getElementById('signup-association-section').style.display = 'none';
-    clearErrors();
-  }
-
-  function showRoleSelection() {
-    document.getElementById('login-section').style.display = 'none';
-    document.getElementById('role-section').style.display = 'block';
-    document.getElementById('signup-passenger-section').style.display = 'none';
-    document.getElementById('signup-driver-section').style.display = 'none';
-    document.getElementById('signup-owner-section').style.display = 'none';
-    document.getElementById('signup-association-section').style.display = 'none';
-    clearErrors();
-  }
-
-  function showSignupForm(role) {
-    document.getElementById('login-section').style.display = 'none';
-    document.getElementById('role-section').style.display = 'none';
-    document.getElementById('signup-passenger-section').style.display = role === 'passenger' ? 'block' : 'none';
-    document.getElementById('signup-driver-section').style.display = role === 'driver' ? 'block' : 'none';
-    document.getElementById('signup-owner-section').style.display = role === 'owner' ? 'block' : 'none';
-    document.getElementById('signup-association-section').style.display = role === 'association' ? 'block' : 'none';
-    clearErrors();
-    if (role === 'owner' || role === 'driver') {
-      populateAssociationDropdown();
-    }
-  }
-
-  async function populateAssociationDropdown() {
-    const select = document.getElementById('owner-association-id');
-    const driverSelect = document.getElementById('driver-association-id');
-    select.innerHTML = '<option value="" disabled selected>Loading associations...</option>';
-    driverSelect.innerHTML = '<option value="" selected>No Association</option>';
-
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+    let supabase;
     try {
-      console.log('Fetching associations from Supabase');
-      const { data, error } = await supabase
-        .from('associations')
-        .select('id, association_name')
-        .order('association_name', { ascending: true });
-
-      if (error) {
-        console.error('Association fetch error:', error);
-        showError('owner-error-message', 'Failed to load associations: ' + error.message);
-        select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        console.warn('No associations found');
-        showError('owner-error-message', 'No associations available. Please create one first.');
-        select.innerHTML = '<option value="" disabled selected>No associations available</option>';
-        return;
-      }
-
-      console.log('Associations loaded:', data);
-      select.innerHTML = '<option value="" disabled selected>Select Association</option>';
-      data.forEach(assoc => {
-        const option = document.createElement('option');
-        option.value = assoc.id;
-        option.textContent = assoc.association_name;
-        select.appendChild(option);
-        driverSelect.appendChild(option.cloneNode(true));
-      });
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('Supabase client initialized');
     } catch (error) {
-      console.error('Unexpected error in populateAssociationDropdown:', error);
-      showError('owner-error-message', 'Error loading associations: ' + error.message);
-      select.innerHTML = '<option value="" disabled selected>Error loading associations</option>';
+      console.error('Supabase init failed:', error);
+      showNotification('Failed to connect to backend. Please check your network.', 'error');
     }
-  }
-
-  async function handleLogin(event) {
-  event.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-  const role = document.getElementById('login-role').value;
-
-  // Clear any existing errors
-  clearErrors();
-  if (!email || !password || !role) {
-    showError('login-error-message', 'Please fill in all fields.');
-    return;
-  }
-
-  console.log('Login attempt:', { email, role });
-
-  // Authenticate user
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    console.error('Login error:', error.message, error.code);
-    showError('login-error-message', `Login failed: ${error.message}`);
-    return;
-  }
-
-  // Fetch user data
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
-    console.error('Failed to fetch user:', userError?.message);
-    showError('login-error-message', 'Failed to verify user.');
-    return;
-  }
-  console.log('Authenticated user:', { userId: userData.user.id, email });
-
-  // Verify session
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !sessionData.session) {
-    console.error('Session error:', sessionError?.message);
-    showError('login-error-message', 'No active session. Please try logging in again.');
-    return;
-  }
-  console.log('Authenticated session:', { userId: sessionData.session.user.id });
-
-  // Fetch profile to verify role
-  console.log('Checking profile for user:', userData.user.id);
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userData.user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    console.error('Profile fetch error:', profileError.message, profileError.code);
-    showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
-    return;
-  }
-
-  if (!profile) {
-    console.log('No profile found for user:', userData.user.id);
-    showError('login-error-message', 'No profile found. Please sign up first.');
-    return;
-  }
-
-  if (profile.role !== role) {
-    console.error('Role mismatch:', { selected: role, actual: profile.role });
-    showError('login-error-message', `Invalid role selected. Your account is registered as ${profile.role}.`);
-    return;
-  }
-
-  // Redirect to the appropriate dashboard based on role
-  console.log('Redirecting to dashboard for role:', role);
-  redirectToDashboard(role);
-}
-
-// Define redirectToDashboard function
-function redirectToDashboard(role) {
-  const dashboardMap = {
-    owner: 'owner-dashboard.html',
-    association: 'association-dashboard.html',
-    driver: 'driver-dashboard.html',
-    passenger: 'passenger-dashboard.html'
-  };
-
-  const dashboardUrl = dashboardMap[role];
-  if (!dashboardUrl) {
-    console.error('Invalid role for redirect:', role);
-    showError('login-error-message', 'Invalid role. Please contact support.');
-    return;
-  }
-
-  console.log('Navigating to:', dashboardUrl);
-  window.location.href = dashboardUrl;
-}
-  async function submitSignup(role, event) {
-    event.preventDefault();
-    const submitBtn = document.querySelector(`#signup-${role}-form button[type="submit"]`);
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Signing up...';
-    try {
-      const formData = {};
+    function showSection(sectionId) {
+      const sections = ['login-section', 'role-section', 'passenger-section', 'driver-section', 'owner-section', 'association-section'];
+      sections.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      const section = document.getElementById(sectionId);
+      if (section) section.classList.remove('hidden');
+    }
+    function showLogin() {
+      showSection('login-section');
+    }
+    function showRoleSelection() {
+      showSection('role-section');
+    }
+    function showSignupForm(role) {
+      showSection(`${role}-section`);
+    }
+    function showError(elementId, message) {
+      const errorElement = document.getElementById(elementId);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        setTimeout(() => errorElement.style.display = 'none', 5000);
+      }
+    }
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 1rem; border-radius: 8px; z-index: 5000;';
+      notification.innerHTML = `<span>${message}</span>`;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 5000);
+    }
+    async function handleLogin(e) {
+      e.preventDefault();
+      const form = e.target;
+      if (!form.checkValidity()) {
+        showError('login-error-message', 'Please fill all required fields.');
+        return;
+      }
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const role = document.getElementById('login-role').value;
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        if (profile?.role !== role) throw new Error('Selected role does not match your account.');
+        // Role-based redirects handled by auth state change
+      } catch (error) {
+        showError('login-error-message', error.message);
+      }
+    }
+    async function submitSignup(role, e) {
+      e.preventDefault();
+      const form = e.target;
+      if (!form.checkValidity()) {
+        showError(`signup-${role}-error-message`, 'Please fill all required fields.');
+        return;
+      }
+      let additionalData = {};
       if (role === 'passenger') {
-        formData.email = document.getElementById('passenger-email').value;
-        formData.name = document.getElementById('passenger-name').value;
-        formData.password = document.getElementById('passenger-password').value;
-        formData.confirmPassword = document.getElementById('passenger-confirm-password').value;
+        additionalData.name = document.getElementById('passenger-name').value;
+        additionalData.email = document.getElementById('passenger-email').value;
       } else if (role === 'driver') {
-        formData.email = document.getElementById('driver-email').value;
-        formData.name = document.getElementById('driver-name').value;
-        formData.surname = document.getElementById('driver-surname').value;
-        formData.idNumber = document.getElementById('driver-id-number').value;
-        formData.licenseType = document.getElementById('driver-license-type').value;
-        formData.licenseExpiry = document.getElementById('driver-license-expiry').value;
-        formData.prdp = document.getElementById('driver-prdp').value;
-        formData.associationId = document.getElementById('driver-association-id').value;
-        formData.password = document.getElementById('driver-password').value;
-        formData.confirmPassword = document.getElementById('driver-confirm-password').value;
+        additionalData.name = document.getElementById('driver-name').value;
+        additionalData.email = document.getElementById('driver-email').value;
+        additionalData.associationId = document.getElementById('driver-association-id').value;
+        additionalData.ownerId = document.getElementById('driver-owner-id').value;
+        additionalData.licenseType = document.getElementById('driver-license-type').value;
+        additionalData.licenseExpiry = document.getElementById('driver-license-expiry').value;
+        additionalData.prdp = document.getElementById('driver-prdp').checked;
       } else if (role === 'owner') {
-        formData.email = document.getElementById('owner-email').value;
-        formData.name = document.getElementById('owner-name').value;
-        formData.associationId = document.getElementById('owner-association-id').value;
-        formData.password = document.getElementById('owner-password').value;
-        formData.confirmPassword = document.getElementById('owner-confirm-password').value;
+        additionalData.name = document.getElementById('owner-name').value;
+        additionalData.email = document.getElementById('owner-email').value;
+        additionalData.associationId = document.getElementById('owner-association-id').value;
       } else if (role === 'association') {
-        formData.email = document.getElementById('association-email').value;
-        formData.associationName = document.getElementById('association-name').value;
-        formData.password = document.getElementById('association-password').value;
-        formData.confirmPassword = document.getElementById('association-confirm-password').value;
+        additionalData.associationName = document.getElementById('association-name').value;
+        additionalData.email = document.getElementById('association-email').value;
+        additionalData.phone = document.getElementById('association-phone').value;
+        additionalData.address = document.getElementById('association-address').value;
+        additionalData.description = document.getElementById('association-description').value;
+        additionalData.adminName = document.getElementById('association-admin-name').value;
+        additionalData.adminPhone = document.getElementById('association-admin-phone').value;
       }
-
-      await handleSignUp(role, formData);
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Sign Up';
+      const email = additionalData.email || '';
+      const password = document.getElementById(`${role}-password`).value;
+      try {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        await upsertProfile(role, data.user.id, email, additionalData);
+        if (role === 'association') await handleAssociationSignup(data.user.id, additionalData);
+        else if (role === 'owner') await handleOwnerSignup(data.user.id, additionalData);
+        else if (role === 'driver') await handleDriverSignup(data.user.id, additionalData);
+        else if (role === 'passenger') await handlePassengerSignup(data.user.id, additionalData);
+        showNotification('Signup successful! Please login.', 'success');
+        showLogin();
+      } catch (error) {
+        showError(`signup-${role}-error-message`, error.message);
+      }
     }
-  }
-
-  async function upsertProfile(role, userId, email, additionalData) {
-  if (!userId) {
-    console.error('No userId provided for profile upsert');
-    showError(`${role}-error-message`, 'Invalid user ID. Please try signing up again.');
-    return false;
-  }
-
-  const profileData = {
-    id: userId,
-    email: email,
-    role: role,
-    name: additionalData.name || additionalData.associationName || email.split('@')[0],
-    updated_at: new Date().toISOString(),
-    created_at: new Date().toISOString() // Add this line
-  };
-
-  console.log('Creating/updating profile:', profileData);
-  
-  try {
-    // First, check if profile already exists
-    const { data: existingProfile, error: checkError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Profile check error:', checkError);
+    async function handleAssociationSignup(userId, additionalData) {
+      const associationData = {
+        id: userId,
+        association_name: additionalData.associationName,
+        email: additionalData.email,
+        phone: additionalData.phone,
+        address: additionalData.address,
+        description: additionalData.description,
+        admin_name: additionalData.adminName,
+        admin_phone: additionalData.adminPhone,
+        created_at: new Date().toISOString()
+      };
+      const { error } = await supabase.from('associations').insert([associationData]);
+      if (error) throw new Error(`Failed to create association: ${error.message}`);
     }
-
-    if (existingProfile) {
-      console.log('Profile already exists, updating:', existingProfile);
-      // Update existing profile
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', userId)
-        .select()
+    async function handleOwnerSignup(userId, additionalData) {
+      if (!additionalData.associationId) {
+        showError('signup-owner-error-message', 'Association ID is required.');
+        throw new Error('Association ID is required.');
+      }
+      const { data: association, error: assocError } = await supabase
+        .from('associations')
+        .select('id')
+        .eq('id', additionalData.associationId)
         .single();
-      
-      if (error) {
-        console.error('Profile update error:', error);
-        return false;
+      if (assocError || !association) {
+        showError('signup-owner-error-message', 'Invalid Association ID.');
+        throw new Error('Invalid Association ID.');
       }
-      console.log('Profile updated:', data);
-    } else {
-      console.log('Creating new profile');
-      // Insert new profile
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
+      const memberData = {
+        auth_id: userId,
+        association_id: additionalData.associationId,
+        role: 'owner',
+        is_verified: false,
+        name: additionalData.name || '',
+        email: additionalData.email || '',
+        created_at: new Date().toISOString()
+      };
+      console.log('Creating owner member:', memberData);
+      const { error: memberError } = await supabase.from('members').insert([memberData]);
+      if (memberError) {
+        console.error('Owner member creation error:', memberError);
+        throw new Error(`Failed to create owner profile: ${memberError.message}`);
+      }
+      console.log('Owner member record created successfully');
+    }
+    async function handleDriverSignup(userId, additionalData) {
+      if (!additionalData.associationId || !additionalData.ownerId) {
+        showError('signup-driver-error-message', 'Association ID and Owner ID are required.');
+        throw new Error('Required fields missing.');
+      }
+      const { data: association, error: assocError } = await supabase
+        .from('associations')
+        .select('id')
+        .eq('id', additionalData.associationId)
         .single();
-      
-      if (error) {
-        console.error('Profile creation error:', error);
-        return false;
+      if (assocError || !association) {
+        showError('signup-driver-error-message', 'Invalid Association ID.');
+        throw new Error('Invalid Association ID.');
       }
-      console.log('Profile created:', data);
+      const { data: owner, error: ownerError } = await supabase
+        .from('members')
+        .select('id')
+        .eq('id', additionalData.ownerId)
+        .eq('role', 'owner')
+        .single();
+      if (ownerError || !owner) {
+        showError('signup-driver-error-message', 'Invalid Owner ID.');
+        throw new Error('Invalid Owner ID.');
+      }
+      const memberData = {
+        auth_id: userId,
+        association_id: additionalData.associationId,
+        owner_id: additionalData.ownerId,
+        role: 'driver',
+        is_verified: false,
+        name: additionalData.name || '',
+        email: additionalData.email || '',
+        license_type: additionalData.licenseType || '',
+        license_expiry: additionalData.licenseExpiry || '',
+        prdp: additionalData.prdp || false,
+        created_at: new Date().toISOString()
+      };
+      console.log('Creating driver member:', memberData);
+      const { error: memberError } = await supabase.from('members').insert([memberData]);
+      if (memberError) {
+        console.error('Driver member creation error:', memberError);
+        throw new Error(`Failed to create driver profile: ${memberError.message}`);
+      }
+      console.log('Driver member record created successfully');
     }
-    
-    return true;
-  } catch (error) {
-    console.error('Unexpected error in upsertProfile:', error);
-    return false;
-  }
-}
-
-  async function refreshSession() {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error) {
-      console.error('Session refresh error:', error.message);
-      return false;
+    async function handlePassengerSignup(userId, additionalData) {
+      const passengerData = {
+        auth_id: userId,
+        name: additionalData.name || '',
+        email: additionalData.email || '',
+        created_at: new Date().toISOString()
+      };
+      const { error } = await supabase.from('passengers').insert([passengerData]);
+      if (error) throw new Error(`Failed to create passenger profile: ${error.message}`);
     }
-    console.log('Session refreshed:', data);
-    return true;
-  }
-
-  async function checkAndRedirectUser(session) {
-  if (!session?.user) {
-    console.log('No user in session, showing login page');
-    showLogin();
-    return;
-  }
-
-  const userId = session.user.id;
-  console.log('Checking profile for user:', userId);
-
-  try {
-    // Add a small delay to ensure profile is created
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (profileError) {
-      if (profileError.code === 'PGRST116') {
-        console.log('No profile found for user, creating default profile');
-        
-        // Auto-create a basic profile
-        const profileCreated = await upsertProfile('passenger', userId, session.user.email, {
-          name: session.user.email.split('@')[0]
-        });
-        
-        if (profileCreated) {
-          console.log('Default profile created, redirecting to passenger dashboard');
-          redirectToDashboard('passenger');
-        } else {
-          console.log('Failed to create profile, showing role selection');
-          showRoleSelection();
-        }
+    async function upsertProfile(role, userId, email, additionalData) {
+      const profileData = {
+        id: userId,
+        email: email,
+        role: role,
+        name: additionalData.name || additionalData.associationName || email.split('@')[0],
+        updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
+      const { data: existing } = await supabase.from('profiles').select('id').eq('id', userId).single();
+      if (existing) {
+        const { error } = await supabase.from('profiles').update(profileData).eq('id', userId);
+        if (error) throw error;
       } else {
-        console.error('Profile fetch error:', profileError);
-        showError('login-error-message', `Failed to fetch profile: ${profileError.message}`);
+        const { error } = await supabase.from('profiles').insert([profileData]);
+        if (error) throw error;
+      }
+    }
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        await checkAndRedirectUser(session);
+      } else if (event === 'SIGNED_OUT') {
         showLogin();
       }
-      return;
-    }
-
-    console.log('Profile found:', profile);
-    redirectToDashboard(profile.role);
-  } catch (error) {
-    console.error('Error checking profile:', error);
-    showError('login-error-message', 'Error checking user profile. Please try again.');
-    showLogin();
-  }
-}
-
-    async function debugAuthFlow() {
-  const { data: session } = await supabase.auth.getSession();
-  const { data: user } = await supabase.auth.getUser();
-  
-  console.log('=== DEBUG AUTH FLOW ===');
-  console.log('Session exists:', !!session?.session);
-  console.log('User exists:', !!user?.user);
-  console.log('User ID:', user?.user?.id);
-  
-  if (user?.user?.id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.user.id)
-      .single();
-    
-    console.log('Profile exists:', !!profile);
-    console.log('Profile data:', profile);
-  }
-  console.log('=== END DEBUG ===');
-}
-
-// Call this when needed for debugging
-// debugAuthFlow();
-
-    async function handleSignUp(role, formData) {
-  const { email, password, confirmPassword, ...additionalData } = formData;
-  console.log('Signup attempt:', { role, email, passwordLength: password?.length, additionalData });
-
-  // Validation
-  if (!email || !password || !confirmPassword || !role) {
-    showError(`${role}-error-message`, 'Please fill in all required fields.');
-    return;
-  }
-  
-  if (password !== confirmPassword) {
-    showError(`${role}-error-message`, 'Passwords do not match.');
-    return;
-  }
-  
-  if (password.length < 8) {
-    showError(`${role}-error-message`, 'Password must be at least 8 characters long.');
-    return;
-  }
-
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(email)) {
-    showError(`${role}-error-message`, 'Invalid email format.');
-    return;
-  }
-
-  // Driver-specific validation
-  if (role === 'driver') {
-    const idRegex = /^\d{13}$/;
-    if (!idRegex.test(formData.idNumber)) {
-      showError('driver-error-message', 'ID Number must be a valid 13-digit South African ID.');
-      return;
-    }
-    
-    const isValidSAID = (id) => {
-      let sum = 0;
-      for (let i = 0; i < 13; i++) {
-        let digit = parseInt(id[i]);
-        if (i % 2 === 0) sum += digit;
-        else sum += (digit * 2 > 9 ? digit * 2 - 9 : digit * 2);
-      }
-      return sum % 10 === 0;
-    };
-    
-    if (!isValidSAID(formData.idNumber)) {
-      showError('driver-error-message', 'Invalid South African ID number.');
-      return;
-    }
-    
-    if (!formData.licenseType) {
-      showError('driver-error-message', 'Please select a license type.');
-      return;
-    }
-  }
-
-  // Owner-specific validation
-  if (role === 'owner' && !additionalData.associationId) {
-    showError('owner-error-message', 'Please select an association.');
-    return;
-  }
-
-  // Association-specific validation
-  if (role === 'association' && !additionalData.associationName) {
-    showError('association-error-message', 'Please enter association name.');
-    return;
-  }
-
-  let userId;
-  let isExistingUser = false;
-
-  try {
-    // Attempt signup
-    console.log('Sending signup request:', { email, redirectTo: 'https://realzee.github.io/Taxi-Drive/' });
-    const { data: signupData, error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { 
-        emailRedirectTo: 'https://realzee.github.io/Taxi-Drive/',
-        data: { role: role } // Store role in user metadata
-      }
     });
-
-    if (signupError) {
-      console.error('Supabase signup error:', signupError.message, signupError.details);
-      
-      if (signupError.message === 'User already registered') {
-        console.log('Existing user detected, attempting login...');
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
-          email, 
-          password 
-        });
-        
-        if (loginError) {
-          showError(`${role}-error-message`, `This email is already registered. Please use the correct password or recover it.`);
-          return;
-        }
-        
-        isExistingUser = true;
-        userId = loginData.user.id;
-        console.log('Existing user logged in:', { userId, email });
-      } else if (signupError.message.includes('email confirmation')) {
-        showError(`${role}-error-message`, 'Please check your email to confirm your account before logging in.');
-        return;
-      } else {
-        showError(`${role}-error-message`, `Signup failed: ${signupError.message}`);
+    async function checkAndRedirectUser(session) {
+      if (!session?.user) {
+        showLogin();
         return;
       }
-    } else {
-      // New user signed up
-      if (signupData.user) {
-        userId = signupData.user.id;
-        console.log('New user created:', { userId, email, requiresConfirmation: !signupData.session });
-        
-        // If email confirmation is required
-        if (!signupData.session) {
-          showError(`${role}-error-message`, 'Please check your email to confirm your account before logging in.');
-          return;
-        }
-      }
-    }
-
-    // For new users or when we have a session, proceed with profile creation
-    if (userId) {
-      // Refresh session to ensure we have the latest token
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        console.error('Session error:', sessionError?.message);
-        
-        // If it's a new user that requires confirmation, we can still proceed
-        if (!isExistingUser && signupData?.user && !signupData.session) {
-          showError(`${role}-error-message`, 'Please check your email to confirm your account. You can complete your profile setup after confirmation.');
-          return;
-        }
-        
-        showError(`${role}-error-message`, 'Authentication session not found. Please try again.');
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+      if (!profile) {
+        showLogin();
         return;
       }
-
-      // Verify session user matches our user ID
-      if (sessionData.session.user.id !== userId) {
-        console.error('Session user ID mismatch:', {
-          sessionUserId: sessionData.session.user.id,
-          fetchedUserId: userId
-        });
-        showError(`${role}-error-message`, 'Authentication session mismatch. Please try again.');
+      switch (profile.role) {
+        case 'association':
+          window.location.href = 'association-dashboard.html';
+          break;
+        case 'owner':
+          const { data: member } = await supabase.from('members').select('is_verified').eq('auth_id', session.user.id).single();
+          if (member?.is_verified) {
+            window.location.href = 'owner-dashboard.html';
+          } else {
+            showNotification('Account pending verification.', 'warning');
+            showLogin();
+          }
+          break;
+        case 'driver':
+          window.location.href = 'driver-dashboard.html';
+          break;
+        case 'passenger':
+          window.location.href = 'passenger-dashboard.html';
+          break;
+        default:
+          showLogin();
+      }
+    }
+    document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+    document.getElementById('google-login-btn')?.addEventListener('click', () => {
+      supabase.auth.signInWithOAuth({ provider: 'google' });
+    });
+    document.getElementById('show-signup')?.addEventListener('click', showRoleSelection);
+    document.getElementById('role-next-btn')?.addEventListener('click', () => {
+      const role = document.getElementById('signup-role')?.value;
+      if (!role) {
+        showError('role-error-message', 'Please select a role.');
         return;
       }
-
-      console.log('Authenticated session verified:', { userId: sessionData.session.user.id });
-
-      // Create or update profile
-      console.log('Creating/updating profile for user:', userId);
-      const profileCreated = await upsertProfile(role, userId, email, additionalData);
-      
-      if (!profileCreated) {
-        showError(`${role}-error-message`, 'Failed to create user profile. Please try again.');
-        return;
-      }
-
-      console.log('Profile created successfully, proceeding with role-specific setup');
-
-      // Role-specific data creation
-      try {
-        if (role === 'owner') {
-          await handleOwnerSignup(userId, additionalData.associationId);
-        } else if (role === 'association') {
-          await handleAssociationSignup(userId, additionalData.associationName);
-        } else if (role === 'driver') {
-          await handleDriverSignup(userId, additionalData);
-        } else if (role === 'passenger') {
-          await handlePassengerSignup(userId, additionalData);
-        }
-      } catch (roleError) {
-        console.error(`${role} setup error:`, roleError);
-        showError(`${role}-error-message`, `Failed to complete ${role} setup: ${roleError.message}`);
-        return;
-      }
-
-      // Final session refresh before redirect
-      await refreshSession();
-
-      console.log(`Successfully completed ${role} signup, redirecting to dashboard`);
-      redirectToDashboard(role);
-
-    } else {
-      showError(`${role}-error-message`, 'Failed to get user ID. Please try again.');
-      return;
-    }
-
-  } catch (error) {
-    console.error('Unexpected error in handleSignUp:', error);
-    showError(`${role}-error-message`, `An unexpected error occurred: ${error.message}`);
-  }
-}
-
-// Helper functions for role-specific signup
-async function handleOwnerSignup(userId, associationId) {
-  console.log('Creating owner record:', { userId, associationId });
-  
-  // Verify association exists
-  const { data: assoc, error: assocError } = await supabase
-    .from('associations')
-    .select('id')
-    .eq('id', associationId)
-    .single();
-  
-  if (assocError || !assoc) {
-    console.error('Invalid association ID:', assocError?.message);
-    throw new Error('Selected association is invalid.');
-  }
-
-  const ownerId = generateUUID();
-  const { error: ownerError } = await supabase.from('owners').insert([
-    { 
-      id: ownerId, 
-      admin_id: userId, 
-      association_id: associationId,
-      created_at: new Date().toISOString()
-    }
-  ]);
-  
-  if (ownerError) {
-    console.error('Owner creation error:', ownerError);
-    throw new Error(`Failed to create owner profile: ${ownerError.message}`);
-  }
-  
-  console.log('Owner record created successfully');
-}
-
-async function handleAssociationSignup(userId, associationName) {
-  console.log('Creating association:', { userId, associationName });
-  
-  const { error: assocError } = await supabase.from('associations').insert([
-    { 
-      id: userId, 
-      association_name: associationName,
-      created_at: new Date().toISOString()
-    }
-  ]);
-  
-  if (assocError) {
-    console.error('Association creation error:', assocError);
-    throw new Error(`Failed to create association: ${assocError.message}`);
-  }
-  
-  console.log('Association created successfully');
-}
-
-async function handleDriverSignup(userId, additionalData) {
-  const driverId = generateUUID();
-  const driverData = {
-    id: driverId,
-    admin_id: userId,
-    owner_id: null,
-    association_id: additionalData.associationId || null,
-    name: additionalData.name,
-    surname: additionalData.surname,
-    id_number: additionalData.idNumber,
-    license_type: additionalData.licenseType,
-    license_expiry: additionalData.licenseExpiry || null,
-    prdp: additionalData.prdp === 'true',
-    created_at: new Date().toISOString()
-  };
-
-  // Validate association if provided
-  if (driverData.association_id) {
-    const { data: assoc, error: assocError } = await supabase
-      .from('associations')
-      .select('id')
-      .eq('id', driverData.association_id)
-      .single();
-    
-    if (assocError || !assoc) {
-      console.error('Invalid association ID:', assocError?.message);
-      throw new Error('Invalid Association ID.');
-    }
-  }
-
-  console.log('Creating driver:', driverData);
-  const { error: driverError } = await supabase.from('drivers').insert([driverData]);
-  
-  if (driverError) {
-    console.error('Driver creation error:', driverError);
-    throw new Error(`Failed to create driver profile: ${driverError.message}`);
-  }
-  
-  console.log('Driver record created successfully');
-}
-
-async function handlePassengerSignup(userId, additionalData) {
-  // Passenger doesn't need additional tables, just the profile
-  console.log('Passenger signup completed with profile creation');
-}
-
-// Enhanced upsertProfile function
-async function upsertProfile(role, userId, email, additionalData) {
-  if (!userId) {
-    console.error('No userId provided for profile upsert');
-    return false;
-  }
-
-  const profileData = {
-    id: userId,
-    email: email,
-    role: role,
-    name: additionalData.name || additionalData.associationName || email.split('@')[0],
-    updated_at: new Date().toISOString(),
-    created_at: new Date().toISOString()
-  };
-
-  console.log('Creating/updating profile:', profileData);
-  
-  try {
-    // First, check if profile already exists
-    const { data: existingProfile, error: checkError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Profile check error:', checkError);
-    }
-
-    let result;
-    if (existingProfile) {
-      console.log('Profile already exists, updating:', existingProfile);
-      // Update existing profile
-      result = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', userId)
-        .select()
-        .single();
-    } else {
-      console.log('Creating new profile');
-      // Insert new profile
-      result = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
-        .single();
-    }
-    
-    const { data, error } = result;
-    
-    if (error) {
-      console.error('Profile operation error:', error);
-      
-      // If it's a foreign key constraint error, the user might not exist in auth.users
-      if (error.code === '23503') {
-        console.error('Foreign key constraint violation - user might not exist in auth.users');
-        return false;
-      }
-      
-      // If it's a unique constraint error, profile already exists
-      if (error.code === '23505') {
-        console.log('Profile already exists (unique constraint), attempting update');
-        const updateResult = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('id', userId)
-          .select()
-          .single();
-        
-        if (updateResult.error) {
-          console.error('Profile update after constraint error failed:', updateResult.error);
-          return false;
-        }
-        
-        console.log('Profile updated after constraint violation');
-        return true;
-      }
-      
-      return false;
-    }
-
-    console.log('Profile operation successful:', data);
-    return true;
-  } catch (error) {
-    console.error('Unexpected error in upsertProfile:', error);
-    return false;
-  }
-}
-
-// Enhanced refreshSession function
-async function refreshSession() {
-  try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error) {
-      console.error('Session refresh error:', error.message);
-      return false;
-    }
-    console.log('Session refreshed successfully');
-    return true;
-  } catch (error) {
-    console.error('Unexpected error refreshing session:', error);
-    return false;
-  }
-}
-
-  // Event Listeners
-  document.getElementById('login-form').addEventListener('submit', handleLogin);
-  document.getElementById('google-login-btn').addEventListener('click', () => {
-    supabase.auth.signInWithOAuth({ provider: 'google' });
-  });
-  document.getElementById('show-signup').addEventListener('click', showRoleSelection);
-  document.getElementById('role-next-btn').addEventListener('click', () => {
-    const role = document.getElementById('signup-role').value;
-    if (!role) {
-      showError('role-error-message', 'Please select a role.');
-      return;
-    }
-    showSignupForm(role);
-  });
-  document.getElementById('passenger-back-btn').addEventListener('click', showRoleSelection);
-  document.getElementById('driver-back-btn').addEventListener('click', showRoleSelection);
-  document.getElementById('owner-back-btn').addEventListener('click', showRoleSelection);
-  document.getElementById('association-back-btn').addEventListener('click', showRoleSelection);
-  document.getElementById('show-login-from-role').addEventListener('click', showLogin);
-  document.getElementById('show-login-from-passenger').addEventListener('click', showLogin);
-  document.getElementById('show-login-from-driver').addEventListener('click', showLogin);
-  document.getElementById('show-login-from-owner').addEventListener('click', showLogin);
-  document.getElementById('show-login-from-association').addEventListener('click', showLogin);
-  document.getElementById('signup-passenger-form').addEventListener('submit', (e) => submitSignup('passenger', e));
-  document.getElementById('signup-driver-form').addEventListener('submit', (e) => submitSignup('driver', e));
-  document.getElementById('signup-owner-form').addEventListener('submit', (e) => submitSignup('owner', e));
-  document.getElementById('signup-association-form').addEventListener('submit', (e) => submitSignup('association', e));
-
-  // Handle authentication state changes
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', { event, session });
-    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-      await checkAndRedirectUser(session);
-    } else if (event === 'SIGNED_OUT') {
-      console.log('User signed out, showing login page');
-      showLogin();
-    } else if (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-      console.log('User or token updated, rechecking profile');
-      await checkAndRedirectUser(session);
-    }
-  });
-}
-</script>
+      showSignupForm(role);
+    });
+    document.getElementById('passenger-back-btn')?.addEventListener('click', showRoleSelection);
+    document.getElementById('driver-back-btn')?.addEventListener('click', showRoleSelection);
+    document.getElementById('owner-back-btn')?.addEventListener('click', showRoleSelection);
+    document.getElementById('association-back-btn')?.addEventListener('click', showRoleSelection);
+    document.getElementById('show-login-from-role')?.addEventListener('click', showLogin);
+    document.getElementById('show-login-from-passenger')?.addEventListener('click', showLogin);
+    document.getElementById('show-login-from-driver')?.addEventListener('click', showLogin);
+    document.getElementById('show-login-from-owner')?.addEventListener('click', showLogin);
+    document.getElementById('show-login-from-association')?.addEventListener('click', showLogin);
+    document.getElementById('signup-passenger-form')?.addEventListener('submit', (e) => submitSignup('passenger', e));
+    document.getElementById('signup-driver-form')?.addEventListener('submit', (e) => submitSignup('driver', e));
+    document.getElementById('signup-owner-form')?.addEventListener('submit', (e) => submitSignup('owner', e));
+    document.getElementById('signup-association-form')?.addEventListener('submit', (e) => submitSignup('association', e));
+    document.querySelectorAll('.logo').forEach(logo => {
+      logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
+    });
+  </script>
 </body>
 </html>
