@@ -36,6 +36,7 @@ let mapInstance = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 let userLocationWatcher = null;
+let authListenerRegistered = false;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initializeSupabase();
@@ -84,6 +85,16 @@ async function initializeDashboard() {
     loadAlerts();
     loadWallet();
     listenToRealtimeUpdates();
+    if (!authListenerRegistered) {
+      authListenerRegistered = true;
+      supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed in association dashboard:', { event, userId: session?.user?.id });
+        if (event === 'SIGNED_OUT') {
+          showNotification('Session expired. Redirecting to login.', 'warning');
+          window.location.href = 'index.html';
+        }
+      });
+    }
   } catch (error) {
     console.error('Error initializing dashboard:', error);
     showNotification('Failed to initialize dashboard.', 'error');
