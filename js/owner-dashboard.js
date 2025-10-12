@@ -1,12 +1,33 @@
 const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
-let supabase;
-try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('Supabase client initialized');
-} catch (error) {
-  console.error('Supabase init failed:', error);
-  showNotification('Failed to connect to backend. Please check your network.', 'error');
+let supabase = null;
+async function initializeSupabase() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const maxAttempts = 5;
+    const checkSupabase = () => {
+      if (window.supabase?.createClient) {
+        try {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          console.log('Supabase client initialized');
+          resolve();
+        } catch (error) {
+          console.error('Supabase init failed:', error);
+          showNotification('Failed to connect to backend. Please check your network.', 'error');
+          reject(error);
+        }
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        console.log(`Waiting for Supabase library to load... Attempt ${attempts}`);
+        setTimeout(checkSupabase, 500);
+      } else {
+        console.error('Supabase library failed to load after max attempts');
+        showNotification('Failed to load backend services. Please refresh the page.', 'error');
+        reject(new Error('Supabase library not loaded'));
+      }
+    };
+    checkSupabase();
+  });
 }
 let currentUser = null;
 let currentOwner = null;
@@ -14,15 +35,25 @@ let currentOwnerId = null;
 let currentAssociationId = null;
 let map = null;
 let fleetMarkers = {};
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  initializeDashboard();
-  const logos = document.querySelectorAll('.association-logo, #main-logo');
-  logos.forEach(logo => {
-    logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
-  });
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initializeSupabase();
+    initMap();
+    const logos = document.querySelectorAll('.association-logo, #main-logo');
+    logos.forEach(logo => {
+      logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
+    });
+    initializeDashboard();
+  } catch (error) {
+    console.error('Error during initialization:', error);
+    showNotification('Failed to initialize application.', 'error');
+  }
 });
 async function initializeDashboard() {
+  if (!supabase) {
+    showNotification('Backend services not loaded. Please try again.', 'error');
+    return;
+  }
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -89,8 +120,8 @@ async function initializeDashboard() {
   }
 }
 async function loadDrivers() {
-  if (!currentOwnerId) {
-    console.warn('Cannot load drivers: currentOwnerId is null');
+  if (!supabase || !currentOwnerId) {
+    console.warn('Cannot load drivers: supabase or currentOwnerId is null');
     showNotification('Unable to load drivers.', 'error');
     return;
   }
@@ -125,8 +156,8 @@ async function loadDrivers() {
   }
 }
 async function loadVehicles() {
-  if (!currentOwnerId) {
-    console.warn('Cannot load vehicles: currentOwnerId is null');
+  if (!supabase || !currentOwnerId) {
+    console.warn('Cannot load vehicles: supabase or currentOwnerId is null');
     showNotification('Unable to load vehicles.', 'error');
     renderMapMarkers([]);
     return;
@@ -159,6 +190,7 @@ async function loadVehicles() {
   }
 }
 async function loadFinancials() {
+  if (!supabase) return;
   try {
     const { data: financials } = await supabase
       .from('financials')
@@ -200,8 +232,8 @@ function openMapModal() {
   }, 100);
 }
 function listenRealtime() {
-  if (!currentOwnerId) {
-    console.warn('Cannot set up realtime: currentOwnerId is null');
+  if (!supabase || !currentOwnerId) {
+    console.warn('Cannot set up realtime: supabase or currentOwnerId is null');
     showNotification('Realtime updates unavailable.', 'error');
     return;
   }
@@ -270,6 +302,7 @@ function showNotification(message, type = 'info') {
   setTimeout(() => notification.remove(), 5000);
 }
 async function handleLogout() {
+  if (!supabase) return;
   try {
     await supabase.auth.signOut();
     window.location.href = 'index.html';
@@ -289,7 +322,6 @@ function setupEventListeners() {
         showNotification('Please fill all required fields.', 'error');
         return;
       }
-      // Handle driver addition
     });
   }
   const addVehicleForm = document.getElementById('add-vehicle-form');
@@ -300,7 +332,6 @@ function setupEventListeners() {
         showNotification('Please fill all required fields.', 'error');
         return;
       }
-      // Handle vehicle addition
     });
   }
 }
@@ -310,7 +341,6 @@ function editDriver(id) {
 }
 function deleteDriver(id) {
   console.log('Delete driver:', id);
-  // Implement deletion logic
 }
 function editVehicle(id) {
   console.log('Edit vehicle:', id);
@@ -318,7 +348,6 @@ function editVehicle(id) {
 }
 function deleteVehicle(id) {
   console.log('Delete vehicle:', id);
-  // Implement deletion logic
 }
 window.editDriver = editDriver;
 window.deleteDriver = deleteDriver;
