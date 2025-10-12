@@ -8,11 +8,10 @@
   <meta name="theme-color" content="#052438">
   <title>TaxiDrive - Login</title>
   <link rel="icon" href="./assets/favicon.ico">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js"
-    onerror="this.onerror=null; this.src='https://unpkg.com/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js';">
-  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    /* Keep all your existing CSS styles */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -124,6 +123,8 @@
     <img src="./assets/Logo1.png" alt="TaxiDrive Logo" class="logo" onerror="this.src='./assets/placeholder-logo.png'">
     <h1>TaxiDrive</h1>
     <p class="subtitle">Connecting People. Powering Mobility.</p>
+    
+    <!-- Login Section -->
     <div id="login-section">
       <form id="login-form">
         <div class="form-group">
@@ -156,6 +157,8 @@
         <span id="show-signup" class="text-link">Sign Up</span>
       </p>
     </div>
+
+    <!-- Role Selection Section -->
     <div id="role-section" class="hidden">
       <div class="form-group">
         <label class="form-label" for="signup-role">Select Role</label>
@@ -173,11 +176,13 @@
         <span id="show-login-from-role" class="text-link">Login</span>
       </p>
     </div>
+
+    <!-- Passenger Signup Section -->
     <div id="passenger-section" class="hidden">
       <form id="signup-passenger-form">
         <div class="form-group">
-          <label class="form-label" for="passenger-name">Name</label>
-          <input id="passenger-name" type="text" placeholder="Name" class="form-input" required>
+          <label class="form-label" for="passenger-name">Full Name</label>
+          <input id="passenger-name" type="text" placeholder="Full Name" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="passenger-email">Email</label>
@@ -185,7 +190,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="passenger-password">Password</label>
-          <input id="passenger-password" type="password" placeholder="Password" class="form-input" required>
+          <input id="passenger-password" type="password" placeholder="Password" class="form-input" required minlength="6">
         </div>
         <div id="signup-passenger-error-message" class="error-message"></div>
         <button type="submit" class="btn">Sign Up</button>
@@ -195,11 +200,13 @@
         <span id="show-login-from-passenger" class="text-link">Login</span>
       </p>
     </div>
+
+    <!-- Driver Signup Section -->
     <div id="driver-section" class="hidden">
       <form id="signup-driver-form">
         <div class="form-group">
-          <label class="form-label" for="driver-name">Name</label>
-          <input id="driver-name" type="text" placeholder="Name" class="form-input" required>
+          <label class="form-label" for="driver-name">Full Name</label>
+          <input id="driver-name" type="text" placeholder="Full Name" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-email">Email</label>
@@ -207,15 +214,23 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-password">Password</label>
-          <input id="driver-password" type="password" placeholder="Password" class="form-input" required>
+          <input id="driver-password" type="password" placeholder="Password" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-association-id">Association ID</label>
-          <input id="driver-association-id" type="text" placeholder="Association ID" class="form-input" required>
+          <input id="driver-association-id" type="text" placeholder="Association UUID" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-owner-id">Owner ID</label>
-          <input id="driver-owner-id" type="text" placeholder="Owner ID" class="form-input" required>
+          <input id="driver-owner-id" type="text" placeholder="Owner UUID" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-phone">Phone Number</label>
+          <input id="driver-phone" type="tel" placeholder="Phone Number" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="driver-id-number">ID Number</label>
+          <input id="driver-id-number" type="text" placeholder="ID Number" class="form-input">
         </div>
         <div class="form-group">
           <label class="form-label" for="driver-license-type">License Type</label>
@@ -225,9 +240,9 @@
           <label class="form-label" for="driver-license-expiry">License Expiry</label>
           <input id="driver-license-expiry" type="date" class="form-input">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="driver-prdp">PrDP</label>
+        <div class="form-group checkbox-group">
           <input id="driver-prdp" type="checkbox" class="form-checkbox">
+          <label for="driver-prdp">Has PrDP</label>
         </div>
         <div id="signup-driver-error-message" class="error-message"></div>
         <button type="submit" class="btn">Sign Up</button>
@@ -237,11 +252,13 @@
         <span id="show-login-from-driver" class="text-link">Login</span>
       </p>
     </div>
+
+    <!-- Owner Signup Section -->
     <div id="owner-section" class="hidden">
       <form id="signup-owner-form">
         <div class="form-group">
-          <label class="form-label" for="owner-name">Name</label>
-          <input id="owner-name" type="text" placeholder="Name" class="form-input" required>
+          <label class="form-label" for="owner-name">Full Name</label>
+          <input id="owner-name" type="text" placeholder="Full Name" class="form-input" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="owner-email">Email</label>
@@ -249,11 +266,15 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="owner-password">Password</label>
-          <input id="owner-password" type="password" placeholder="Password" class="form-input" required>
+          <input id="owner-password" type="password" placeholder="Password" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
           <label class="form-label" for="owner-association-id">Association ID</label>
-          <input id="owner-association-id" type="text" placeholder="Association ID" class="form-input" required>
+          <input id="owner-association-id" type="text" placeholder="Association UUID" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="owner-phone">Phone Number</label>
+          <input id="owner-phone" type="tel" placeholder="Phone Number" class="form-input">
         </div>
         <div id="signup-owner-error-message" class="error-message"></div>
         <button type="submit" class="btn">Sign Up</button>
@@ -263,6 +284,8 @@
         <span id="show-login-from-owner" class="text-link">Login</span>
       </p>
     </div>
+
+    <!-- Association Signup Section -->
     <div id="association-section" class="hidden">
       <form id="signup-association-form">
         <div class="form-group">
@@ -275,7 +298,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="association-password">Password</label>
-          <input id="association-password" type="password" placeholder="Password" class="form-input" required>
+          <input id="association-password" type="password" placeholder="Password" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
           <label class="form-label" for="association-phone">Phone</label>
@@ -306,451 +329,393 @@
       </p>
     </div>
   </div>
+
   <script>
     const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+    
     let supabase = null;
-    let lastSessionToken = null;
-    let authListenerRegistered = false;
-    let isRedirecting = false;
+    let currentSession = null;
 
-    // Debounce function to prevent multiple rapid calls
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-
+    // Initialize Supabase
     async function initializeSupabase() {
-      return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 5;
-        const checkSupabase = () => {
-          if (window.supabase?.createClient) {
-            try {
-              supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-              console.log('Taxi-Drive/:324 Supabase client initialized');
-              resolve();
-            } catch (error) {
-              console.error('Taxi-Drive/:330 Supabase init failed:', error);
-              showNotification('Failed to connect to backend. Please check your network.', 'error');
-              reject(error);
-            }
-          } else if (attempts < maxAttempts) {
-            attempts++;
-            console.log(`Taxi-Drive/:335 Waiting for Supabase library to load... Attempt ${attempts}`);
-            setTimeout(checkSupabase, 500);
-          } else {
-            console.error('Taxi-Drive/:338 Supabase library failed to load after max attempts');
-            showNotification('Failed to load backend services. Please refresh the page.', 'error');
-            reject(new Error('Supabase library not loaded'));
-          }
-        };
-        checkSupabase();
-      });
+      if (window.supabase && window.supabase.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase initialized successfully');
+        return true;
+      }
+      throw new Error('Supabase library not loaded');
     }
 
+    // Show/hide sections
     function showSection(sectionId) {
-      const sections = ['login-section', 'role-section', 'passenger-section', 'driver-section', 'owner-section', 'association-section'];
-      sections.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      document.querySelectorAll('[id$="-section"]').forEach(section => {
+        section.classList.add('hidden');
+      });
       const section = document.getElementById(sectionId);
       if (section) section.classList.remove('hidden');
     }
 
-    function showLogin() {
-      showSection('login-section');
-    }
-
-    function showRoleSelection() {
-      showSection('role-section');
-    }
-
-    function showSignupForm(role) {
-      showSection(`${role}-section`);
-    }
-
-    function showError(elementId, message) {
-      const errorElement = document.getElementById(elementId);
-      if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        setTimeout(() => errorElement.style.display = 'none', 5000);
-      }
-    }
-
+    // Show notification
     function showNotification(message, type = 'info') {
       const notification = document.createElement('div');
-      notification.className = `notification notification-${type}`;
-      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 1rem; border-radius: 8px; z-index: 5000; background: #fff; color: #052438;';
-      notification.innerHTML = `<span>${message}</span>`;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        background: ${type === 'error' ? '#ff4444' : type === 'success' ? '#4CAF50' : '#2196F3'};
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      notification.textContent = message;
       document.body.appendChild(notification);
       setTimeout(() => notification.remove(), 5000);
     }
 
+    // Handle login
     async function handleLogin(e) {
       e.preventDefault();
       if (!supabase) {
-        showError('login-error-message', 'Backend services not loaded. Please try again.');
+        showNotification('Backend services not loaded', 'error');
         return;
       }
-      const form = e.target;
-      if (!form.checkValidity()) {
-        showError('login-error-message', 'Please fill all required fields.');
-        return;
-      }
+
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
       const role = document.getElementById('login-role').value;
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        console.log('Taxi-Drive/:400 Login successful, user:', data.user.id, data.user.email);
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-        if (profileError) {
-          console.error('Taxi-Drive/:403 Profile fetch error:', profileError);
-          throw new Error(`Failed to fetch user profile: ${profileError.message}`);
-        }
-        if (!profile) {
-          console.error('Taxi-Drive/:406 No profile found for user:', data.user.id);
-          throw new Error('No profile found for this user.');
-        }
-        if (profile.role !== role) {
-          console.error('Taxi-Drive/:410 Role mismatch:', { selected: role, profile: profile.role });
-          throw new Error('Selected role does not match your account.');
-        }
-        // Fallback redirect in case auth listener doesn't trigger
-        await performRedirect(profile.role, data.user.id);
-      } catch (error) {
-        console.error('Taxi-Drive/:414 Login error:', error);
-        showError('login-error-message', error.message);
-      }
-    }
 
-    async function submitSignup(role, e) {
-      e.preventDefault();
-      if (!supabase) {
-        showError(`signup-${role}-error-message`, 'Backend services not loaded. Please try again.');
-        return;
-      }
-      const form = e.target;
-      if (!form.checkValidity()) {
-        showError(`signup-${role}-error-message`, 'Please fill all required fields.');
-        return;
-      }
-      let additionalData = {};
-      if (role === 'passenger') {
-        additionalData.name = document.getElementById('passenger-name').value;
-        additionalData.email = document.getElementById('passenger-email').value;
-      } else if (role === 'driver') {
-        additionalData.name = document.getElementById('driver-name').value;
-        additionalData.email = document.getElementById('driver-email').value;
-        additionalData.associationId = document.getElementById('driver-association-id').value;
-        additionalData.ownerId = document.getElementById('driver-owner-id').value;
-        additionalData.licenseType = document.getElementById('driver-license-type').value;
-        additionalData.licenseExpiry = document.getElementById('driver-license-expiry').value;
-        additionalData.prdp = document.getElementById('driver-prdp').checked;
-      } else if (role === 'owner') {
-        additionalData.name = document.getElementById('owner-name').value;
-        additionalData.email = document.getElementById('owner-email').value;
-        additionalData.associationId = document.getElementById('owner-association-id').value;
-      } else if (role === 'association') {
-        additionalData.associationName = document.getElementById('association-name').value;
-        additionalData.email = document.getElementById('association-email').value;
-        additionalData.phone = document.getElementById('association-phone').value;
-        additionalData.address = document.getElementById('association-address').value;
-        additionalData.description = document.getElementById('association-description').value;
-        additionalData.adminName = document.getElementById('association-admin-name').value;
-        additionalData.adminPhone = document.getElementById('association-admin-phone').value;
-      }
-      const email = additionalData.email || '';
-      const password = document.getElementById(`${role}-password`).value;
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          password,
-          options: { data: { role, name: additionalData.name || additionalData.associationName || email.split('@')[0] } }
+          password
         });
+
         if (error) throw error;
-        const userId = data.user.id;
-        if (role === 'association') {
-          await handleAssociationSignup(userId, additionalData);
-        } else if (role === 'owner') {
-          await handleOwnerSignup(userId, additionalData);
-        } else if (role === 'driver') {
-          await handleDriverSignup(userId, additionalData);
-        }
-        showNotification('Signup successful! Please login.', 'success');
-        showLogin();
+
+        currentSession = data.session;
+        await checkUserRoleAndRedirect(data.user.id, role);
+        
       } catch (error) {
-        console.error('Taxi-Drive/:450 Signup error for ' + role + ':', error);
-        showError(`signup-${role}-error-message`, error.message);
+        console.error('Login error:', error);
+        showNotification(error.message, 'error');
       }
     }
 
-    async function handleAssociationSignup(userId, additionalData) {
-      const associationData = {
-        id: userId,
-        association_name: additionalData.associationName,
-        email: additionalData.email,
-        phone: additionalData.phone,
-        address: additionalData.address,
-        description: additionalData.description,
-        admin_name: additionalData.adminName,
-        admin_phone: additionalData.adminPhone,
-        created_at: new Date().toISOString()
-      };
-      const { error } = await supabase.from('associations').insert([associationData]);
-      if (error) {
-        console.error('Taxi-Drive/:465 Association signup error:', error);
-        throw new Error(`Failed to create association: ${error.message}`);
+    // Check user role and redirect
+    async function checkUserRoleAndRedirect(userId, expectedRole) {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+
+        if (error) throw error;
+
+        if (!profile || profile.role !== expectedRole) {
+          throw new Error(`Invalid role. Expected ${expectedRole} but found ${profile?.role}`);
+        }
+
+        // Redirect based on role
+        const redirectUrls = {
+          passenger: 'passenger-dashboard.html',
+          driver: 'driver-dashboard.html',
+          owner: 'owner-dashboard.html',
+          association: 'association-dashboard.html'
+        };
+
+        const redirectUrl = redirectUrls[expectedRole];
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else {
+          throw new Error('Invalid role for redirect');
+        }
+
+      } catch (error) {
+        console.error('Role check error:', error);
+        showNotification(error.message, 'error');
+        await supabase.auth.signOut();
       }
     }
 
-    async function handleOwnerSignup(userId, additionalData) {
-      if (!additionalData.associationId) {
-        showError('signup-owner-error-message', 'Association ID is required.');
-        throw new Error('Association ID is required.');
+    // Handle signup
+    async function handleSignup(role, formData) {
+      if (!supabase) {
+        throw new Error('Backend services not loaded');
       }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: role,
+            name: formData.name
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Create role-specific records
+      if (role === 'association') {
+        await createAssociationRecord(data.user.id, formData);
+      } else if (role === 'owner') {
+        await createOwnerRecord(data.user.id, formData);
+      } else if (role === 'driver') {
+        await createDriverRecord(data.user.id, formData);
+      }
+      // Passenger doesn't need additional records beyond profile
+
+      return data;
+    }
+
+    // Create association record
+    async function createAssociationRecord(userId, formData) {
+      const { error } = await supabase
+        .from('associations')
+        .insert({
+          id: userId,
+          association_name: formData.associationName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          description: formData.description,
+          admin_name: formData.adminName,
+          admin_phone: formData.adminPhone
+        });
+
+      if (error) throw error;
+    }
+
+    // Create owner record
+    async function createOwnerRecord(userId, formData) {
+      // Verify association exists
       const { data: association, error: assocError } = await supabase
         .from('associations')
         .select('id')
-        .eq('id', additionalData.associationId)
+        .eq('id', formData.associationId)
         .single();
+
       if (assocError || !association) {
-        console.error('Taxi-Drive/:478 Invalid Association ID:', assocError);
-        showError('signup-owner-error-message', 'Invalid Association ID.');
-        throw new Error('Invalid Association ID.');
+        throw new Error('Invalid Association ID');
       }
-      const memberData = {
-        auth_id: userId,
-        association_id: additionalData.associationId,
-        role: 'owner',
-        is_verified: false,
-        name: additionalData.name || '',
-        email: additionalData.email || '',
-        created_at: new Date().toISOString()
-      };
-      console.log('Taxi-Drive/:489 Creating owner member:', memberData);
-      const { error: memberError } = await supabase.from('members').insert([memberData]);
-      if (memberError) {
-        console.error('Taxi-Drive/:492 Owner member creation error:', memberError);
-        throw new Error(`Failed to create owner profile: ${memberError.message}`);
-      }
-      console.log('Taxi-Drive/:495 Owner member record created successfully');
+
+      const { error } = await supabase
+        .from('members')
+        .insert({
+          auth_id: userId,
+          association_id: formData.associationId,
+          role: 'owner',
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone
+        });
+
+      if (error) throw error;
     }
 
-    async function handleDriverSignup(userId, additionalData) {
-      if (!additionalData.associationId || !additionalData.ownerId) {
-        showError('signup-driver-error-message', 'Association ID and Owner ID are required.');
-        throw new Error('Required fields missing.');
-      }
+    // Create driver record
+    async function createDriverRecord(userId, formData) {
+      // Verify association exists
       const { data: association, error: assocError } = await supabase
         .from('associations')
         .select('id')
-        .eq('id', additionalData.associationId)
+        .eq('id', formData.associationId)
         .single();
+
       if (assocError || !association) {
-        console.error('Taxi-Drive/:507 Invalid Association ID:', assocError);
-        showError('signup-driver-error-message', 'Invalid Association ID.');
-        throw new Error('Invalid Association ID.');
+        throw new Error('Invalid Association ID');
       }
+
+      // Verify owner exists
       const { data: owner, error: ownerError } = await supabase
         .from('members')
         .select('id')
-        .eq('id', additionalData.ownerId)
+        .eq('id', formData.ownerId)
         .eq('role', 'owner')
         .single();
+
       if (ownerError || !owner) {
-        console.error('Taxi-Drive/:517 Invalid Owner ID:', ownerError);
-        showError('signup-driver-error-message', 'Invalid Owner ID.');
-        throw new Error('Invalid Owner ID.');
+        throw new Error('Invalid Owner ID');
       }
-      const memberData = {
-        auth_id: userId,
-        association_id: additionalData.associationId,
-        owner_id: additionalData.ownerId,
-        role: 'driver',
-        is_verified: false,
-        name: additionalData.name || '',
-        email: additionalData.email || '',
-        license_type: additionalData.licenseType || '',
-        license_expiry: additionalData.licenseExpiry || '',
-        prdp: additionalData.prdp || false,
-        created_at: new Date().toISOString()
-      };
-      console.log('Taxi-Drive/:532 Creating driver member:', memberData);
-      const { error: memberError } = await supabase.from('members').insert([memberData]);
-      if (memberError) {
-        console.error('Taxi-Drive/:535 Driver member creation error:', memberError);
-        throw new Error(`Failed to create driver profile: ${memberError.message}`);
-      }
-      console.log('Taxi-Drive/:538 Driver member record created successfully');
+
+      const { error } = await supabase
+        .from('members')
+        .insert({
+          auth_id: userId,
+          association_id: formData.associationId,
+          owner_id: formData.ownerId,
+          role: 'driver',
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          id_number: formData.idNumber,
+          license_type: formData.licenseType,
+          license_expiry: formData.licenseExpiry,
+          prdp: formData.prdp || false
+        });
+
+      if (error) throw error;
     }
 
-    async function performRedirect(role, userId) {
-      console.log('Taxi-Drive/:550 Performing redirect for role:', role, 'userId:', userId);
-      try {
-        if (role === 'owner') {
-          console.log('Taxi-Drive/:553 Fetching owner member data for user:', userId);
-          const { data: member, error: memberError } = await supabase.from('members').select('is_verified').eq('auth_id', userId).single();
-          if (memberError) {
-            console.error('Taxi-Drive/:556 Member fetch error:', memberError);
-            showNotification(`Failed to load owner profile: ${memberError.message}`, 'error');
-            showLogin();
-            return;
-          }
-          if (!member) {
-            console.error('Taxi-Drive/:561 No member record found for owner:', userId);
-            showNotification('Owner profile not found. Please contact support.', 'error');
-            showLogin();
-            return;
-          }
-          if (!member.is_verified) {
-            console.log('Taxi-Drive/:566 Owner not verified, showing login');
-            showNotification('Account pending verification.', 'warning');
-            showLogin();
-            return;
-          }
+    // Form submission handlers
+    function setupFormHandlers() {
+      // Login form
+      document.getElementById('login-form').addEventListener('submit', handleLogin);
+
+      // Role selection
+      document.getElementById('show-signup').addEventListener('click', () => showSection('role-section'));
+      document.getElementById('role-next-btn').addEventListener('click', () => {
+        const role = document.getElementById('signup-role').value;
+        if (role) {
+          showSection(`${role}-section`);
+        } else {
+          showNotification('Please select a role', 'error');
         }
-        const redirectMap = {
-          association: 'association-dashboard.html',
-          owner: 'owner-dashboard.html',
-          driver: 'driver-dashboard.html',
-          passenger: 'passenger-dashboard.html'
+      });
+
+      // Back buttons
+      document.getElementById('passenger-back-btn').addEventListener('click', () => showSection('role-section'));
+      document.getElementById('driver-back-btn').addEventListener('click', () => showSection('role-section'));
+      document.getElementById('owner-back-btn').addEventListener('click', () => showSection('role-section'));
+      document.getElementById('association-back-btn').addEventListener('click', () => showSection('role-section'));
+
+      // Login links
+      document.getElementById('show-login-from-role').addEventListener('click', () => showSection('login-section'));
+      document.getElementById('show-login-from-passenger').addEventListener('click', () => showSection('login-section'));
+      document.getElementById('show-login-from-driver').addEventListener('click', () => showSection('login-section'));
+      document.getElementById('show-login-from-owner').addEventListener('click', () => showSection('login-section'));
+      document.getElementById('show-login-from-association').addEventListener('click', () => showSection('login-section'));
+
+      // Signup forms
+      document.getElementById('signup-passenger-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+          name: document.getElementById('passenger-name').value,
+          email: document.getElementById('passenger-email').value,
+          password: document.getElementById('passenger-password').value
         };
-        const redirectUrl = redirectMap[role];
-        if (!redirectUrl) {
-          console.error('Taxi-Drive/:575 Invalid role for redirect:', role);
-          showNotification('Invalid user role. Please contact support.', 'error');
-          showLogin();
-          return;
-        }
-        console.log('Taxi-Drive/:580 Redirecting to:', redirectUrl);
-        window.location.href = redirectUrl;
-      } catch (error) {
-        console.error('Taxi-Drive/:583 Redirect error:', error);
-        showNotification(`Redirect failed: ${error.message}`, 'error');
-        showLogin();
-      }
-    }
 
-    async function checkAndRedirectUser(session) {
-      if (!supabase) {
-        console.error('Taxi-Drive/:589 Supabase not initialized');
-        showNotification('Backend services not loaded. Please try again.', 'error');
-        return;
-      }
-      if (isRedirecting) {
-        console.log('Taxi-Drive/:594 Redirect already in progress, skipping');
-        return;
-      }
-      if (!session?.user) {
-        console.log('Taxi-Drive/:598 No user in session, showing login');
-        showLogin();
-        return;
-      }
-      console.log('Taxi-Drive/:602 Checking user session:', { userId: session.user.id, email: session.user.email, accessToken: session.access_token });
-      isRedirecting = true;
-      try {
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-        if (profileError) {
-          console.error('Taxi-Drive/:607 Profile fetch error:', profileError);
-          showNotification(`Failed to load user profile: ${profileError.message}`, 'error');
-          showLogin();
-          return;
+        try {
+          await handleSignup('passenger', formData);
+          showNotification('Signup successful! Please check your email for verification.', 'success');
+          showSection('login-section');
+        } catch (error) {
+          showNotification(error.message, 'error');
         }
-        if (!profile) {
-          console.error('Taxi-Drive/:612 No profile found for user:', session.user.id);
-          showNotification('No profile found for this user. Please sign up.', 'error');
-          showLogin();
-          return;
-        }
-        console.log('Taxi-Drive/:617 User profile:', profile);
-        await performRedirect(profile.role, session.user.id);
-      } catch (error) {
-        console.error('Taxi-Drive/:620 Error in checkAndRedirectUser:', error);
-        showNotification(`Authentication error: ${error.message}`, 'error');
-        showLogin();
-      } finally {
-        isRedirecting = false;
-      }
-    }
+      });
 
-    const debouncedCheckAndRedirectUser = debounce(checkAndRedirectUser, 500);
+      document.getElementById('signup-driver-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+          name: document.getElementById('driver-name').value,
+          email: document.getElementById('driver-email').value,
+          password: document.getElementById('driver-password').value,
+          associationId: document.getElementById('driver-association-id').value,
+          ownerId: document.getElementById('driver-owner-id').value,
+          phone: document.getElementById('driver-phone').value,
+          idNumber: document.getElementById('driver-id-number').value,
+          licenseType: document.getElementById('driver-license-type').value,
+          licenseExpiry: document.getElementById('driver-license-expiry').value,
+          prdp: document.getElementById('driver-prdp').checked
+        };
 
-    function setupAuthListener() {
-      if (!supabase) {
-        console.warn('Taxi-Drive/:626 Supabase not initialized. Retrying...');
-        setTimeout(setupAuthListener, 500);
-        return;
-      }
-      if (authListenerRegistered) {
-        console.log('Taxi-Drive/:631 Auth listener already registered, skipping');
-        return;
-      }
-      authListenerRegistered = true;
-      supabase.auth.onAuthStateChange((event, session) => {
-        const now = Date.now();
-        console.log('Taxi-Drive/:636 Auth state changed:', { event, userId: session?.user?.id, timestamp: now, accessToken: session?.access_token });
-        if (event === 'SIGNED_IN' && session?.access_token === lastSessionToken) {
-          console.log('Taxi-Drive/:638 Ignoring duplicate SIGNED_IN event for same session');
+        try {
+          await handleSignup('driver', formData);
+          showNotification('Driver signup successful! Please check your email for verification.', 'success');
+          showSection('login-section');
+        } catch (error) {
+          showNotification(error.message, 'error');
+        }
+      });
+
+      document.getElementById('signup-owner-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+          name: document.getElementById('owner-name').value,
+          email: document.getElementById('owner-email').value,
+          password: document.getElementById('owner-password').value,
+          associationId: document.getElementById('owner-association-id').value,
+          phone: document.getElementById('owner-phone').value
+        };
+
+        try {
+          await handleSignup('owner', formData);
+          showNotification('Owner signup successful! Please check your email for verification.', 'success');
+          showSection('login-section');
+        } catch (error) {
+          showNotification(error.message, 'error');
+        }
+      });
+
+      document.getElementById('signup-association-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+          associationName: document.getElementById('association-name').value,
+          email: document.getElementById('association-email').value,
+          password: document.getElementById('association-password').value,
+          phone: document.getElementById('association-phone').value,
+          address: document.getElementById('association-address').value,
+          description: document.getElementById('association-description').value,
+          adminName: document.getElementById('association-admin-name').value,
+          adminPhone: document.getElementById('association-admin-phone').value
+        };
+
+        try {
+          await handleSignup('association', formData);
+          showNotification('Association signup successful! Please check your email for verification.', 'success');
+          showSection('login-section');
+        } catch (error) {
+          showNotification(error.message, 'error');
+        }
+      });
+
+      // Google login
+      document.getElementById('google-login-btn').addEventListener('click', async () => {
+        const role = document.getElementById('login-role').value;
+        if (!role) {
+          showNotification('Please select a role before using Google login', 'error');
           return;
         }
-        lastSessionToken = session?.access_token || null;
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-          debouncedCheckAndRedirectUser(session);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('Taxi-Drive/:643 User signed out, showing login');
-          showLogin();
+
+        try {
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+              },
+              redirectTo: `${window.location.origin}/auth-callback.html?role=${role}`
+            }
+          });
+
+          if (error) throw error;
+        } catch (error) {
+          showNotification(error.message, 'error');
         }
       });
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize app
+    async function initializeApp() {
       try {
         await initializeSupabase();
-        document.getElementById('login-form')?.addEventListener('submit', handleLogin);
-        document.getElementById('google-login-btn')?.addEventListener('click', () => {
-          if (supabase) supabase.auth.signInWithOAuth({ provider: 'google' });
-          else showNotification('Backend services not loaded.', 'error');
-        });
-        document.getElementById('show-signup')?.addEventListener('click', showRoleSelection);
-        document.getElementById('role-next-btn')?.addEventListener('click', () => {
-          const role = document.getElementById('signup-role')?.value;
-          if (!role) {
-            showError('role-error-message', 'Please select a role.');
-            return;
-          }
-          showSignupForm(role);
-        });
-        document.getElementById('passenger-back-btn')?.addEventListener('click', showRoleSelection);
-        document.getElementById('driver-back-btn')?.addEventListener('click', showRoleSelection);
-        document.getElementById('owner-back-btn')?.addEventListener('click', showRoleSelection);
-        document.getElementById('association-back-btn')?.addEventListener('click', showRoleSelection);
-        document.getElementById('show-login-from-role')?.addEventListener('click', showLogin);
-        document.getElementById('show-login-from-passenger')?.addEventListener('click', showLogin);
-        document.getElementById('show-login-from-driver')?.addEventListener('click', showLogin);
-        document.getElementById('show-login-from-owner')?.addEventListener('click', showLogin);
-        document.getElementById('show-login-from-association')?.addEventListener('click', showLogin);
-        document.getElementById('signup-passenger-form')?.addEventListener('submit', (e) => submitSignup('passenger', e));
-        document.getElementById('signup-driver-form')?.addEventListener('submit', (e) => submitSignup('driver', e));
-        document.getElementById('signup-owner-form')?.addEventListener('submit', (e) => submitSignup('owner', e));
-        document.getElementById('signup-association-form')?.addEventListener('submit', (e) => submitSignup('association', e));
-        document.querySelectorAll('.logo').forEach(logo => {
-          logo.onerror = () => { logo.src = './assets/placeholder-logo.png'; };
-        });
-        setupAuthListener();
+        setupFormHandlers();
+        console.log('App initialized successfully');
       } catch (error) {
-        console.error('Taxi-Drive/:700 Error during initialization:', error);
-        showNotification('Failed to initialize application.', 'error');
+        console.error('Failed to initialize app:', error);
+        showNotification('Failed to initialize application. Please refresh the page.', 'error');
       }
-    });
+    }
+
+    // Start the app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
 </body>
 </html>
