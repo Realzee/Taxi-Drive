@@ -495,7 +495,7 @@
         switch (profile.role) {
           case 'association':
             console.log('Taxi-Drive/:607 Redirecting to association dashboard');
-            window.location.href = 'association-dashboard.html';
+            window.location.href = './association-dashboard.html';
             break;
           case 'owner':
             console.log('Taxi-Drive/:611 Fetching owner member data for user:', session.user.id);
@@ -514,7 +514,7 @@
             }
             if (member.is_verified) {
               console.log('Taxi-Drive/:625 Redirecting to owner dashboard');
-              window.location.href = 'owner-dashboard.html';
+              window.location.href = './owner-dashboard.html';
             } else {
               console.log('Taxi-Drive/:628 Owner not verified, showing login');
               showNotification('Account pending verification.', 'warning');
