@@ -217,17 +217,17 @@
           <input id="driver-password" type="password" placeholder="Password (min 6 characters)" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-association-id">Association ID</label>
+          <label class="form-label" for="driver-association-id">Association ID (Optional)</label>
           <input id="driver-association-id" type="text" placeholder="Association UUID" class="form-input">
           <small style="color: #ccc; font-size: 0.8rem;">Get this from your association</small>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-owner-id">Owner ID</label>
+          <label class="form-label" for="driver-owner-id">Owner ID (Optional)</label>
           <input id="driver-owner-id" type="text" placeholder="Owner UUID" class="form-input">
           <small style="color: #ccc; font-size: 0.8rem;">Get this from your vehicle owner</small>
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-phone">Phone Number</label>
+          <label class="form-label" for="driver-phone">Phone Number (Optional)</label>
           <input id="driver-phone" type="tel" placeholder="Phone Number" class="form-input">
         </div>
         <div id="signup-driver-error-message" class="error-message"></div>
@@ -255,12 +255,12 @@
           <input id="owner-password" type="password" placeholder="Password (min 6 characters)" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
-          <label class="form-label" for="owner-association-id">Association ID</label>
+          <label class="form-label" for="owner-association-id">Association ID (Optional)</label>
           <input id="owner-association-id" type="text" placeholder="Association UUID" class="form-input">
           <small style="color: #ccc; font-size: 0.8rem;">Get this from your association</small>
         </div>
         <div class="form-group">
-          <label class="form-label" for="owner-phone">Phone Number</label>
+          <label class="form-label" for="owner-phone">Phone Number (Optional)</label>
           <input id="owner-phone" type="tel" placeholder="Phone Number" class="form-input">
         </div>
         <div id="signup-owner-error-message" class="error-message"></div>
@@ -288,23 +288,23 @@
           <input id="association-password" type="password" placeholder="Password (min 6 characters)" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-phone">Phone</label>
+          <label class="form-label" for="association-phone">Phone (Optional)</label>
           <input id="association-phone" type="tel" placeholder="Phone" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-address">Address</label>
+          <label class="form-label" for="association-address">Address (Optional)</label>
           <input id="association-address" type="text" placeholder="Address" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-description">Description</label>
+          <label class="form-label" for="association-description">Description (Optional)</label>
           <textarea id="association-description" placeholder="Description" class="form-input" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-admin-name">Admin Name</label>
+          <label class="form-label" for="association-admin-name">Admin Name (Optional)</label>
           <input id="association-admin-name" type="text" placeholder="Admin Name" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label" for="association-admin-phone">Admin Phone</label>
+          <label class="form-label" for="association-admin-phone">Admin Phone (Optional)</label>
           <input id="association-admin-phone" type="tel" placeholder="Admin Phone" class="form-input">
         </div>
         <div id="signup-association-error-message" class="error-message"></div>
@@ -429,10 +429,11 @@
           .eq('id', data.user.id)
           .single();
 
-        if (profileError) throw profileError;
-
-        if (!profile || profile.role !== role) {
-          throw new Error(`Invalid role. Your account is registered as ${profile?.role || 'unknown'}`);
+        if (profileError) {
+          // Profile doesn't exist, create one
+          await createUserProfile(data.user.id, role, data.user.email, data.user.email.split('@')[0]);
+        } else if (profile.role !== role) {
+          throw new Error(`Invalid role. Your account is registered as ${profile.role}`);
         }
 
         showNotification('Login successful! Redirecting...', 'success');
@@ -457,28 +458,40 @@
       }
     }
 
-    // Handle signup
+    // Create user profile manually
+    async function createUserProfile(userId, role, email, name) {
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          role: role,
+          email: email,
+          name: name
+        });
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        throw new Error('Failed to create user profile');
+      }
+    }
+
+    // Handle signup - SIMPLIFIED VERSION
     async function handleSignup(role, formData) {
       if (!supabase) {
         throw new Error('Backend services not loaded');
       }
 
-      // First create the auth user
+      // First create the auth user WITHOUT metadata to avoid trigger issues
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: role,
-            name: formData.name
-          }
-        }
+        password: formData.password
+        // Remove options to avoid trigger issues
       });
 
       if (authError) throw authError;
 
-      // Wait a bit for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Manually create the profile
+      await createUserProfile(authData.user.id, role, formData.email, formData.name);
 
       // Create role-specific records
       if (role === 'association') {
@@ -507,13 +520,17 @@
           admin_phone: formData.adminPhone
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Association creation error:', error);
+        // Don't throw error - user is already created
+      }
     }
 
     // Create owner record
     async function createOwnerRecord(userId, formData) {
       if (!formData.associationId) {
-        throw new Error('Association ID is required for owner registration');
+        console.log('No association ID provided for owner');
+        return;
       }
 
       const { error } = await supabase
@@ -527,13 +544,17 @@
           phone: formData.phone
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Owner creation error:', error);
+        // Don't throw error - user is already created
+      }
     }
 
     // Create driver record
     async function createDriverRecord(userId, formData) {
       if (!formData.associationId || !formData.ownerId) {
-        throw new Error('Association ID and Owner ID are required for driver registration');
+        console.log('Missing association or owner ID for driver');
+        return;
       }
 
       const { error } = await supabase
@@ -548,7 +569,10 @@
           phone: formData.phone
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Driver creation error:', error);
+        // Don't throw error - user is already created
+      }
     }
 
     // Form submission handlers
@@ -580,7 +604,7 @@
       document.getElementById('show-login-from-owner').addEventListener('click', () => showSection('login-section'));
       document.getElementById('show-login-from-association').addEventListener('click', () => showSection('login-section'));
 
-      // Signup forms
+      // Signup forms - SIMPLIFIED
       document.getElementById('signup-passenger-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
