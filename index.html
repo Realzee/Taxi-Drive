@@ -310,9 +310,9 @@
     const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
     let supabase = null;
-    let lastAuthEvent = null;
-    let lastAuthEventTime = 0;
-    const DEBOUNCE_MS = 1000; // Ignore duplicate events within 1 second
+    let lastSessionToken = null;
+    let authListenerRegistered = false;
+    let isRedirecting = false;
     async function initializeSupabase() {
       return new Promise((resolve, reject) => {
         let attempts = 0;
@@ -321,19 +321,19 @@
           if (window.supabase?.createClient) {
             try {
               supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-              console.log('Supabase client initialized');
+              console.log('Taxi-Drive/:324 Supabase client initialized');
               resolve();
             } catch (error) {
-              console.error('Supabase init failed:', error);
+              console.error('Taxi-Drive/:330 Supabase init failed:', error);
               showNotification('Failed to connect to backend. Please check your network.', 'error');
               reject(error);
             }
           } else if (attempts < maxAttempts) {
             attempts++;
-            console.log(`Waiting for Supabase library to load... Attempt ${attempts}`);
+            console.log(`Taxi-Drive/:335 Waiting for Supabase library to load... Attempt ${attempts}`);
             setTimeout(checkSupabase, 500);
           } else {
-            console.error('Supabase library failed to load after max attempts');
+            console.error('Taxi-Drive/:338 Supabase library failed to load after max attempts');
             showNotification('Failed to load backend services. Please refresh the page.', 'error');
             reject(new Error('Supabase library not loaded'));
           }
@@ -389,9 +389,22 @@
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-        if (profile?.role !== role) throw new Error('Selected role does not match your account.');
+        console.log('Taxi-Drive/:400 Login successful, user:', data.user.id, data.user.email);
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        if (profileError) {
+          console.error('Taxi-Drive/:403 Profile fetch error:', profileError);
+          throw new Error('Failed to fetch user profile.');
+        }
+        if (!profile) {
+          console.error('Taxi-Drive/:406 No profile found for user:', data.user.id);
+          throw new Error('No profile found for this user.');
+        }
+        if (profile.role !== role) {
+          console.error('Taxi-Drive/:410 Role mismatch:', { selected: role, profile: profile.role });
+          throw new Error('Selected role does not match your account.');
+        }
       } catch (error) {
+        console.error('Taxi-Drive/:414 Login error:', error);
         showError('login-error-message', error.message);
       }
     }
@@ -434,16 +447,16 @@
       const email = additionalData.email || '';
       const password = document.getElementById(`${role}-password`).value;
       try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { role } } // Store role in user metadata for trigger
+        });
         if (error) throw error;
-        await upsertProfile(role, data.user.id, email, additionalData);
-        if (role === 'association') await handleAssociationSignup(data.user.id, additionalData);
-        else if (role === 'owner') await handleOwnerSignup(data.user.id, additionalData);
-        else if (role === 'driver') await handleDriverSignup(data.user.id, additionalData);
-        else if (role === 'passenger') await handlePassengerSignup(data.user.id, additionalData);
         showNotification('Signup successful! Please login.', 'success');
         showLogin();
       } catch (error) {
+        console.error('Taxi-Drive/:450 Signup error for ' + role + ':', error);
         showError(`signup-${role}-error-message`, error.message);
       }
     }
@@ -460,7 +473,10 @@
         created_at: new Date().toISOString()
       };
       const { error } = await supabase.from('associations').insert([associationData]);
-      if (error) throw new Error(`Failed to create association: ${error.message}`);
+      if (error) {
+        console.error('Taxi-Drive/:465 Association signup error:', error);
+        throw new Error(`Failed to create association: ${error.message}`);
+      }
     }
     async function handleOwnerSignup(userId, additionalData) {
       if (!additionalData.associationId) {
@@ -473,6 +489,7 @@
         .eq('id', additionalData.associationId)
         .single();
       if (assocError || !association) {
+        console.error('Taxi-Drive/:478 Invalid Association ID:', assocError);
         showError('signup-owner-error-message', 'Invalid Association ID.');
         throw new Error('Invalid Association ID.');
       }
@@ -485,13 +502,13 @@
         email: additionalData.email || '',
         created_at: new Date().toISOString()
       };
-      console.log('Creating owner member:', memberData);
+      console.log('Taxi-Drive/:489 Creating owner member:', memberData);
       const { error: memberError } = await supabase.from('members').insert([memberData]);
       if (memberError) {
-        console.error('Owner member creation error:', memberError);
+        console.error('Taxi-Drive/:492 Owner member creation error:', memberError);
         throw new Error(`Failed to create owner profile: ${memberError.message}`);
       }
-      console.log('Owner member record created successfully');
+      console.log('Taxi-Drive/:495 Owner member record created successfully');
     }
     async function handleDriverSignup(userId, additionalData) {
       if (!additionalData.associationId || !additionalData.ownerId) {
@@ -504,6 +521,7 @@
         .eq('id', additionalData.associationId)
         .single();
       if (assocError || !association) {
+        console.error('Taxi-Drive/:507 Invalid Association ID:', assocError);
         showError('signup-driver-error-message', 'Invalid Association ID.');
         throw new Error('Invalid Association ID.');
       }
@@ -514,6 +532,7 @@
         .eq('role', 'owner')
         .single();
       if (ownerError || !owner) {
+        console.error('Taxi-Drive/:517 Invalid Owner ID:', ownerError);
         showError('signup-driver-error-message', 'Invalid Owner ID.');
         throw new Error('Invalid Owner ID.');
       }
@@ -530,13 +549,13 @@
         prdp: additionalData.prdp || false,
         created_at: new Date().toISOString()
       };
-      console.log('Creating driver member:', memberData);
+      console.log('Taxi-Drive/:532 Creating driver member:', memberData);
       const { error: memberError } = await supabase.from('members').insert([memberData]);
       if (memberError) {
-        console.error('Driver member creation error:', memberError);
+        console.error('Taxi-Drive/:535 Driver member creation error:', memberError);
         throw new Error(`Failed to create driver profile: ${memberError.message}`);
       }
-      console.log('Driver member record created successfully');
+      console.log('Taxi-Drive/:538 Driver member record created successfully');
     }
     async function handlePassengerSignup(userId, additionalData) {
       const passengerData = {
@@ -546,7 +565,10 @@
         created_at: new Date().toISOString()
       };
       const { error } = await supabase.from('passengers').insert([passengerData]);
-      if (error) throw new Error(`Failed to create passenger profile: ${error.message}`);
+      if (error) {
+        console.error('Taxi-Drive/:548 Passenger signup error:', error);
+        throw new Error(`Failed to create passenger profile: ${error.message}`);
+      }
     }
     async function upsertProfile(role, userId, email, additionalData) {
       const profileData = {
@@ -557,94 +579,131 @@
         updated_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
-      const { data: existing } = await supabase.from('profiles').select('id').eq('id', userId).single();
+      const { data: existing, error: checkError } = await supabase.from('profiles').select('id').eq('id', userId).single();
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Taxi-Drive/:560 Profile check error:', checkError);
+        throw checkError;
+      }
       if (existing) {
         const { error } = await supabase.from('profiles').update(profileData).eq('id', userId);
-        if (error) throw error;
+        if (error) {
+          console.error('Taxi-Drive/:565 Profile update error:', error);
+          throw error;
+        }
       } else {
         const { error } = await supabase.from('profiles').insert([profileData]);
-        if (error) throw error;
+        if (error) {
+          console.error('Taxi-Drive/:570 Profile insert error:', error);
+          throw error;
+        }
       }
+      console.log('Taxi-Drive/:573 Profile upserted for user:', userId, 'role:', role);
     }
     async function checkAndRedirectUser(session) {
       if (!supabase) {
+        console.error('Taxi-Drive/:577 Supabase not initialized');
         showNotification('Backend services not loaded. Please try again.', 'error');
         return;
       }
+      if (isRedirecting) {
+        console.log('Taxi-Drive/:581 Redirect already in progress, skipping');
+        return;
+      }
       if (!session?.user) {
-        console.log('No user in session, showing login');
+        console.log('Taxi-Drive/:585 No user in session, showing login');
         showLogin();
         return;
       }
-      console.log('Checking user session:', { userId: session.user.id, email: session.user.email });
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-      if (profileError || !profile) {
-        console.error('Profile fetch error:', profileError);
-        showNotification('Failed to load user profile.', 'error');
-        showLogin();
-        return;
-      }
-      console.log('User profile:', profile);
-      switch (profile.role) {
-        case 'association':
-          console.log('Redirecting to association dashboard');
-          window.location.href = 'association-dashboard.html';
-          break;
-        case 'owner':
-          const { data: member, error: memberError } = await supabase.from('members').select('is_verified').eq('auth_id', session.user.id).single();
-          if (memberError || !member) {
-            console.error('Member fetch error:', memberError);
-            showNotification('Failed to load owner profile.', 'error');
-            showLogin();
-            return;
-          }
-          if (member.is_verified) {
-            console.log('Redirecting to owner dashboard');
-            window.location.href = 'owner-dashboard.html';
-          } else {
-            console.log('Owner not verified, showing login');
-            showNotification('Account pending verification.', 'warning');
-            showLogin();
-          }
-          break;
-        case 'driver':
-          console.log('Redirecting to driver dashboard');
-          window.location.href = 'driver-dashboard.html';
-          break;
-        case 'passenger':
-          console.log('Redirecting to passenger dashboard');
-          window.location.href = 'passenger-dashboard.html';
-          break;
-        default:
-          console.log('Unknown role, showing login');
+      console.log('Taxi-Drive/:589 Checking user session:', { userId: session.user.id, email: session.user.email, accessToken: session.access_token });
+      isRedirecting = true;
+      try {
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        if (profileError) {
+          console.error('Taxi-Drive/:594 Profile fetch error:', profileError);
+          showNotification('Failed to load user profile. Please try again.', 'error');
           showLogin();
+          return;
+        }
+        if (!profile) {
+          console.error('Taxi-Drive/:599 No profile found for user:', session.user.id);
+          showNotification('No profile found for this user. Please sign up.', 'error');
+          showLogin();
+          return;
+        }
+        console.log('Taxi-Drive/:604 User profile:', profile);
+        switch (profile.role) {
+          case 'association':
+            console.log('Taxi-Drive/:607 Redirecting to association dashboard');
+            window.location.href = 'association-dashboard.html';
+            break;
+          case 'owner':
+            console.log('Taxi-Drive/:611 Fetching owner member data for user:', session.user.id);
+            const { data: member, error: memberError } = await supabase.from('members').select('is_verified').eq('auth_id', session.user.id).single();
+            if (memberError) {
+              console.error('Taxi-Drive/:614 Member fetch error:', memberError);
+              showNotification('Failed to load owner profile.', 'error');
+              showLogin();
+              return;
+            }
+            if (!member) {
+              console.error('Taxi-Drive/:620 No member record found for owner:', session.user.id);
+              showNotification('Owner profile not found. Please contact support.', 'error');
+              showLogin();
+              return;
+            }
+            if (member.is_verified) {
+              console.log('Taxi-Drive/:625 Redirecting to owner dashboard');
+              window.location.href = 'owner-dashboard.html';
+            } else {
+              console.log('Taxi-Drive/:628 Owner not verified, showing login');
+              showNotification('Account pending verification.', 'warning');
+              showLogin();
+            }
+            break;
+          case 'driver':
+            console.log('Taxi-Drive/:633 Redirecting to driver dashboard');
+            window.location.href = 'driver-dashboard.html';
+            break;
+          case 'passenger':
+            console.log('Taxi-Drive/:637 Redirecting to passenger dashboard');
+            window.location.href = 'passenger-dashboard.html';
+            break;
+          default:
+            console.error('Taxi-Drive/:641 Unknown role:', profile.role);
+            showNotification('Invalid user role. Please contact support.', 'error');
+            showLogin();
+        }
+      } catch (error) {
+        console.error('Taxi-Drive/:646 Error in checkAndRedirectUser:', error);
+        showNotification('An error occurred during authentication. Please try again.', 'error');
+        showLogin();
+      } finally {
+        isRedirecting = false;
       }
     }
-    let authListenerRegistered = false;
     function setupAuthListener() {
       if (!supabase) {
-        console.warn('Supabase not initialized. Retrying...');
+        console.warn('Taxi-Drive/:654 Supabase not initialized. Retrying...');
         setTimeout(setupAuthListener, 500);
         return;
       }
       if (authListenerRegistered) {
-        console.log('Auth listener already registered, skipping');
+        console.log('Taxi-Drive/:659 Auth listener already registered, skipping');
         return;
       }
       authListenerRegistered = true;
       supabase.auth.onAuthStateChange(async (event, session) => {
         const now = Date.now();
-        console.log('Auth state changed:', { event, userId: session?.user?.id, timestamp: now });
-        if (event === 'SIGNED_IN' && lastAuthEvent === 'SIGNED_IN' && now - lastAuthEventTime < DEBOUNCE_MS) {
-          console.log('Ignoring duplicate SIGNED_IN event');
+        console.log('Taxi-Drive/:664 Auth state changed:', { event, userId: session?.user?.id, timestamp: now, accessToken: session?.access_token });
+        if (event === 'SIGNED_IN' && session?.access_token === lastSessionToken) {
+          console.log('Taxi-Drive/:666 Ignoring duplicate SIGNED_IN event for same session');
           return;
         }
-        lastAuthEvent = event;
-        lastAuthEventTime = now;
+        lastSessionToken = session?.access_token || null;
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
           await checkAndRedirectUser(session);
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out, showing login');
+          console.log('Taxi-Drive/:672 User signed out, showing login');
           showLogin();
         }
       });
@@ -684,7 +743,7 @@
         });
         setupAuthListener();
       } catch (error) {
-        console.error('Error during initialization:', error);
+        console.error('Taxi-Drive/:700 Error during initialization:', error);
         showNotification('Failed to initialize application.', 'error');
       }
     });
