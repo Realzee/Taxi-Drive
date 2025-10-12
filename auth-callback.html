@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authenticating...</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <h2>Authenticating...</h2>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+
+    async function handleOAuthCallback() {
+      try {
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+        
+        if (session?.user) {
+          // Get role from URL parameters
+          const urlParams = new URLSearchParams(window.location.search);
+          const role = urlParams.get('role') || 'passenger';
+          
+          // Update profile with role
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role })
+            .eq('id', session.user.id);
+            
+          if (updateError) {
+            console.warn('Could not update profile role:', updateError);
+          }
+          
+          // Redirect based on role
+          const redirectUrls = {
+            passenger: 'passenger-dashboard.html',
+            driver: 'driver-dashboard.html',
+            owner: 'owner-dashboard.html',
+            association: 'association-dashboard.html'
+          };
+          
+          const redirectUrl = redirectUrls[role] || 'index.html';
+          window.location.href = redirectUrl;
+        } else {
+          throw new Error('No session found');
+        }
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        window.location.href = 'index.html?error=auth_failed';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', handleOAuthCallback);
+  </script>
+</body>
+</html>

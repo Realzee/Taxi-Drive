@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Passenger Dashboard - TaxiDrive</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.0/dist/umd/supabase.min.js"></script>
+  <style>
+    /* Add your dashboard styles here */
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f5;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header style="background: #052438; color: white; padding: 1rem;">
+      <h1>Passenger Dashboard</h1>
+      <button id="logout-btn">Logout</button>
+    </header>
+    
+    <main style="padding: 2rem;">
+      <div id="user-info">
+        <h2>Welcome, <span id="user-name">User</span>!</h2>
+        <p>Role: <span id="user-role">Passenger</span></p>
+      </div>
+      
+      <!-- Add passenger-specific content here -->
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
+
+    let supabase = null;
+    let user = null;
+
+    async function initializeApp() {
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Check authentication
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (!session) {
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        user = session.user;
+        await loadUserProfile();
+        setupEventListeners();
+        
+      } catch (error) {
+        console.error('Initialization error:', error);
+        window.location.href = 'index.html';
+      }
+    }
+
+    async function loadUserProfile() {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (profile.role !== 'passenger') {
+          throw new Error('Invalid role access');
+        }
+
+        document.getElementById('user-name').textContent = profile.name || 'Passenger';
+        document.getElementById('user-role').textContent = profile.role;
+
+      } catch (error) {
+        console.error('Profile load error:', error);
+        await logout();
+      }
+    }
+
+    function setupEventListeners() {
+      document.getElementById('logout-btn').addEventListener('click', logout);
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>
