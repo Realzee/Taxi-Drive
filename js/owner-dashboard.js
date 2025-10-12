@@ -35,6 +35,7 @@ let currentOwnerId = null;
 let currentAssociationId = null;
 let map = null;
 let fleetMarkers = {};
+let authListenerRegistered = false;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initializeSupabase();
@@ -114,6 +115,16 @@ async function initializeDashboard() {
     await loadFinancials();
     setupEventListeners();
     listenRealtime();
+    if (!authListenerRegistered) {
+      authListenerRegistered = true;
+      supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed in owner dashboard:', { event, userId: session?.user?.id });
+        if (event === 'SIGNED_OUT') {
+          showNotification('Session expired. Redirecting to login.', 'warning');
+          window.location.href = 'index.html';
+        }
+      });
+    }
   } catch (error) {
     console.error('Error initializing dashboard:', error);
     showNotification('Failed to initialize dashboard.', 'error');
