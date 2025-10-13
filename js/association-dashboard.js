@@ -2,7 +2,7 @@
 console.log('Association dashboard script loaded');
 
 // Global variables
-let supabase;
+let supabase = null;
 let currentAssociationId = null;
 let map = null;
 let vehicleMarkers = {};
@@ -24,17 +24,45 @@ const elements = {
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing dashboard...');
-    initializeSupabase();
-    checkAuthAndInitialize();
+    initializeApp();
 });
 
-// Initialize Supabase
-function initializeSupabase() {
-    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+// Initialize the entire application
+async function initializeApp() {
+    try {
+        await initializeSupabase();
+        await checkAuthAndInitialize();
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showNotification('Error initializing application. Please refresh the page.', 'error');
+    }
+}
 
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase client initialized');
+// Initialize Supabase
+async function initializeSupabase() {
+    try {
+        const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+
+        // Check if supabase is available
+        if (typeof window.supabase === 'undefined') {
+            throw new Error('Supabase library not loaded');
+        }
+
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true
+            }
+        });
+        
+        console.log('Supabase client initialized');
+        return supabase;
+        
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
+        throw error;
+    }
 }
 
 // Check authentication and initialize dashboard
@@ -42,6 +70,10 @@ async function checkAuthAndInitialize() {
     try {
         console.log('Checking authentication status...');
         
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
+        }
+
         // Get current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -100,7 +132,7 @@ async function initializeDashboard() {
         
     } catch (error) {
         console.error('Error initializing dashboard:', error);
-        showNotification('Error loading dashboard. Please refresh the page.', 'error');
+        showNotification('Error loading dashboard data. Please refresh the page.', 'error');
     }
 }
 
@@ -109,6 +141,10 @@ async function loadAssociationData() {
     try {
         console.log('Loading association data for ID:', currentAssociationId);
         
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
+        }
+
         const { data: association, error } = await supabase
             .from('associations')
             .select('id, association_name, email, phone, address, description, admin_name, admin_phone, logo_url, wallet_balance')
@@ -119,9 +155,16 @@ async function loadAssociationData() {
             console.error('Error fetching association:', error);
             
             // If association doesn't exist, create a default one
-            if (error.code === 'PGRST116') {
+            if (error.code === 'PGRST116' || error.message.includes('404') || error.message.includes('not found')) {
                 console.log('No association found, creating default association...');
                 return await createDefaultAssociation();
+            }
+            
+            // Check if it's an RLS error
+            if (error.code === '42501' || error.message.includes('permission denied')) {
+                console.error('RLS Policy error - check your Supabase RLS policies');
+                showNotification('Permission denied. Please check database permissions.', 'error');
+                return null;
             }
             
             throw error;
@@ -143,7 +186,8 @@ async function loadAssociationData() {
         
     } catch (error) {
         console.error('Error in loadAssociationData:', error);
-        throw error;
+        showNotification('Error loading association data', 'error');
+        return null;
     }
 }
 
@@ -152,9 +196,12 @@ async function createDefaultAssociation() {
     try {
         console.log('Creating default association for user:', currentAssociationId);
         
-        const { data: user } = await supabase.auth.getUser();
-        const userEmail = user.user.email;
-        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        const userEmail = user.email;
         const defaultAssociation = {
             id: currentAssociationId,
             association_name: `${userEmail.split('@')[0]} Association`,
@@ -165,7 +212,8 @@ async function createDefaultAssociation() {
             admin_name: userEmail.split('@')[0],
             admin_phone: '',
             wallet_balance: 0,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         const { data: association, error } = await supabase
@@ -176,89 +224,91 @@ async function createDefaultAssociation() {
 
         if (error) {
             console.error('Error creating default association:', error);
+            
+            // If insertion fails due to RLS, try with service key or show instructions
+            if (error.code === '42501') {
+                showNotification('Please create an association record in your database first.', 'warning');
+                return defaultAssociation; // Return the local object
+            }
+            
             throw error;
         }
 
         console.log('Default association created:', association);
+        showNotification('Default association created successfully', 'success');
         return association;
         
     } catch (error) {
         console.error('Error creating default association:', error);
-        throw error;
+        showNotification('Error creating association. Please contact administrator.', 'error');
+        return null;
     }
 }
 
-// Redirect to login
-function redirectToLogin() {
-    console.log('Redirecting to login page...');
-    window.location.href = 'index.html';
-}
-
-// Load dashboard statistics
+// Load dashboard statistics with error handling
 async function loadDashboardStats() {
     try {
-        if (!currentAssociationId) {
-            console.error('No association ID available');
+        if (!currentAssociationId || !supabase) {
+            console.error('No association ID or Supabase client available');
             return;
         }
 
         console.log('Loading dashboard stats for association:', currentAssociationId);
 
-        // Load vehicles count
-        const { count: vehiclesCount, error: vehiclesError } = await supabase
-            .from('vehicles')
-            .select('*', { count: 'exact', head: true })
-            .eq('association_id', currentAssociationId);
+        // Helper function to safely count records
+        const safeCount = async (tableName) => {
+            try {
+                const { count, error } = await supabase
+                    .from(tableName)
+                    .select('*', { count: 'exact', head: true })
+                    .eq('association_id', currentAssociationId);
 
-        if (vehiclesError) {
-            console.error('Error fetching vehicles count:', vehiclesError);
-        } else {
-            elements.statVehicles.textContent = vehiclesCount || 0;
-        }
-
-        // Load members count
-        const { count: membersCount, error: membersError } = await supabase
-            .from('members')
-            .select('*', { count: 'exact', head: true })
-            .eq('association_id', currentAssociationId);
-
-        if (membersError) {
-            console.error('Error fetching members count:', membersError);
-        } else {
-            elements.statMembers.textContent = membersCount || 0;
-        }
-
-        // Load routes count
-        const { count: routesCount, error: routesError } = await supabase
-            .from('routes')
-            .select('*', { count: 'exact', head: true })
-            .eq('association_id', currentAssociationId);
-
-        if (routesError) {
-            console.error('Error fetching routes count:', routesError);
-        } else {
-            elements.statRoutes.textContent = routesCount || 0;
-        }
-
-        // Load alarms count
-        const { count: alarmsCount, error: alarmsError } = await supabase
-            .from('alarms')
-            .select('*', { count: 'exact', head: true })
-            .eq('association_id', currentAssociationId)
-            .eq('resolved', false);
-
-        if (alarmsError) {
-            console.error('Error fetching alarms count:', alarmsError);
-        } else {
-            elements.statAlarms.textContent = alarmsCount || 0;
-            
-            // Update alert badge
-            if (alarmsCount > 0) {
-                elements.alertBadge.style.display = 'flex';
-                elements.alertCount.textContent = alarmsCount;
-            } else {
-                elements.alertBadge.style.display = 'none';
+                if (error) {
+                    console.error(`Error counting ${tableName}:`, error);
+                    return 0;
+                }
+                return count || 0;
+            } catch (error) {
+                console.error(`Error in safeCount for ${tableName}:`, error);
+                return 0;
             }
+        };
+
+        // Load counts safely
+        const vehiclesCount = await safeCount('vehicles');
+        const membersCount = await safeCount('members');
+        const routesCount = await safeCount('routes');
+        
+        // Alarms count with additional filter
+        let alarmsCount = 0;
+        try {
+            const { count, error } = await supabase
+                .from('alarms')
+                .select('*', { count: 'exact', head: true })
+                .eq('association_id', currentAssociationId)
+                .eq('resolved', false);
+
+            if (error) {
+                console.error('Error counting alarms:', error);
+            } else {
+                alarmsCount = count || 0;
+            }
+        } catch (error) {
+            console.error('Error in alarms count:', error);
+        }
+
+        // Update UI elements
+        elements.statVehicles.textContent = vehiclesCount;
+        elements.statMembers.textContent = membersCount;
+        elements.statRoutes.textContent = routesCount;
+        elements.statAlarms.textContent = alarmsCount;
+        
+        // Update alert badge
+        if (alarmsCount > 0) {
+            elements.alertBadge.style.display = 'flex';
+            elements.alertCount.textContent = alarmsCount;
+        } else {
+            elements.alertBadge.style.display = 'none';
         }
 
     } catch (error) {
@@ -266,10 +316,10 @@ async function loadDashboardStats() {
     }
 }
 
-// Load recent members
+// Load recent members with error handling
 async function loadRecentMembers() {
     try {
-        if (!currentAssociationId) return;
+        if (!currentAssociationId || !supabase) return;
 
         const { data: members, error } = await supabase
             .from('members')
@@ -315,10 +365,10 @@ async function loadRecentMembers() {
     }
 }
 
-// Load recent routes
+// Load recent routes with error handling
 async function loadRecentRoutes() {
     try {
-        if (!currentAssociationId) return;
+        if (!currentAssociationId || !supabase) return;
 
         const { data: routes, error } = await supabase
             .from('routes')
@@ -394,10 +444,10 @@ function initializeMap() {
     }
 }
 
-// Load vehicle locations on map
+// Load vehicle locations on map with error handling
 async function loadVehicleLocations() {
     try {
-        if (!currentAssociationId || !map) return;
+        if (!currentAssociationId || !map || !supabase) return;
 
         const { data: vehicles, error } = await supabase
             .from('vehicles')
@@ -443,11 +493,11 @@ async function loadVehicleLocations() {
     }
 }
 
-// Set up realtime subscriptions
+// Set up realtime subscriptions with error handling
 function setupRealtimeSubscriptions() {
     try {
-        if (!currentAssociationId) {
-            console.error('Cannot set up realtime: currentAssociationId is null');
+        if (!currentAssociationId || !supabase) {
+            console.error('Cannot set up realtime: missing association ID or Supabase client');
             return;
         }
 
@@ -545,6 +595,12 @@ function updateAlertBadge() {
         elements.alertCount.textContent = newCount;
         elements.alertBadge.style.display = 'flex';
     }
+}
+
+// Redirect to login
+function redirectToLogin() {
+    console.log('Redirecting to login page...');
+    window.location.href = 'index.html';
 }
 
 // Setup event listeners
@@ -684,7 +740,7 @@ function initializeFullMap() {
 
 // Load vehicles for specific map
 async function loadVehiclesForMap(targetMap) {
-    if (!currentAssociationId) return;
+    if (!currentAssociationId || !supabase) return;
 
     const { data: vehicles, error } = await supabase
         .from('vehicles')
@@ -720,10 +776,10 @@ async function loadVehiclesForMap(targetMap) {
     }
 }
 
-// Show wallet modal
+// Show wallet modal with error handling
 async function showWalletModal() {
     try {
-        if (!currentAssociationId) return;
+        if (!currentAssociationId || !supabase) return;
 
         const { data: association, error } = await supabase
             .from('associations')
@@ -733,6 +789,7 @@ async function showWalletModal() {
 
         if (error) {
             console.error('Error fetching wallet balance:', error);
+            showNotification('Error loading wallet data', 'error');
             return;
         }
 
@@ -753,12 +810,11 @@ async function showWalletModal() {
     }
 }
 
-// Load recent transactions
+// Load recent transactions with error handling
 async function loadRecentTransactions() {
     try {
-        if (!currentAssociationId) return;
+        if (!currentAssociationId || !supabase) return;
 
-        // First check if transactions table exists by trying to query it
         const { data: transactions, error } = await supabase
             .from('transactions')
             .select('id, amount, type, description, created_at')
@@ -799,10 +855,10 @@ async function loadRecentTransactions() {
     }
 }
 
-// Show alerts modal
+// Show alerts modal with error handling
 async function showAlertsModal() {
     try {
-        if (!currentAssociationId) return;
+        if (!currentAssociationId || !supabase) return;
 
         const { data: alarms, error } = await supabase
             .from('alarms')
@@ -813,6 +869,7 @@ async function showAlertsModal() {
 
         if (error) {
             console.error('Error fetching alarms:', error);
+            showNotification('Error loading alerts', 'error');
             return;
         }
 
@@ -852,6 +909,7 @@ async function showAlertsModal() {
 
     } catch (error) {
         console.error('Error showing alerts modal:', error);
+        showNotification('Error loading alerts', 'error');
     }
 }
 
@@ -877,7 +935,7 @@ async function resolveAlarm(alarmId) {
     }
 }
 
-// Show profile modal
+// Show profile modal with error handling
 async function showProfileModal() {
     try {
         const association = await loadAssociationData();
@@ -1069,18 +1127,20 @@ function getNotificationIcon(type) {
 }
 
 // Auth state change listener
-supabase.auth.onAuthStateChange((event, session) => {
-    console.log('Auth state changed in association dashboard:', { event, userId: session?.user?.id });
-    
-    if (event === 'SIGNED_OUT') {
-        console.log('User signed out, redirecting to login');
-        window.location.href = 'index.html';
-    } else if (event === 'SIGNED_IN' && currentAssociationId === null) {
-        console.log('User signed in, re-initializing dashboard');
-        currentAssociationId = session.user.id;
-        initializeDashboard();
-    }
-});
+if (supabase) {
+    supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed in association dashboard:', { event, userId: session?.user?.id });
+        
+        if (event === 'SIGNED_OUT') {
+            console.log('User signed out, redirecting to login');
+            window.location.href = 'index.html';
+        } else if (event === 'SIGNED_IN' && currentAssociationId === null) {
+            console.log('User signed in, re-initializing dashboard');
+            currentAssociationId = session.user.id;
+            initializeDashboard();
+        }
+    });
+}
 
 // Make functions globally available for HTML onclick handlers
 window.resolveAlarm = resolveAlarm;
