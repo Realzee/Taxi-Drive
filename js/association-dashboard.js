@@ -68,7 +68,7 @@ async function initializeApp() {
 async function initializeSupabase() {
     try {
         const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODUyMzUsImV4cCI6MjA3NDQ2MTIzNX0.CYWfAs4xaBf7WwJthiBGHw4iBtiY1wwYvghHcXQnVEc';
 
         // Check if supabase is available
         if (typeof window.supabase === 'undefined') {
