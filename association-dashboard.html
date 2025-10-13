@@ -11,12 +11,6 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
     <!-- Montserrat Font -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -29,7 +23,6 @@
 </head>
 <body class="association-dashboard">
 <div class="dashboard-app">
-    <!-- Header -->
     <!-- Header -->
     <header class="header">
         <div class="header-content">
@@ -51,10 +44,13 @@
             </div>
         </div>
     </header>
-<!-- Welcome Section -->
-            <section class="welcome-section">
-    <br> <p>Efficient Association Management</p>
-</section>
+
+    <!-- Welcome Section -->
+    <section class="welcome-section">
+        <h1>Welcome to Association Dashboard</h1>
+        <p>Efficient Association Management</p>
+    </section>
+
     <!-- Main Content -->
     <main class="main-content">
         <div class="dashboard-container">
@@ -103,16 +99,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- Map Section -->
-            <div id="map-modal" class="modal-overlay">
-            <div class="modal-content">
-            <button class="modal-close-btn" onclick="closeModal('map-modal')">×</button>
-            <button class="btn btn-primary" onclick="centerOnUserLocation()">Center on My Location</button>
-                <h3>Live Vehicle Locations</h3>
-            <div id="map" style="height: 400px; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 8px;"></div>
-                </div>
-            </div>
 
             <!-- Quick Actions -->
             <section class="quick-actions-section">
@@ -194,6 +180,7 @@
         </div>
     </nav>
 </div>
+
     <!-- Modals -->
 
     <!-- Credential Modal -->
@@ -227,7 +214,6 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-primary" onclick="closeModal('owner-credential-modal')">Close</button>
-            <!-- Dynamic buttons will be added by JavaScript -->
         </div>
     </div>
 </div>
@@ -266,7 +252,6 @@
         </div>
     </div>
 </div>
-
 
     <!-- Profile Modal -->
     <div id="profile-modal" class="modal-overlay">
@@ -405,14 +390,12 @@
                 <h3>Add New Owner</h3>
                 <button class="modal-close">&times;</button>
             </div>
-
-                <div class="form-group checkbox-group">
-                <input type="checkbox" id="generate-credentials" class="form-checkbox">
-                <label for="generate-credentials">Generate login credentials for this owner</label>
-                </div>
-
-
             <div class="modal-body">
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="generate-credentials" class="form-checkbox">
+                    <label for="generate-credentials">Generate login credentials for this owner</label>
+                </div>
+                
                 <form id="add-member-form">
                     <div class="form-group">
                         <label for="member-email">Owner Email</label>
@@ -420,7 +403,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="member-name">Member Name</label>
+                        <label for="member-name">Owner Name</label>
                         <input type="text" id="member-name" class="form-input" required>
                     </div>
                     
@@ -555,5 +538,4 @@
     <!-- Main Dashboard Script -->
     <script src="./js/association-dashboard.js"></script>
 </body>
-
 </html>
