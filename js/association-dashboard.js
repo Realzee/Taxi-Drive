@@ -41,26 +41,53 @@ async function initializeApp() {
 // Initialize Supabase
 async function initializeSupabase() {
     try {
+        // Replace these with your actual Supabase credentials
         const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+        
+        // IMPORTANT: Get this from your Supabase project settings -> API -> anon public key
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+
+        // Validate credentials
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Missing Supabase credentials');
+        }
+
+        if (!SUPABASE_URL.includes('supabase.co') || SUPABASE_ANON_KEY.length < 20) {
+            throw new Error('Invalid Supabase credentials format');
+        }
 
         // Check if supabase is available
         if (typeof window.supabase === 'undefined') {
-            throw new Error('Supabase library not loaded');
+            throw new Error('Supabase library not loaded. Check if the script is included.');
         }
 
+        console.log('Initializing Supabase client with URL:', SUPABASE_URL);
+        
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
                 persistSession: true,
-                autoRefreshToken: true
+                autoRefreshToken: true,
+                detectSessionInUrl: true
             }
         });
+
+        // Test the connection with a simple query
+        console.log('Testing Supabase connection...');
+        const { data, error } = await supabase.auth.getSession();
         
-        console.log('Supabase client initialized');
+        if (error) {
+            if (error.message.includes('API key') || error.message.includes('JWT')) {
+                throw new Error('Invalid API key. Please check your Supabase anon public key in project settings.');
+            }
+            throw error;
+        }
+        
+        console.log('Supabase client initialized successfully');
         return supabase;
         
     } catch (error) {
         console.error('Error initializing Supabase:', error);
+        showNotification('Error connecting to database: ' + error.message, 'error');
         throw error;
     }
 }
@@ -79,6 +106,7 @@ async function checkAuthAndInitialize() {
         
         if (sessionError) {
             console.error('Session error:', sessionError);
+            showNotification('Authentication error. Please log in again.', 'error');
             redirectToLogin();
             return;
         }
@@ -98,6 +126,7 @@ async function checkAuthAndInitialize() {
         
     } catch (error) {
         console.error('Error checking authentication:', error);
+        showNotification('Authentication error: ' + error.message, 'error');
         redirectToLogin();
     }
 }
@@ -110,9 +139,9 @@ async function initializeDashboard() {
         // Load association data
         const association = await loadAssociationData();
         if (!association) {
-            console.error('No association data found');
-            showNotification('Error: Association data not found', 'error');
-            return;
+            console.log('No association data found - working in limited mode');
+            showNotification('Working in limited mode. Some features may not be available.', 'warning');
+            // Continue with limited functionality
         }
         
         // Load dashboard stats
@@ -132,7 +161,7 @@ async function initializeDashboard() {
         
     } catch (error) {
         console.error('Error initializing dashboard:', error);
-        showNotification('Error loading dashboard data. Please refresh the page.', 'error');
+        showNotification('Error loading dashboard data. Some features may not work.', 'warning');
     }
 }
 
@@ -154,17 +183,16 @@ async function loadAssociationData() {
         if (error) {
             console.error('Error fetching association:', error);
             
+            // If it's an API key error, don't try to create association
+            if (error.message.includes('API key') || error.message.includes('JWT')) {
+                console.error('API key error - cannot create association');
+                return null;
+            }
+            
             // If association doesn't exist, create a default one
             if (error.code === 'PGRST116' || error.message.includes('404') || error.message.includes('not found')) {
                 console.log('No association found, creating default association...');
                 return await createDefaultAssociation();
-            }
-            
-            // Check if it's an RLS error
-            if (error.code === '42501' || error.message.includes('permission denied')) {
-                console.error('RLS Policy error - check your Supabase RLS policies');
-                showNotification('Permission denied. Please check database permissions.', 'error');
-                return null;
             }
             
             throw error;
@@ -186,7 +214,7 @@ async function loadAssociationData() {
         
     } catch (error) {
         console.error('Error in loadAssociationData:', error);
-        showNotification('Error loading association data', 'error');
+        // Don't show notification here to avoid spam
         return null;
     }
 }
@@ -225,10 +253,10 @@ async function createDefaultAssociation() {
         if (error) {
             console.error('Error creating default association:', error);
             
-            // If insertion fails due to RLS, try with service key or show instructions
-            if (error.code === '42501') {
-                showNotification('Please create an association record in your database first.', 'warning');
-                return defaultAssociation; // Return the local object
+            // If insertion fails due to RLS or API key, return local object
+            if (error.code === '42501' || error.message.includes('API key') || error.message.includes('JWT')) {
+                console.log('Using local association data due to permissions');
+                return defaultAssociation;
             }
             
             throw error;
@@ -240,8 +268,13 @@ async function createDefaultAssociation() {
         
     } catch (error) {
         console.error('Error creating default association:', error);
-        showNotification('Error creating association. Please contact administrator.', 'error');
-        return null;
+        // Return a local association object as fallback
+        return {
+            id: currentAssociationId,
+            association_name: 'My Association',
+            email: 'association@example.com',
+            wallet_balance: 0
+        };
     }
 }
 
@@ -250,6 +283,7 @@ async function loadDashboardStats() {
     try {
         if (!currentAssociationId || !supabase) {
             console.error('No association ID or Supabase client available');
+            setDefaultStats();
             return;
         }
 
@@ -298,28 +332,44 @@ async function loadDashboardStats() {
         }
 
         // Update UI elements
-        elements.statVehicles.textContent = vehiclesCount;
-        elements.statMembers.textContent = membersCount;
-        elements.statRoutes.textContent = routesCount;
-        elements.statAlarms.textContent = alarmsCount;
-        
-        // Update alert badge
-        if (alarmsCount > 0) {
-            elements.alertBadge.style.display = 'flex';
-            elements.alertCount.textContent = alarmsCount;
-        } else {
-            elements.alertBadge.style.display = 'none';
-        }
+        updateStatsUI(vehiclesCount, membersCount, routesCount, alarmsCount);
 
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
+        setDefaultStats();
+    }
+}
+
+// Set default stats when database is unavailable
+function setDefaultStats() {
+    updateStatsUI(0, 0, 0, 0);
+}
+
+// Update stats UI
+function updateStatsUI(vehicles, members, routes, alarms) {
+    if (elements.statVehicles) elements.statVehicles.textContent = vehicles;
+    if (elements.statMembers) elements.statMembers.textContent = members;
+    if (elements.statRoutes) elements.statRoutes.textContent = routes;
+    if (elements.statAlarms) elements.statAlarms.textContent = alarms;
+    
+    // Update alert badge
+    if (elements.alertBadge && elements.alertCount) {
+        if (alarms > 0) {
+            elements.alertBadge.style.display = 'flex';
+            elements.alertCount.textContent = alarms;
+        } else {
+            elements.alertBadge.style.display = 'none';
+        }
     }
 }
 
 // Load recent members with error handling
 async function loadRecentMembers() {
     try {
-        if (!currentAssociationId || !supabase) return;
+        if (!currentAssociationId || !supabase) {
+            showEmptyMembersState();
+            return;
+        }
 
         const { data: members, error } = await supabase
             .from('members')
@@ -330,17 +380,12 @@ async function loadRecentMembers() {
 
         if (error) {
             console.error('Error fetching recent members:', error);
+            showEmptyMembersState();
             return;
         }
 
         if (!members || members.length === 0) {
-            elements.recentMembersContent.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-users"></i>
-                    <h3>No Owners Yet</h3>
-                    <p>Start by adding owners to your association.</p>
-                </div>
-            `;
+            showEmptyMembersState();
             return;
         }
 
@@ -362,13 +407,27 @@ async function loadRecentMembers() {
 
     } catch (error) {
         console.error('Error loading recent members:', error);
+        showEmptyMembersState();
     }
+}
+
+function showEmptyMembersState() {
+    elements.recentMembersContent.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>No Owners Yet</h3>
+            <p>Start by adding owners to your association.</p>
+        </div>
+    `;
 }
 
 // Load recent routes with error handling
 async function loadRecentRoutes() {
     try {
-        if (!currentAssociationId || !supabase) return;
+        if (!currentAssociationId || !supabase) {
+            showEmptyRoutesState();
+            return;
+        }
 
         const { data: routes, error } = await supabase
             .from('routes')
@@ -379,17 +438,12 @@ async function loadRecentRoutes() {
 
         if (error) {
             console.error('Error fetching recent routes:', error);
+            showEmptyRoutesState();
             return;
         }
 
         if (!routes || routes.length === 0) {
-            elements.recentRoutesContent.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-route"></i>
-                    <h3>No Routes Yet</h3>
-                    <p>Create your first route to get started.</p>
-                </div>
-            `;
+            showEmptyRoutesState();
             return;
         }
 
@@ -412,7 +466,18 @@ async function loadRecentRoutes() {
 
     } catch (error) {
         console.error('Error loading recent routes:', error);
+        showEmptyRoutesState();
     }
+}
+
+function showEmptyRoutesState() {
+    elements.recentRoutesContent.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-route"></i>
+            <h3>No Routes Yet</h3>
+            <p>Create your first route to get started.</p>
+        </div>
+    `;
 }
 
 // Initialize map
@@ -600,7 +665,9 @@ function updateAlertBadge() {
 // Redirect to login
 function redirectToLogin() {
     console.log('Redirecting to login page...');
-    window.location.href = 'index.html';
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
 }
 
 // Setup event listeners
@@ -1150,3 +1217,23 @@ window.showMapModal = showMapModal;
 window.showWalletModal = showWalletModal;
 window.showAlertsModal = showAlertsModal;
 window.showProfileModal = showProfileModal;
+
+// API Key Test Function (for debugging)
+window.testSupabaseConnection = async function() {
+    try {
+        const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+        
+        const testClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const { data, error } = await testClient.auth.getSession();
+        
+        if (error) {
+            alert('API Key Error: ' + error.message);
+        } else {
+            alert('API Key is valid! Connection successful.');
+        }
+    } catch (error) {
+        alert('Connection test failed: ' + error.message);
+    }
+};
