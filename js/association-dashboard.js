@@ -107,8 +107,17 @@ async function checkAuthAndInitialize() {
     try {
         console.log('Checking authentication status...');
         
-        // For demo purposes, set a demo user
-        currentAssociationId = 'demo-user-id';
+        // Get the current session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+            console.error('No active session found');
+            throw new Error('User not authenticated');
+        }
+        
+        // Set currentAssociationId to the authenticated user's ID
+        currentAssociationId = session.user.id;
+        console.log('User authenticated:', currentAssociationId, session.user.email);
         
         // Initialize dashboard components
         await initializeDashboard();
@@ -118,6 +127,40 @@ async function checkAuthAndInitialize() {
         console.error('Error checking authentication:', error);
         initializeDemoMode();
     }
+}
+
+function setupRealtimeSubscriptions() {
+    if (!supabase || !currentAssociationId) {
+        console.log('Skipping realtime subscriptions: Supabase or association ID not available');
+        return;
+    }
+    
+    console.log('Setting up realtime subscriptions for association:', currentAssociationId);
+    
+    // Subscribe to alarms table for new/updated alarms
+    realtimeSubscription = supabase
+        .channel('alarms-channel')
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'alarms',
+                filter: `association_id=eq.${currentAssociationId}`
+            },
+            (payload) => {
+                console.log('Realtime alarm update:', payload);
+                // Refresh alerts modal if open
+                if (document.getElementById('alerts-modal').style.display === 'flex') {
+                    showAlertsModal();
+                }
+                // Update stats
+                loadDashboardStats();
+            }
+        )
+        .subscribe((status) => {
+            console.log('Realtime subscription status:', status);
+        });
 }
 
 // Initialize dashboard components
