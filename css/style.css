@@ -360,3 +360,44 @@ select:focus {
     border-radius: 8px;
     margin-top: 10px;
 }
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 10000;
+    max-width: 400px;
+    border-left: 4px solid #667eea;
+    animation: slideInRight 0.3s ease;
+}
+
+.notification-success { border-left-color: #27ae60; }
+.notification-error { border-left-color: #e74c3c; }
+.notification-warning { border-left-color: #f39c12; }
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6c757d;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
