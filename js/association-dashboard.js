@@ -25,8 +25,7 @@ const elements = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing dashboard...');
     initializeSupabase();
-    initializeDashboard();
-    setupEventListeners();
+    checkAuthAndInitialize();
 });
 
 // Initialize Supabase
@@ -38,23 +37,51 @@ function initializeSupabase() {
     console.log('Supabase client initialized');
 }
 
-// Initialize dashboard
-async function initializeDashboard() {
+// Check authentication and initialize dashboard
+async function checkAuthAndInitialize() {
     try {
-        // Check authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        console.log('Checking authentication status...');
         
-        if (authError || !user) {
-            console.error('Not authenticated, redirecting to login...');
-            window.location.href = 'index.html';
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+            console.error('Session error:', sessionError);
+            redirectToLogin();
             return;
         }
 
-        console.log('Authenticated user:', user.id, user.email);
-        currentAssociationId = user.id;
+        if (!session) {
+            console.log('No session found, redirecting to login');
+            redirectToLogin();
+            return;
+        }
 
+        console.log('User authenticated:', session.user.id, session.user.email);
+        currentAssociationId = session.user.id;
+
+        // Initialize dashboard components
+        await initializeDashboard();
+        setupEventListeners();
+        
+    } catch (error) {
+        console.error('Error checking authentication:', error);
+        redirectToLogin();
+    }
+}
+
+// Initialize dashboard components
+async function initializeDashboard() {
+    try {
+        console.log('Initializing dashboard components...');
+        
         // Load association data
-        await loadAssociationData();
+        const association = await loadAssociationData();
+        if (!association) {
+            console.error('No association data found');
+            showNotification('Error: Association data not found', 'error');
+            return;
+        }
         
         // Load dashboard stats
         await loadDashboardStats();
@@ -68,6 +95,8 @@ async function initializeDashboard() {
         
         // Initialize map if modal exists
         initializeMap();
+        
+        console.log('Dashboard initialized successfully');
         
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -88,12 +117,19 @@ async function loadAssociationData() {
 
         if (error) {
             console.error('Error fetching association:', error);
+            
+            // If association doesn't exist, create a default one
+            if (error.code === 'PGRST116') {
+                console.log('No association found, creating default association...');
+                return await createDefaultAssociation();
+            }
+            
             throw error;
         }
 
         if (!association) {
             console.error('No association found for ID:', currentAssociationId);
-            throw new Error('Association not found');
+            return await createDefaultAssociation();
         }
 
         console.log('Association data loaded:', association);
@@ -109,6 +145,53 @@ async function loadAssociationData() {
         console.error('Error in loadAssociationData:', error);
         throw error;
     }
+}
+
+// Create default association if none exists
+async function createDefaultAssociation() {
+    try {
+        console.log('Creating default association for user:', currentAssociationId);
+        
+        const { data: user } = await supabase.auth.getUser();
+        const userEmail = user.user.email;
+        
+        const defaultAssociation = {
+            id: currentAssociationId,
+            association_name: `${userEmail.split('@')[0]} Association`,
+            email: userEmail,
+            phone: '',
+            address: '',
+            description: 'Taxi association management',
+            admin_name: userEmail.split('@')[0],
+            admin_phone: '',
+            wallet_balance: 0,
+            created_at: new Date().toISOString()
+        };
+
+        const { data: association, error } = await supabase
+            .from('associations')
+            .insert([defaultAssociation])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating default association:', error);
+            throw error;
+        }
+
+        console.log('Default association created:', association);
+        return association;
+        
+    } catch (error) {
+        console.error('Error creating default association:', error);
+        throw error;
+    }
+}
+
+// Redirect to login
+function redirectToLogin() {
+    console.log('Redirecting to login page...');
+    window.location.href = 'index.html';
 }
 
 // Load dashboard statistics
@@ -466,6 +549,8 @@ function updateAlertBadge() {
 
 // Setup event listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
     // Bottom navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function() {
@@ -507,10 +592,13 @@ function setupEventListeners() {
     
     // Wallet navigation
     document.querySelector('[data-target="wallet"]')?.addEventListener('click', showWalletModal);
+    
+    console.log('Event listeners setup complete');
 }
 
 // Handle navigation
 function handleNavigation(target) {
+    console.log('Navigation to:', target);
     switch(target) {
         case 'dashboard':
             // Already on dashboard
@@ -529,6 +617,7 @@ function handleNavigation(target) {
 
 // Handle quick actions
 function handleQuickAction(action) {
+    console.log('Quick action:', action);
     switch(action) {
         case 'add-route':
             showModal('add-route-modal');
@@ -669,6 +758,7 @@ async function loadRecentTransactions() {
     try {
         if (!currentAssociationId) return;
 
+        // First check if transactions table exists by trying to query it
         const { data: transactions, error } = await supabase
             .from('transactions')
             .select('id, amount, type, description, created_at')
@@ -983,9 +1073,10 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.log('Auth state changed in association dashboard:', { event, userId: session?.user?.id });
     
     if (event === 'SIGNED_OUT') {
+        console.log('User signed out, redirecting to login');
         window.location.href = 'index.html';
     } else if (event === 'SIGNED_IN' && currentAssociationId === null) {
-        // Re-initialize dashboard if not already initialized
+        console.log('User signed in, re-initializing dashboard');
         currentAssociationId = session.user.id;
         initializeDashboard();
     }
