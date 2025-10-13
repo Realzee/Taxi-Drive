@@ -1,15 +1,8 @@
 // Association Dashboard JavaScript
 console.log('Association dashboard script loaded');
 
-// Supabase configuration
-const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
-
-// Initialize Supabase
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log('Supabase client initialized');
-
 // Global variables
+let supabase;
 let currentAssociationId = null;
 let map = null;
 let vehicleMarkers = {};
@@ -31,9 +24,19 @@ const elements = {
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing dashboard...');
+    initializeSupabase();
     initializeDashboard();
     setupEventListeners();
 });
+
+// Initialize Supabase
+function initializeSupabase() {
+    const SUPABASE_URL = 'https://kgyiwowwdwxrxsuydwii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneWl3b3d3ZHd4cnhzdXlkd2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5MjQxNDcsImV4cCI6MjA0ODUwMDE0N30.9_jm6O1ZQICJ1J5-rSdfx0xJ4OSrf2luteOPKJWeBzM';
+
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase client initialized');
+}
 
 // Initialize dashboard
 async function initializeDashboard() {
@@ -501,6 +504,9 @@ function setupEventListeners() {
 
     // Map modal
     document.querySelector('[data-target="map"]')?.addEventListener('click', showMapModal);
+    
+    // Wallet navigation
+    document.querySelector('[data-target="wallet"]')?.addEventListener('click', showWalletModal);
 }
 
 // Handle navigation
@@ -545,6 +551,15 @@ function showModal(modalId) {
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        
+        // Initialize map if it's the map modal
+        if (modalId === 'map-modal') {
+            setTimeout(() => {
+                if (!document.getElementById('full-map')._leaflet_id) {
+                    initializeFullMap();
+                }
+            }, 100);
+        }
     }
 }
 
@@ -560,12 +575,6 @@ function closeModal(modalId) {
 // Show map modal
 function showMapModal() {
     showModal('map-modal');
-    // Initialize full map if not already done
-    setTimeout(() => {
-        if (!document.getElementById('full-map')._leaflet_id) {
-            initializeFullMap();
-        }
-    }, 100);
 }
 
 // Initialize full screen map
@@ -619,6 +628,84 @@ async function loadVehiclesForMap(targetMap) {
             .filter(v => v.current_lat && v.current_lng)
             .map(v => [v.current_lat, v.current_lng]);
         targetMap.fitBounds(bounds);
+    }
+}
+
+// Show wallet modal
+async function showWalletModal() {
+    try {
+        if (!currentAssociationId) return;
+
+        const { data: association, error } = await supabase
+            .from('associations')
+            .select('wallet_balance')
+            .eq('id', currentAssociationId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching wallet balance:', error);
+            return;
+        }
+
+        // Update wallet balance in modal
+        const walletBalanceElement = document.getElementById('wallet-balance');
+        if (walletBalanceElement) {
+            walletBalanceElement.textContent = `R ${(association.wallet_balance || 0).toFixed(2)}`;
+        }
+
+        // Load recent transactions
+        await loadRecentTransactions();
+
+        showModal('wallet-modal');
+
+    } catch (error) {
+        console.error('Error showing wallet modal:', error);
+        showNotification('Error loading wallet data', 'error');
+    }
+}
+
+// Load recent transactions
+async function loadRecentTransactions() {
+    try {
+        if (!currentAssociationId) return;
+
+        const { data: transactions, error } = await supabase
+            .from('transactions')
+            .select('id, amount, type, description, created_at')
+            .eq('association_id', currentAssociationId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        const transactionsList = document.getElementById('transactions-list');
+        if (!transactionsList) return;
+
+        if (error || !transactions || transactions.length === 0) {
+            transactionsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No Transactions</h3>
+                    <p>Transaction history will appear here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const transactionsHTML = transactions.map(transaction => `
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <h4>${transaction.description || 'Transaction'}</h4>
+                    <small>${new Date(transaction.created_at).toLocaleString()}</small>
+                </div>
+                <div class="transaction-amount ${transaction.type === 'credit' ? 'credit' : 'debit'}">
+                    ${transaction.type === 'credit' ? '+' : '-'}R ${Math.abs(transaction.amount).toFixed(2)}
+                </div>
+            </div>
+        `).join('');
+
+        transactionsList.innerHTML = transactionsHTML;
+
+    } catch (error) {
+        console.error('Error loading transactions:', error);
     }
 }
 
@@ -708,13 +795,13 @@ async function showProfileModal() {
         
         if (profileForm && association) {
             // Populate form fields
-            profileForm.querySelector('[name="association_name"]').value = association.association_name || '';
-            profileForm.querySelector('[name="email"]').value = association.email || '';
-            profileForm.querySelector('[name="phone"]').value = association.phone || '';
-            profileForm.querySelector('[name="address"]').value = association.address || '';
-            profileForm.querySelector('[name="description"]').value = association.description || '';
-            profileForm.querySelector('[name="admin_name"]').value = association.admin_name || '';
-            profileForm.querySelector('[name="admin_phone"]').value = association.admin_phone || '';
+            document.getElementById('profile-association-name').value = association.association_name || '';
+            document.getElementById('profile-association-email').value = association.email || '';
+            document.getElementById('profile-association-phone').value = association.phone || '';
+            document.getElementById('profile-association-address').value = association.address || '';
+            document.getElementById('profile-association-description').value = association.description || '';
+            document.getElementById('profile-admin-name').value = association.admin_name || '';
+            document.getElementById('profile-admin-phone').value = association.admin_phone || '';
         }
 
         showModal('profile-modal');
@@ -730,15 +817,14 @@ async function handleProfileUpdate(event) {
     event.preventDefault();
     
     try {
-        const formData = new FormData(event.target);
         const updates = {
-            association_name: formData.get('association_name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            description: formData.get('description'),
-            admin_name: formData.get('admin_name'),
-            admin_phone: formData.get('admin_phone'),
+            association_name: document.getElementById('profile-association-name').value,
+            email: document.getElementById('profile-association-email').value,
+            phone: document.getElementById('profile-association-phone').value,
+            address: document.getElementById('profile-association-address').value,
+            description: document.getElementById('profile-association-description').value,
+            admin_name: document.getElementById('profile-admin-name').value,
+            admin_phone: document.getElementById('profile-admin-phone').value,
             updated_at: new Date().toISOString()
         };
 
@@ -765,13 +851,12 @@ async function handleAddRoute(event) {
     event.preventDefault();
     
     try {
-        const formData = new FormData(event.target);
         const routeData = {
-            name: formData.get('route_name'),
-            origin: formData.get('origin'),
-            destination: formData.get('destination'),
-            schedule: formData.get('schedule'),
-            is_active: formData.get('is_active') === 'on',
+            name: document.getElementById('route-name').value,
+            origin: document.getElementById('route-origin').value,
+            destination: document.getElementById('route-destination').value,
+            schedule: document.getElementById('route-schedule').value,
+            is_active: true,
             association_id: currentAssociationId,
             created_at: new Date().toISOString()
         };
@@ -801,12 +886,12 @@ async function handleAddMember(event) {
     event.preventDefault();
     
     try {
-        const formData = new FormData(event.target);
         const memberData = {
-            name: formData.get('member_name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            role: formData.get('role'),
+            name: document.getElementById('member-name').value,
+            email: document.getElementById('member-email').value,
+            phone: document.getElementById('member-phone').value,
+            role: document.getElementById('member-role').value,
+            is_verified: document.getElementById('member-verified').checked,
             association_id: currentAssociationId,
             created_at: new Date().toISOString()
         };
@@ -841,8 +926,8 @@ async function handleLogout() {
         
         // Unsubscribe from realtime
         if (realtimeSubscription) {
-            realtimeSubscription.vehicleSubscription.unsubscribe();
-            realtimeSubscription.alarmSubscription.unsubscribe();
+            realtimeSubscription.vehicleSubscription?.unsubscribe();
+            realtimeSubscription.alarmSubscription?.unsubscribe();
         }
         
         window.location.href = 'index.html';
@@ -872,50 +957,6 @@ function showNotification(message, type = 'info') {
             <i class="fas fa-times"></i>
         </button>
     `;
-
-    // Add styles if not already added
-    if (!document.querySelector('#notification-styles')) {
-        const styles = document.createElement('style');
-        styles.id = 'notification-styles';
-        styles.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: white;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                z-index: 10000;
-                max-width: 400px;
-                border-left: 4px solid #667eea;
-                animation: slideInRight 0.3s ease;
-            }
-            .notification-success { border-left-color: #27ae60; }
-            .notification-error { border-left-color: #e74c3c; }
-            .notification-warning { border-left-color: #f39c12; }
-            .notification-content {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                flex: 1;
-            }
-            .notification-close {
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: #6c757d;
-            }
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(styles);
-    }
 
     document.body.appendChild(notification);
 
@@ -954,3 +995,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 window.resolveAlarm = resolveAlarm;
 window.showModal = showModal;
 window.closeModal = closeModal;
+window.showMapModal = showMapModal;
+window.showWalletModal = showWalletModal;
+window.showAlertsModal = showAlertsModal;
+window.showProfileModal = showProfileModal;
