@@ -217,16 +217,6 @@
           <input id="driver-password" type="password" placeholder="Password (min 6 characters)" class="form-input" required minlength="6">
         </div>
         <div class="form-group">
-          <label class="form-label" for="driver-association-id">Association ID (Optional)</label>
-          <input id="driver-association-id" type="text" placeholder="Association UUID" class="form-input">
-          <small style="color: #ccc; font-size: 0.8rem;">Get this from your association</small>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="driver-owner-id">Owner ID (Optional)</label>
-          <input id="driver-owner-id" type="text" placeholder="Owner UUID" class="form-input">
-          <small style="color: #ccc; font-size: 0.8rem;">Get this from your vehicle owner</small>
-        </div>
-        <div class="form-group">
           <label class="form-label" for="driver-phone">Phone Number (Optional)</label>
           <input id="driver-phone" type="tel" placeholder="Phone Number" class="form-input">
         </div>
@@ -253,11 +243,6 @@
         <div class="form-group">
           <label class="form-label" for="owner-password">Password</label>
           <input id="owner-password" type="password" placeholder="Password (min 6 characters)" class="form-input" required minlength="6">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="owner-association-id">Association ID (Optional)</label>
-          <input id="owner-association-id" type="text" placeholder="Association UUID" class="form-input">
-          <small style="color: #ccc; font-size: 0.8rem;">Get this from your association</small>
         </div>
         <div class="form-group">
           <label class="form-label" for="owner-phone">Phone Number (Optional)</label>
@@ -294,18 +279,6 @@
         <div class="form-group">
           <label class="form-label" for="association-address">Address (Optional)</label>
           <input id="association-address" type="text" placeholder="Address" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="association-description">Description (Optional)</label>
-          <textarea id="association-description" placeholder="Description" class="form-input" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="association-admin-name">Admin Name (Optional)</label>
-          <input id="association-admin-name" type="text" placeholder="Admin Name" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="association-admin-phone">Admin Phone (Optional)</label>
-          <input id="association-admin-phone" type="tel" placeholder="Admin Phone" class="form-input">
         </div>
         <div id="signup-association-error-message" class="error-message"></div>
         <button type="submit" class="btn">Sign Up</button>
@@ -422,7 +395,7 @@
 
         if (error) throw error;
 
-        // Check user role
+        // Check if profile exists and role matches
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
@@ -460,46 +433,87 @@
 
     // Create user profile manually
     async function createUserProfile(userId, role, email, name) {
-      const { error } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          role: role,
-          email: email,
-          name: name
-        });
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            role: role,
+            email: email,
+            name: name
+          });
 
-      if (error) {
-        console.error('Error creating profile:', error);
-        throw new Error('Failed to create user profile');
+        if (error) {
+          // If it's a duplicate key error, the profile already exists
+          if (error.code === '23505') {
+            console.log('Profile already exists, updating role...');
+            // Update the existing profile with the correct role
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: role })
+              .eq('id', userId);
+            
+            if (updateError) throw updateError;
+          } else {
+            throw error;
+          }
+        }
+      } catch (error) {
+        console.error('Error in createUserProfile:', error);
+        throw new Error('Failed to create/update user profile');
       }
     }
 
-    // Handle signup - SIMPLIFIED VERSION
+    // Handle signup - COMPLETELY SIMPLIFIED
     async function handleSignup(role, formData) {
       if (!supabase) {
         throw new Error('Backend services not loaded');
       }
 
-      // First create the auth user WITHOUT metadata to avoid trigger issues
+      console.log('Starting signup for role:', role);
+
+      // Step 1: Create auth user (SIMPLIFIED - no metadata)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password
-        // Remove options to avoid trigger issues
+        // Remove all options to avoid any trigger issues
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
 
-      // Manually create the profile
+      if (!authData.user) {
+        throw new Error('No user data returned from signup');
+      }
+
+      console.log('Auth user created:', authData.user.id);
+
+      // Step 2: Wait a moment to ensure auth user is fully created
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 3: Create profile
       await createUserProfile(authData.user.id, role, formData.email, formData.name);
 
-      // Create role-specific records
+      console.log('Profile created for user:', authData.user.id);
+
+      // Step 4: Create role-specific records (non-blocking)
       if (role === 'association') {
-        await createAssociationRecord(authData.user.id, formData);
+        createAssociationRecord(authData.user.id, formData).catch(err => {
+          console.error('Association record creation failed:', err);
+          // Don't throw - user is already created
+        });
       } else if (role === 'owner') {
-        await createOwnerRecord(authData.user.id, formData);
+        createOwnerRecord(authData.user.id, formData).catch(err => {
+          console.error('Owner record creation failed:', err);
+          // Don't throw - user is already created
+        });
       } else if (role === 'driver') {
-        await createDriverRecord(authData.user.id, formData);
+        createDriverRecord(authData.user.id, formData).catch(err => {
+          console.error('Driver record creation failed:', err);
+          // Don't throw - user is already created
+        });
       }
 
       return authData;
@@ -514,30 +528,21 @@
           association_name: formData.associationName,
           email: formData.email,
           phone: formData.phone,
-          address: formData.address,
-          description: formData.description,
-          admin_name: formData.adminName,
-          admin_phone: formData.adminPhone
+          address: formData.address
         });
 
       if (error) {
         console.error('Association creation error:', error);
-        // Don't throw error - user is already created
+        // Don't throw - user is already created
       }
     }
 
     // Create owner record
     async function createOwnerRecord(userId, formData) {
-      if (!formData.associationId) {
-        console.log('No association ID provided for owner');
-        return;
-      }
-
       const { error } = await supabase
         .from('members')
         .insert({
           auth_id: userId,
-          association_id: formData.associationId,
           role: 'owner',
           name: formData.name,
           email: formData.email,
@@ -546,23 +551,16 @@
 
       if (error) {
         console.error('Owner creation error:', error);
-        // Don't throw error - user is already created
+        // Don't throw - user is already created
       }
     }
 
     // Create driver record
     async function createDriverRecord(userId, formData) {
-      if (!formData.associationId || !formData.ownerId) {
-        console.log('Missing association or owner ID for driver');
-        return;
-      }
-
       const { error } = await supabase
         .from('members')
         .insert({
           auth_id: userId,
-          association_id: formData.associationId,
-          owner_id: formData.ownerId,
           role: 'driver',
           name: formData.name,
           email: formData.email,
@@ -571,7 +569,7 @@
 
       if (error) {
         console.error('Driver creation error:', error);
-        // Don't throw error - user is already created
+        // Don't throw - user is already created
       }
     }
 
@@ -604,7 +602,7 @@
       document.getElementById('show-login-from-owner').addEventListener('click', () => showSection('login-section'));
       document.getElementById('show-login-from-association').addEventListener('click', () => showSection('login-section'));
 
-      // Signup forms - SIMPLIFIED
+      // Signup forms
       document.getElementById('signup-passenger-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
@@ -646,8 +644,6 @@
           name: document.getElementById('driver-name').value,
           email: document.getElementById('driver-email').value,
           password: document.getElementById('driver-password').value,
-          associationId: document.getElementById('driver-association-id').value,
-          ownerId: document.getElementById('driver-owner-id').value,
           phone: document.getElementById('driver-phone').value
         };
 
@@ -677,7 +673,6 @@
           name: document.getElementById('owner-name').value,
           email: document.getElementById('owner-email').value,
           password: document.getElementById('owner-password').value,
-          associationId: document.getElementById('owner-association-id').value,
           phone: document.getElementById('owner-phone').value
         };
 
@@ -708,10 +703,7 @@
           email: document.getElementById('association-email').value,
           password: document.getElementById('association-password').value,
           phone: document.getElementById('association-phone').value,
-          address: document.getElementById('association-address').value,
-          description: document.getElementById('association-description').value,
-          adminName: document.getElementById('association-admin-name').value,
-          adminPhone: document.getElementById('association-admin-phone').value
+          address: document.getElementById('association-address').value
         };
 
         try {
