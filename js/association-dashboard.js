@@ -892,6 +892,19 @@ async function loadRecentTransactions() {
         const transactionsList = document.getElementById('transactions-list');
         if (!transactionsList) return;
 
+        // Handle case where transactions table doesn't exist
+        if (error && (error.code === '42P01' || error.message.includes('does not exist'))) {
+            console.log('Transactions table does not exist, showing empty state');
+            transactionsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No Transactions Table</h3>
+                    <p>Transactions table not set up in database.</p>
+                </div>
+            `;
+            return;
+        }
+
         if (error || !transactions || transactions.length === 0) {
             transactionsList.innerHTML = `
                 <div class="empty-state">
@@ -919,6 +932,16 @@ async function loadRecentTransactions() {
 
     } catch (error) {
         console.error('Error loading transactions:', error);
+        const transactionsList = document.getElementById('transactions-list');
+        if (transactionsList) {
+            transactionsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>Error Loading Transactions</h3>
+                    <p>Could not load transaction history.</p>
+                </div>
+            `;
+        }
     }
 }
 
