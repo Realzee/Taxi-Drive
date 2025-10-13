@@ -1,239 +1,91 @@
-/* Association Dashboard - COMPLETE STYLES */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Fix body positioning */
-body.association-dashboard {
+/* Association Dashboard Styles - Matching Index Page Theme */
+.association-dashboard {
     font-family: 'Montserrat', sans-serif;
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
-    background-attachment: fixed;
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
-    display: block;
+    color: #333;
 }
 
-/* Remove any conflicting container styles */
-body.association-dashboard .container {
-    all: unset !important;
-}
-
-/* Main app container */
 .dashboard-app {
-    width: 100%;
-    max-width: 480px;
+    max-width: 1200px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 1rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    background: white;
     min-height: 100vh;
+    box-shadow: 0 0 30px rgba(0,0,0,0.1);
     position: relative;
-    overflow: hidden;
 }
 
-/* Header Styles - Simplified */
+/* Header Styles */
 .header {
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 0.75rem 1rem;
-    width: 100%;
-    max-width: 480px; /* Match dashboard-app's max-width */
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border-radius: 1rem 1rem 0 0;
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%); /* Center the header */
+    padding: 1rem 0;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
 }
 
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    position: relative;
+    padding: 0 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* Logo Styles - Simplified */
 .logo-section {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem; /* Reduced gap for compactness */
-}
-
-#main-logo {
-    height: 80px; /* Reset to original size for simplicity */
-    width: auto;
-    border-radius: 10px;
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Association logo - bigger and centered */
-.association-logo {
-    height: 60px !important; /* Bigger than main logo */
-    width: 60px !important;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: none; /* Hidden by default */
-}
-
-/* When association logo is loaded, position it */
-.association-logo[src]:not([src=""]) {
-    display: block !important;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-}
-
-/* Adjust title section when association logo is present */
-.association-logo[src]:not([src=""]) ~ .title-section {
-    margin-left: 70px; /* Make space for the centered logo */
-}
-
-/* Header content adjustment for logo layout */
-.header-content {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    width: 100%;
-    position: relative;
-}
-
-/* Logo preview in modals - bigger */
-#edit-logo-preview-img,
-#logo-preview-img {
-    max-width: 200px !important;
-    max-height: 200px !important;
-    border-radius: 12px;
-    border: 3px solid rgba(163, 201, 230, 0.3);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Welcome section logo display */
-/* Association Logo Display - BEFORE Dashboard Overview */
-.association-logo-display {
-    text-align: center;
-    margin: 20px 0 30px 0;
-    padding: 20px;
-    background: linear-gradient(135deg, rgba(26, 42, 68, 0.1) 0%, rgba(163, 201, 230, 0.1) 100%);
-    border-radius: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.association-logo-large {
-    width: 120px !important;
-    height: 120px !important;
-    border-radius: 20px;
-    object-fit: cover;
-    border: 4px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-    margin: 0 auto 15px auto;
-    display: block;
-    background: white;
-    padding: 8px;
-}
-
-.association-name-display {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--dark-blue);
-    margin: 10px 0 5px 0;
-    text-align: center;
-}
-
-.association-email-display {
-    font-size: 0.9rem;
-    color: var(--dark-blue);
-    opacity: 0.8;
-    text-align: center;
-    margin: 0;
-}
-
-/* Hide the small header association logo when we have the big display */
-.association-logo-display:not(.hidden) ~ .header .association-logo {
-    display: none !important;
-}
-
-/* Adjust welcome section when logo is displayed */
-.association-logo-display:not(.hidden) + .welcome-section {
-    margin-top: 10px;
+    gap: 1rem;
 }
 
 .logo {
-    height: 40px;
+    height: 50px;
     width: auto;
-    border-radius: 6px;
-}
-
-.title-section {
-    display: block;
+    border-radius: 10px;
 }
 
 .app-title {
-    font-size: 1.2rem; /* Slightly reduced for simplicity */
-    font-weight: 600;
+    font-size: 1.8rem;
+    font-weight: 700;
     margin: 0;
-    line-height: 1;
     color: white;
 }
-.association-name {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    font-weight: 500;
-}
 
-/* Header actions - Icons and logout on right */
 .header-actions {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem; /* Reduced gap for compactness */
+    align-items: center;
+    gap: 1rem;
 }
 
 .icon-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.2);
+    border: none;
     color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.4rem;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
-    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
 }
 
 .badge {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    background: #F44336;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
     color: white;
     border-radius: 50%;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     font-size: 0.7rem;
     display: flex;
     align-items: center;
@@ -241,58 +93,35 @@ body.association-dashboard .container {
     font-weight: 600;
 }
 
-.logout-btn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+/* Welcome Section */
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-bottom: 2rem;
 }
 
-.logout-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+.welcome-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
 }
 
-.user-info {
-    color: white;
-    font-size: 0.75rem;
-    text-align: right;
-    margin-right: 0.5rem;
+.welcome-section p {
+    font-size: 1.2rem;
     opacity: 0.9;
-}
-
-.user-info small {
-    display: block;
-    line-height: 1.2;
+    margin: 0;
 }
 
 /* Main Content */
 .main-content {
-    padding: 1rem;
-    padding-bottom: 80px;
-    width: 100%;
-    padding-top: 100px; /* Increased to accommodate bigger logo */
-}
-.welcome-section {
-    text-align: center;
-    margin-bottom: 2rem;
+    padding: 0 1.5rem 80px 1.5rem;
 }
 
-.welcome-section h2 {
-    color: #1A2A44;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.welcome-section p {
-    color: #6c757d;
-    margin: 0;
-    font-size: 1rem;
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 /* Stats Section */
@@ -301,67 +130,64 @@ body.association-dashboard .container {
 }
 
 .section-title {
-    color: #1A2A44;
+    font-size: 1.5rem;
     font-weight: 600;
-    margin: 0 0 1rem 0;
-    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    border-left: 4px solid #667eea;
+    padding-left: 1rem;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 1rem;
-    padding: 1.25rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     display: flex;
     align-items: center;
     gap: 1rem;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
 .stat-icon {
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
     font-size: 1.5rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .stat-info {
     flex: 1;
-    min-width: 0;
 }
 
 .stat-value {
-    font-size: 1.75rem;
+    font-size: 2rem;
     font-weight: 700;
-    color: #1A2A44;
     margin: 0;
-    line-height: 1;
+    color: #2c3e50;
 }
 
 .stat-label {
-    font-size: 0.875rem;
     color: #6c757d;
-    margin: 0.25rem 0 0 0;
+    margin: 0;
     font-weight: 500;
 }
 
@@ -372,59 +198,52 @@ body.association-dashboard .container {
 
 .quick-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 
 .quick-action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem 0.75rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    padding: 1rem 1.5rem;
     border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     cursor: pointer;
+    transition: all 0.3s ease;
     text-decoration: none;
-    min-height: 100px;
     justify-content: center;
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
 }
 
-.quick-action-btn.btn-secondary {
-    background: rgba(163, 201, 230, 0.2);
-    border: 1px solid rgba(163, 201, 230, 0.3);
-    color: #1A2A44;
-    backdrop-filter: blur(10px);
-}
-
-.quick-action-btn.btn-danger {
-    background: rgba(244, 67, 54, 0.1);
-    border: 1px solid rgba(244, 67, 54, 0.2);
-    color: #F44336;
-    backdrop-filter: blur(10px);
-}
-
-.quick-action-btn:hover {
+.btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
-.quick-action-btn i {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
+.btn-secondary {
+    background: #6c757d;
+    color: white;
 }
 
-.quick-action-btn span {
-    font-size: 0.875rem;
-    font-weight: 500;
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
 }
 
 /* Recent Sections */
@@ -440,231 +259,122 @@ body.association-dashboard .container {
 }
 
 .view-all {
-    color: #A3C9E6;
+    color: #667eea;
     text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
+    font-weight: 600;
     transition: color 0.3s ease;
 }
 
 .view-all:hover {
-    color: #1A2A44;
+    color: #764ba2;
 }
 
 .list-container {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    overflow: hidden;
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
-.list-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    gap: 1rem;
-    transition: background-color 0.3s ease;
-}
-
-.list-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.list-item:last-child {
-    border-bottom: none;
-}
-
-.item-icon {
-    background: linear-gradient(135deg, #A3C9E6 0%, #1A2A44 100%);
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.item-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.item-details h4 {
-    margin: 0 0 0.25rem 0;
-    color: #1A2A44;
-    font-weight: 600;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.item-details p {
-    margin: 0.25rem 0;
+.empty-state {
+    text-align: center;
+    padding: 2rem;
     color: #6c757d;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.member-role, .route-schedule {
-    font-size: 0.75rem;
-    font-weight: 500;
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #bdc3c7;
 }
 
-.status-indicator {
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
+.empty-state h3 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
 }
 
-.status-active {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
-    border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.status-inactive {
-    background: rgba(255, 152, 0, 0.1);
-    color: #FF9800;
-    border: 1px solid rgba(255, 152, 0, 0.2);
-}
-
-.status-pending {
-    background: rgba(23, 162, 184, 0.1);
-    color: #17a2b8;
-    border: 1px solid rgba(23, 162, 184, 0.2);
-}
-
-.item-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
+.empty-state p {
+    margin: 0;
 }
 
 /* Bottom Navigation */
 .bottom-nav {
     position: fixed;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 480px;
+    left: 0;
+    right: 0;
     background: white;
-    padding: 0.75rem 0;
-    border-radius: 1rem 1rem 0 0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
     display: flex;
     justify-content: space-around;
-    border-top: 1px solid #D3D3D3;
+    padding: 0.75rem 0;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+    border-top: 1px solid #e9ecef;
+    z-index: 1000;
 }
 
 .nav-item {
-    text-align: center;
-    color: #6c757d;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 0.5rem;
-    border-radius: 0.75rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
-    flex: 1;
-    max-width: 80px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    color: #6c757d;
     text-decoration: none;
 }
 
 .nav-item.active {
-    color: #1A2A44;
-    background: #D3D3D3;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.nav-item:hover {
-    color: #1A2A44;
-    background: #D3D3D3;
-    transform: translateY(-2px);
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 .nav-item i {
     font-size: 1.25rem;
-    margin-bottom: 0.25rem;
-    display: block;
-    transition: transform 0.3s ease;
-}
-
-.nav-item:hover i {
-    transform: scale(1.1);
-}
-
-.nav-item.active i {
-    color: #A3C9E6;
 }
 
 .nav-item span {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 500;
-}
-
-/* Map Modal */
-#map-modal .modal-content {
-    max-width: 480px; /* Match dashboard-app max-width */
-    width: 100%;
-    padding: 1rem;
-}
-
-/* Map Container */
-#map {
-    height: 400px; /* Fixed height for usability */
-    width: 100%;
-    max-width: 480px; /* Ensure map doesn't exceed app width */
-    border-radius: 8px;
-    border: 2px solid rgba(163, 201, 230, 0.3); /* Match app aesthetic */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Modal Styles */
 .modal-overlay {
-    display: none; /* Hidden by default */
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
-    z-index: 1000; /* Ensure modal is above other content */
-    justify-content: center;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
     align-items: center;
-    overflow: auto;
+    justify-content: center;
+    z-index: 1001;
+    padding: 1rem;
 }
 
 .modal-content {
     background: white;
-    border-radius: 12px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 500px;
     width: 100%;
-    max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    margin: 0 auto;
+    animation: modalSlideIn 0.3s ease;
 }
 
-.fullscreen-modal {
-    max-width: 95vw;
-    max-height: 95vh;
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal-header {
@@ -672,82 +382,77 @@ body.association-dashboard .container {
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid #dee2e6;
-    position: sticky;
-    top: 0;
-    background: white;
-    border-radius: 12px 12px 0 0;
-    z-index: 1;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .modal-header h3 {
     margin: 0;
-    color: #1A2A44;
+    color: #2c3e50;
     font-weight: 600;
-    font-size: 1.25rem;
 }
 
-.modal-close, .modal-close-btn, .btn-cancel {
-    cursor: pointer;
+.modal-close {
     background: none;
     border: none;
     font-size: 1.5rem;
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    cursor: pointer;
+    color: #6c757d;
+    transition: color 0.3s ease;
 }
 
 .modal-close:hover {
-    background: #dee2e6;
+    color: #e74c3c;
 }
 
 .modal-body {
     padding: 1.5rem;
 }
 
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
 /* Form Styles */
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #1A2A44;
-    font-weight: 500;
-    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 .form-input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     font-size: 1rem;
-    transition: border-color 0.2s;
-    background: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #A3C9E6;
-    box-shadow: 0 0 0 2px rgba(163, 201, 230, 0.2);
-}
-
-.form-checkbox {
-    margin-right: 0.5rem;
-    transform: scale(1.2);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .checkbox-group {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.checkbox-group label {
-    margin-bottom: 0;
-    cursor: pointer;
+.form-checkbox {
+    width: 18px;
+    height: 18px;
 }
 
 .form-actions {
@@ -755,74 +460,19 @@ body.association-dashboard .container {
     gap: 1rem;
     justify-content: flex-end;
     margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
 }
 
-/* Button Styles */
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     padding: 0.75rem 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.5rem;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
     font-weight: 600;
-    text-decoration: none;
     cursor: pointer;
     transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
     gap: 0.5rem;
-    white-space: nowrap;
-    backdrop-filter: blur(10px);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #1A2A44 0%, #A3C9E6 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #15233a 0%, #8bb8d4 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-secondary {
-    background: rgba(163, 201, 230, 0.2);
-    border: 1px solid rgba(163, 201, 230, 0.3);
-    color: #1A2A44;
-}
-
-.btn-secondary:hover {
-    background: rgba(163, 201, 230, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-danger {
-    background: rgba(244, 67, 54, 0.1);
-    border: 1px solid rgba(244, 67, 54, 0.2);
-    color: #F44336;
-}
-
-.btn-danger:hover {
-    background: rgba(244, 67, 54, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-success {
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid rgba(76, 175, 80, 0.2);
-    color: #4CAF50;
-}
-
-.btn-success:hover {
-    background: rgba(76, 175, 80, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-sm {
@@ -830,272 +480,68 @@ body.association-dashboard .container {
     font-size: 0.875rem;
 }
 
-/* Empty States */
-.empty-state {
-    text-align: center;
-    padding: 3rem 2rem;
-    color: #6c757d;
+.btn-success {
+    background: #27ae60;
+    color: white;
 }
 
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
+.btn-success:hover {
+    background: #219a52;
+    transform: translateY(-2px);
 }
 
-.empty-state h3 {
-    margin: 0 0 0.5rem 0;
-    color: #1A2A44;
-    font-weight: 600;
-    font-size: 1.25rem;
-}
-
-.empty-state p {
-    margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.4;
-}
-
-/* Notification Styles */
-.notification {
-    position: fixed;
-    top: 80px;
-    right: 50%;
-    transform: translateX(50%);
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    padding: 1rem;
-    z-index: 3000;
-    max-width: 400px;
-    width: calc(100% - 2rem);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    animation: slideIn 0.3s ease-out;
-}
-
-.notification-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-}
-
-.notification-close {
-    background: none;
-    border: none;
-    font-size: 1.25rem;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-.notification-close:hover {
-    background: #dee2e6;
-}
-
-.notification-success {
-    border-left: 4px solid #28a745;
-}
-
-.notification-error {
-    border-left: 4px solid #dc3545;
-}
-
-.notification-info {
-    border-left: 4px solid #17a2b8;
-}
-
-.notification-warning {
-    border-left: 4px solid #ffc107;
-}
-
-/* User location marker */
-.user-location-marker {
-    background-color: #007bff; /* Blue dot */
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(50%) translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(50%) translateY(0);
-        opacity: 1;
-    }
+/* Map Styles */
+#map, #full-map {
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 /* Responsive Design */
-@media (max-width: 480px) {
-    .dashboard-app {
-        border-radius: 0;
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
     }
-    
-    .header {
-        border-radius: 0;
-    }
-    
-
-    /* Dashboard Container - Define width explicitly */
-.dashboard-container {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 0 1rem;
-}
     
     .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
-    
-    .stat-card {
-        padding: 1rem;
-    }
-    
-    .stat-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.25rem;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
+        grid-template-columns: 1fr;
     }
     
     .quick-actions {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
+        grid-template-columns: 1fr;
     }
     
-    .quick-action-btn {
-        padding: 1rem 0.5rem;
-        min-height: 90px;
+    .main-content {
+        padding: 0 1rem 80px 1rem;
     }
     
     .modal-content {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-    
-    .bottom-nav {
-        border-radius: 0;
-    }
-    
-    .nav-item {
-        max-width: 70px;
-    }
-    
-    .nav-item i {
-        font-size: 1.1rem;
-    }
-    
-    .nav-item span {
-        font-size: 0.65rem;
+        margin: 1rem;
+        max-width: none;
     }
 }
 
-/* Owner Management Styles */
-.owner-item {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-    border-left: 4px solid #FFD700;
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
 }
 
-.owner-badge {
-    background: #FFD700;
-    color: #000;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: bold;
-    margin-left: 0.5rem;
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.owner-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
-
-.credential-details {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin: 1rem 0;
-}
-
-.credential-details h4 {
-    margin-bottom: 0.5rem;
-    color: #1A2A44;
-}
-
-.credential-field {
-    display: flex;
-    justify-content: between;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    background: white;
-    border-radius: 0.25rem;
-}
-
-.credential-field label {
-    font-weight: bold;
-    min-width: 120px;
-    margin-bottom: 0;
-}
-
-.credential-field span {
-    flex: 1;
-}
-
-.text-info {
-    color: #17a2b8 !important;
-}
-
-/* Modal footer button spacing */
-.modal-footer {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.modal-footer .btn {
-    flex: 1;
-    min-width: 120px;
-}
-
-/* Ensure app stays centered on larger screens */
-@media (min-width: 481px) {
-    body.association-dashboard {
-        border-left: 1px solid #dee2e6;
-        border-right: 1px solid #dee2e6;
-    }
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    #map-modal .modal-content {
-        max-width: 100%; /* Full width on small screens */
-        border-radius: 0;
-    }
-    #map {
-        max-width: 100%; /* Ensure map fits within modal */
-    }
-}
-
