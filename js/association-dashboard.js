@@ -168,34 +168,27 @@ async function initializeDashboard() {
     try {
         console.log('Initializing dashboard components...');
         
-        // Load association data
         const association = await loadAssociationData();
         if (!association) {
-            console.log('Using demo association data');
+            console.log('No association data found');
             loadDemoAssociationData();
+        } else {
+            console.log('Association data loaded:', association);
         }
         
-        // Load dashboard stats
         await loadDashboardStats();
-        
-        // Load recent data
         await loadRecentMembers();
         await loadRecentRoutes();
         
-        // Set up realtime subscriptions
         setupRealtimeSubscriptions();
-        
-        // Initialize map if modal exists
-        initializeMap();
         
         console.log('Dashboard initialized successfully');
         
     } catch (error) {
-        console.error('Error initializing dashboard:', error);
+        console.error('Error initializing dashboard:', error, error.stack);
         initializeDemoMode();
     }
 }
-
 // Initialize demo mode
 function initializeDemoMode() {
     console.log('Initializing demo mode with sample data');
@@ -929,4 +922,5 @@ window.showMapModal = showMapModal;
 window.showWalletModal = showWalletModal;
 window.showAlertsModal = showAlertsModal;
 window.showProfileModal = showProfileModal;
+
 
