@@ -319,53 +319,38 @@ async function loadDashboardStats() {
             return;
         }
 
-        // Helper function to safely count records
-        const safeCount = async (tableName) => {
+        const safeCount = async (tableName, extraFilters = {}) => {
             try {
-                const { count, error } = await supabase
+                const query = supabase
                     .from(tableName)
                     .select('*', { count: 'exact', head: true })
                     .eq('association_id', currentAssociationId);
-
+                Object.entries(extraFilters).forEach(([key, value]) => {
+                    query.eq(key, value);
+                });
+                const { count, error } = await query;
                 if (error) {
+                    console.error(`Error counting ${tableName}:`, error);
                     return 0;
                 }
                 return count || 0;
             } catch (error) {
+                console.error(`Error in safeCount for ${tableName}:`, error);
                 return 0;
             }
         };
 
-        // Load counts safely
         const vehiclesCount = await safeCount('vehicles');
         const membersCount = await safeCount('members');
         const routesCount = await safeCount('routes');
-        
-        // Alarms count with additional filter
-        let alarmsCount = 0;
-        try {
-            const { count, error } = await supabase
-                .from('alarms')
-                .select('*', { count: 'exact', head: true })
-                .eq('association_id', currentAssociationId)
-                .eq('resolved', false);
+        const alarmsCount = await safeCount('alarms', { resolved: false });
 
-            if (!error) {
-                alarmsCount = count || 0;
-            }
-        } catch (error) {
-            // Use demo data
-        }
-
-        // Update UI elements
         if (vehiclesCount > 0 || membersCount > 0 || routesCount > 0 || alarmsCount > 0) {
-            // Use real data if available
             if (elements.statVehicles) elements.statVehicles.textContent = vehiclesCount;
             if (elements.statMembers) elements.statMembers.textContent = membersCount;
             if (elements.statRoutes) elements.statRoutes.textContent = routesCount;
             if (elements.statAlarms) elements.statAlarms.textContent = alarmsCount;
-            
-            // Update alert badge
+
             if (elements.alertBadge && elements.alertCount) {
                 if (alarmsCount > 0) {
                     elements.alertBadge.style.display = 'flex';
@@ -375,10 +360,8 @@ async function loadDashboardStats() {
                 }
             }
         } else {
-            // Use demo data
             loadDemoStats();
         }
-
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
         loadDemoStats();
@@ -946,3 +929,4 @@ window.showMapModal = showMapModal;
 window.showWalletModal = showWalletModal;
 window.showAlertsModal = showAlertsModal;
 window.showProfileModal = showProfileModal;
+
